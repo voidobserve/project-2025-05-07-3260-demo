@@ -45,7 +45,7 @@ void tiemr1_set_pwm_low_feq(void)
     TMR1_PWMH = TMR_PWM_VAL_H((((u32)TIMER1_LOW_FEQ_PEROID_VAL * 18 / 100) >> 8) & 0xFF); // 占空比设置值
     TMR1_PWML = TMR_PWM_VAL_L((((u32)TIMER1_LOW_FEQ_PEROID_VAL * 18 / 100) >> 0) & 0xFF);
     TMR1_CONH = TMR_PRD_PND(0x1) | TMR_PRD_IRQ_EN(0x1);  // 使能计数中断
-    TMR1_CONL = TMR_SOURCE_SEL(0x7) | TMR_MODE_SEL(0x2); // 选择系统时钟，时钟源不分频，PWM模式
+    TMR1_CONL = TMR_SOURCE_SEL(0x7) | TMR_PRESCALE_SEL(0x07) | TMR_MODE_SEL(0x2); // 选择系统时钟，时钟源128分频，PWM模式
 }
 
 // 关闭pwm，引脚输出低电平

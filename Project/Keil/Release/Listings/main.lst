@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.7.0   MAIN                                                              06/21/2025 16:38:59 PAGE 1   
+C51 COMPILER V9.60.7.0   MAIN                                                              06/23/2025 11:05:11 PAGE 1   
 
 
 C51 COMPILER V9.60.7.0, COMPILATION OF MODULE MAIN
@@ -31,187 +31,66 @@ line level    source
   20          #include <stdio.h>
   21          
   22          #include "user_config.h"
-  23          
-  24          #if 0
-              
-              void sys_init(void)
-              {
-                  GIE = 0;
-                  CLR_RAM();
-                  IO_Init();
-                  timer0_pwm_config();
-                  timer1_config();
-                  // timer2_pwm_config(); // ¿ØÖÆ Ö÷µÆ µÆ¹â µÄpwm
-              
-                  adc_config();
-              
-                  INTE |= (0x01 << 1); // Ê¹ÄÜ timer1ÖÐ¶Ï
-              
-                  delay_ms(1); // µÈ´ýÏµÍ³ÎÈ¶¨
-                  GIE = 1;
-              }
-              
-              // ³äµç¿ØÖÆ
-              void charge_handle(void)
-              {
-                  // static volatile u8 cur_charge_status = CUR_CHARGE_STATUS_NONE;
-                  u16 charging_adc_val;
-                  u16 bat_adc_val;
-              
-                  adc_sel_pin(ADC_PIN_DETECT_CHARGE);
-                  charging_adc_val = adc_getval(); // ²É¼¯³äµçÊäÈë¶ÔÓ¦µÄadÖµ
-                  adc_sel_pin(ADC_PIN_DETECT_BATTERY);
-                  bat_adc_val = adc_getval(); // ²É¼¯µç³ØµçÑ¹¶ÔÓ¦µÄadÖµ
-C51 COMPILER V9.60.7.0   MAIN                                                              06/21/2025 16:38:59 PAGE 2   
+  23           
+  24          
+  25          /**
+  26           * @brief  Main program.
+  27           * @param  None
+  28           * @retval None
+  29           */
+  30          void main(void)
+  31          {
+  32   1          // ¿´ÃÅ¹·Ä¬ÈÏ´ò¿ª, ¸´Î»Ê±¼ä2s
+  33   1          WDT_KEY = WDT_KEY_VAL(0xDD); //  ¹Ø±Õ¿´ÃÅ¹· (ÈçÐèÅäÖÃ¿´ÃÅ¹·Çë²é¿´¡°WDT\WDT_Reset¡±Ê¾Àý)
+  34   1      
+  35   1          system_init();
+  36   1      
+  37   1          // ¹Ø±ÕHCKºÍHDAµÄµ÷ÊÔ¹¦ÄÜ
+  38   1          WDT_KEY = 0x55;  // ½â³ýÐ´±£»¤
+  39   1          IO_MAP &= ~0x01; // Çå³ýÕâ¸ö¼Ä´æÆ÷µÄÖµ£¬ÊµÏÖ¹Ø±ÕHCKºÍHDAÒý½ÅµÄµ÷ÊÔ¹¦ÄÜ£¨½â³ýÓ³Éä£©
+  40   1          WDT_KEY = 0xBB;  // Ð´Ò»¸öÎÞÐ§µÄÊý¾Ý£¬´¥·¢Ð´±£»¤
+  41   1      
+  42   1          uart0_config();
+  43   1          // timer0_config();
+  44   1          timer1_pwm_config();
+  45   1          timer1_pwm_disable(); 
+  46   1      
+  47   1          // timer1_set_pwm_high_feq();
+  48   1      
+  49   1          adc_config();
+  50   1      
+  51   1          printf("sys reset\n");
+  52   1      
+  53   1          // adc_sel_pin(ADC_PIN_DETECT_CHARGE); // ²âÊÔÍ¨¹ý£¬¿ÉÒÔÕý³£¼ì²â¶ÔÓ¦µÄµçÑ¹Öµ
+C51 COMPILER V9.60.7.0   MAIN                                                              06/23/2025 11:05:11 PAGE 2   
 
-              
-                  // Èç¹ûµ±Ç°Î´ÔÚ³äµç
-                  if (CUR_CHARGE_STATUS_NONE == cur_charge_status)
-                  {
-                      if (charging_adc_val >= ADC_VAL_ENABLE_IN_CHARGE_END)
-                      {
-                          // Èç¹ûÔÚÎ´³äµçÊ±£¬¼ì²âµ½³äµçÊäÈëµçÑ¹¶øÊ¹ÄÜ³äµç
-                          cur_charge_status = CUR_CHARGE_STATUS_IN_CHARGING;
-                      }
-                  }
-                  else // Èç¹ûµ±Ç°ÕýÔÚ³äµç
-                  {
-                      static u8 cur_charging_pwm_status = CUR_CHARGING_PWM_STATUS_NONE;
-              
-                      if (charging_adc_val <= ADC_VAL_DISABLE_IN_CHARGE_END ||
-                          charging_adc_val >= 2420 || /* ³äµçÊäÈëµçÑ¹´óÓÚ 13V £¬¶Ï¿ª³äµç £¬¹«Ê½»¹ÓÐÈ±ÏÝ*/
-                          bat_adc_val >= ADC_VAL_BAT_IS_FULL)
-                      {
-                          // ³äµçÊäÈëµÄµçÑ¹Ð¡ÓÚÒ»¶¨Öµ£¬¶Ï¿ª³äµç
-                          // µç³Ø ÒÑ¾­Âúµç£¬ ¶Ï¿ª³äµç
-                          timer0_pwm_disable();
-                          cur_charge_status = CUR_CHARGE_STATUS_NONE;
-                          cur_charging_pwm_status = CUR_CHARGING_PWM_STATUS_NONE;
-                          return;
-                      }
-              
-                      // µç³ØµçÑ¹Ð¡ÓÚÒ»¶¨Öµ»òÊÇ´óÓÚÒ»¶¨Öµ£¬½øÐÐä¸Á÷³äµç
-                      if (bat_adc_val <= ADC_VAL_BAT_IS_LOW ||
-                          bat_adc_val >= ADC_VAL_BAT_IS_NEAR_FULL)
-                      {
-                          if (CUR_CHARGING_PWM_STATUS_LOW_FEQ != cur_charging_pwm_status)
-                          {
-                              timer0_pwm_set_low_feq(); // º¯ÊýÄÚ²¿Éè¶¨ÁË¹Ì¶¨ÆµÂÊºÍ¹Ì¶¨Õ¼¿Õ±È
-                              cur_charging_pwm_status = CUR_CHARGING_PWM_STATUS_LOW_FEQ;
-                          }
-                      }
-                      else // Èç¹ûµç³ØµçÑ¹²»ÊÇÔÚä¸Á÷³äµçµÄ·¶Î§
-                      {
-                          u32 tmp;
-              
-                          // Èç¹ûµç³ØµçÑ¹²»ÔÚä¸Á÷³äµçµÄÇø¼ä£¬ÔòÕý³£³äµç
-                          // ×¢ÒâÕâÀï²»ÄÜËæÒâ¸Ä±ä PWMÕ¼¿Õ±È£¬×îºÃÉèÖÃPWMÕ¼¿Õ±ÈÎª0
-                          if (CUR_CHARGING_PWM_STATUS_HIGH_FRQ != cur_charging_pwm_status)
-                          {
-                              timer0_pwm_set_high_feq();
-                              cur_charging_pwm_status = CUR_CHARGING_PWM_STATUS_HIGH_FRQ;
-                          }
-              
-                          // ¸ù¾Ý³äµçµçÑ¹µ÷ÕûpwmÕ¼¿Õ±È
-              
-                          // Õý³£³äµçÊ±£¬²Åµ÷½Ú¿ØÖÆ³äµçµÄPWMÕ¼¿Õ±È
-                          if (CUR_CHARGING_PWM_STATUS_HIGH_FRQ == cur_charging_pwm_status)
-                          {
-                              /*
-                                     ²âµÃÑù»ú³äµç¿ØÖÆµÄ¹¦ÄÜ£º
-                                     5VÊäÈë£¬pwm 105Khz£¬90%£¬£¨¿ÉÄÜÒªÊ¹ÓÃ 105Khz£¬85%£©£»12VÊäÈë£¬pwm 105Khz£¬30%
-                                     ÓÃ£¨5V£¬85%£©ºÍ£¨12V£¬30%£©ÕâÁ½¸öµãÀ´¼ÆËã£¬
-                                     ÒÑÖªÁ½µã×ø±ê(5,85),(12,30)£¬Çó¶ÔÓ¦µÄ·½³Ì£¬
-                                     ¶ÔÓ¦Ö±ÏßµÄ·½³Ì£º y  =  ?7.857x  + 124.286
-                                     y ¶ÔÓ¦Õ¼¿Õ±È£¬µ¥Î»£º%£»x ¶ÔÓ¦³äµçÊäÈëµçÑ¹£¬µ¥Î»£ºV
-                                     ÔÚ¹«Ê½ÉÏÈ¥µôÐ¡Êýµã£º
-                                     1000y = -7857x + 124286
-C51 COMPILER V9.60.7.0   MAIN                                                              06/21/2025 16:38:59 PAGE 3   
-
-              
-                                     µ¥Æ¬»úadcÊ¹ÓÃÄÚ²¿2.0V²Î¿¼µçÑ¹£¬
-                                     ½«¹«Ê½×ª»»³É Õ¼¿Õ±È ºÍ adÖµ µÄ¹ØÏµ:
-                                     Íâ²¿³äµçÊäÈëµÄµçÑ¹ 1/11 ·ÖÑ¹ºó£¬µ½µ¥Æ¬»ú¼ì²â½Å
-                                     Íâ²¿ÊäÈëµçÑ¹ / 11 / µ¥Æ¬»úadc²Î¿¼µçÑ¹ * 4096 == µ¥Æ¬»ú²É¼¯µ½µÄadÖµ
-                                     Íâ²¿ÊäÈëµçÑ¹ == µ¥Æ¬»ú²É¼¯µ½µÄadÖµ / 4096 * µ¥Æ¬»úadc²Î¿¼µçÑ¹ * 11
-                                     »»Ëã³Éµ¥Æ¬»ú¿ÉÒÔ¼ÆËãµÄÐÎÊ½£º
-                                     Íâ²¿ÊäÈëµçÑ¹ == µ¥Æ¬»ú²É¼¯µ½µÄadÖµ * µ¥Æ¬»úadc²Î¿¼µçÑ¹ * 11 / 4096
-                                     x = adc_val * 2 * 11 / 4096
-              
-                                     µÃµ½µÄ¹«Ê½£º
-                                     1000y = 124286 - 7857 (adc_val * 2 * 11 / 4096)
-                                     1000y = 124286 - adc_val * 7857 * 2 * 11 / 4096
-                                     Õâ¸ö¹«Ê½ÔËËã²»»á³¬³ö 2^32 ·¶Î§
-                                 */
-                              tmp = (u32)124286 - (u32)charging_adc_val * 7857 * 2 * 11 / 4096;
-                              // µÃµ½µÄ tmp ÊÇ1000±¶µÄÕ¼¿Õ±ÈÖµ£¬ÐèÒª³ýÒÔ1000£¬ ÔÙ³ËÒÔ ¶¨Ê±Æ÷ÖØÔØÖµ/100,µÃµ½¶¨Ê±Æ÷¶ÔÓ¦µÄÕ
-             -¼¿Õ±ÈÖµ
-                              T1DATA = (u32)T1LOAD * (u32)tmp / 1000 / 100; // ×îÖÕµÄÕ¼¿Õ±ÈÖµ
-                          }
-                      }
-                  }
-              }
-              
-              #endif
- 140          
- 141          /**
- 142           * @brief  Main program.
- 143           * @param  None
- 144           * @retval None
- 145           */
- 146          void main(void)
- 147          {
- 148   1          // ¿´ÃÅ¹·Ä¬ÈÏ´ò¿ª, ¸´Î»Ê±¼ä2s
- 149   1          WDT_KEY = WDT_KEY_VAL(0xDD); //  ¹Ø±Õ¿´ÃÅ¹· (ÈçÐèÅäÖÃ¿´ÃÅ¹·Çë²é¿´¡°WDT\WDT_Reset¡±Ê¾Àý)
- 150   1      
- 151   1          system_init();
- 152   1      
- 153   1          // ¹Ø±ÕHCKºÍHDAµÄµ÷ÊÔ¹¦ÄÜ
- 154   1          WDT_KEY = 0x55;  // ½â³ýÐ´±£»¤
- 155   1          IO_MAP &= ~0x01; // Çå³ýÕâ¸ö¼Ä´æÆ÷µÄÖµ£¬ÊµÏÖ¹Ø±ÕHCKºÍHDAÒý½ÅµÄµ÷ÊÔ¹¦ÄÜ£¨½â³ýÓ³Éä£©
- 156   1          WDT_KEY = 0xBB;  // Ð´Ò»¸öÎÞÐ§µÄÊý¾Ý£¬´¥·¢Ð´±£»¤
- 157   1      
- 158   1          uart0_config();
- 159   1          // timer0_config();
- 160   1          timer1_pwm_config();
- 161   1          timer1_pwm_disable();
- 162   1      
- 163   1          // timer1_set_pwm_high_feq();
- 164   1      
- 165   1          adc_config();
- 166   1      
- 167   1          printf("sys reset\n");
- 168   1      
- 169   1          // adc_sel_pin(ADC_PIN_DETECT_CHARGE); // ²âÊÔÍ¨¹ý£¬¿ÉÒÔÕý³£¼ì²â¶ÔÓ¦µÄµçÑ¹Öµ
- 170   1          adc_sel_pin(ADC_PIN_DETECT_BATTERY); // ²âÊÔÍ¨¹ý£¬¿ÉÒÔÕý³£¼ì²â¶ÔÓ¦µÄµçÑ¹Öµ
- 171   1      
- 172   1          // PWM_CTL_FOR_CHARGING_SET_HIGH_FEQ();
- 173   1          PWM_CTL_FOR_CHARGING_SET_LOW_FEQ();
- 174   1      
- 175   1          // {
- 176   1          //     u32 tmp = (u32)TIMER1_HIGH_FEQ_PEROID_VAL * 90 / 100;
-C51 COMPILER V9.60.7.0   MAIN                                                              06/21/2025 16:38:59 PAGE 4   
-
- 177   1      
- 178   1          //     TMR1_PWMH = (tmp >> 8) & 0xFF;
- 179   1          //     TMR1_PWML = tmp & 0xFF;
- 180   1          // }
- 181   1      
- 182   1          while (1)
- 183   1          {
- 184   2              // charge_handle();
- 185   2          }
- 186   1      }
- 187          
- 188          /**
- 189           * @}
- 190           */
- 191          
- 192          /*************************** (C) COPYRIGHT 2022 HUGE-IC ***** END OF FILE *****/
+  54   1          // adc_sel_pin(ADC_PIN_DETECT_BATTERY); // ²âÊÔÍ¨¹ý£¬¿ÉÒÔÕý³£¼ì²â¶ÔÓ¦µÄµçÑ¹Öµ
+  55   1      
+  56   1          // PWM_CTL_FOR_CHARGING_SET_HIGH_FEQ();
+  57   1          PWM_CTL_FOR_CHARGING_SET_LOW_FEQ();
+  58   1      
+  59   1          // {
+  60   1          //     u32 tmp = (u32)TIMER1_HIGH_FEQ_PEROID_VAL * 90 / 100;
+  61   1      
+  62   1          //     TMR1_PWMH = (tmp >> 8) & 0xFF;
+  63   1          //     TMR1_PWML = tmp & 0xFF;
+  64   1          // }
+  65   1      
+  66   1          while (1)
+  67   1          {
+  68   2              // charge_handle();
+  69   2          }
+  70   1      }
+  71          
+  72          /**
+  73           * @}
+  74           */
+  75          
+  76          /*************************** (C) COPYRIGHT 2022 HUGE-IC ***** END OF FILE *****/
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =     50    ----
+   CODE SIZE        =     45    ----
    CONSTANT SIZE    =     11    ----
    XDATA SIZE       =   ----    ----
    PDATA SIZE       =   ----    ----

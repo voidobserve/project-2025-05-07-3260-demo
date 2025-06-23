@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.7.0   TIMER1                                                            06/21/2025 15:46:02 PAGE 1   
+C51 COMPILER V9.60.7.0   TIMER1                                                            06/23/2025 11:05:10 PAGE 1   
 
 
 C51 COMPILER V9.60.7.0, COMPILATION OF MODULE TIMER1
@@ -61,10 +61,10 @@ line level    source
              -��值
   46   1          TMR1_PWML = TMR_PWM_VAL_L((((u32)TIMER1_LOW_FEQ_PEROID_VAL * 18 / 100) >> 0) & 0xFF);
   47   1          TMR1_CONH = TMR_PRD_PND(0x1) | TMR_PRD_IRQ_EN(0x1);  // 使能计数中断
-  48   1          TMR1_CONL = TMR_SOURCE_SEL(0x7) | TMR_MODE_SEL(0x2); // 选择系统时钟，时钟源不分频，PWM�
-C51 COMPILER V9.60.7.0   TIMER1                                                            06/21/2025 15:46:02 PAGE 2   
+  48   1          TMR1_CONL = TMR_SOURCE_SEL(0x7) | TMR_PRESCALE_SEL(0x07) | TMR_MODE_SEL(0x2); // 选择系统时钟，
+C51 COMPILER V9.60.7.0   TIMER1                                                            06/23/2025 11:05:10 PAGE 2   
 
-             -��式
+             -时钟源128分频，PWM模式
   49   1      }
   50          
   51          // 关闭pwm，引脚输出低电平

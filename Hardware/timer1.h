@@ -4,7 +4,7 @@
 #include "include.h"
 
 // #define PEROID_VAL (SYSCLK / 128 / 1000 - 1) // 周期值=系统时钟/分频/频率 - 1
-#define TIMER1_LOW_FEQ_PEROID_VAL (SYSCLK / 1 / 20000 - 1) // 周期值=系统时钟/分频/频率 - 1  
+#define TIMER1_LOW_FEQ_PEROID_VAL (SYSCLK / 128 / 105 - 1) // 周期值=系统时钟/分频/频率 - 1  
 
 
 #define TIMER1_HIGH_FEQ_PEROID_VAL (SYSCLK / 1 / 105000 - 1) // 周期值=系统时钟/分频/频率 - 1  

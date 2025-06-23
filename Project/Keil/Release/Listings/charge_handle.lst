@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.7.0   CHARGE_HANDLE                                                     06/21/2025 16:45:05 PAGE 1   
+C51 COMPILER V9.60.7.0   CHARGE_HANDLE                                                     06/23/2025 11:05:11 PAGE 1   
 
 
 C51 COMPILER V9.60.7.0, COMPILATION OF MODULE CHARGE_HANDLE
@@ -18,15 +18,23 @@ line level    source
    7          {
    8   1          // static volatile u8 cur_charge_status = CUR_CHARGE_STATUS_NONE; // 测试用
    9   1      
-  10   1          volatile u16 charging_adc_val;
-  11   1          volatile u16 bat_adc_val;
-  12   1      
-  13   1          adc_sel_pin(ADC_PIN_DETECT_CHARGE);
-  14   1          charging_adc_val = adc_getval(); // 采集充电输入对应的ad值
-  15   1          adc_sel_pin(ADC_PIN_DETECT_BATTERY);
-  16   1          bat_adc_val = adc_getval(); // 采集电池电压对应的ad值
-  17   1      
-  18   1      #if 0
+  10   1          /*
+  11   1              标志位，是否使能充电，用于控制充满电后，等到充电电压小于一定值之�
+             -�，再使能充电
+  12   1              0 -- 不使能充电
+  13   1              1 -- 使能充电
+  14   1          */
+  15   1          static volatile u8 flag_is_enable_charging = 0;
+  16   1      
+  17   1          volatile u16 charging_adc_val;
+  18   1          volatile u16 bat_adc_val;
+  19   1      
+  20   1          adc_sel_pin(ADC_PIN_DETECT_CHARGE);
+  21   1          charging_adc_val = adc_getval(); // 采集充电输入对应的ad值
+  22   1          adc_sel_pin(ADC_PIN_DETECT_BATTERY);
+  23   1          bat_adc_val = adc_getval(); // 采集电池电压对应的ad值
+  24   1      
+  25   1      #if 0
                   {
                       static u16 cnt = 0;
                       cnt++;
@@ -41,137 +49,149 @@ line level    source
                       }
                   }
               #endif
-  33   1      
-  34   1      #if 1
-  35   1          // 如果当前未在充电
-  36   1          if (CUR_CHARGE_STATUS_NONE == cur_charge_status)
-  37   1          {
-  38   2              if (charging_adc_val >= ADC_VAL_ENABLE_IN_CHARGE_END)
-  39   2              {
-  40   3                  // 如果在未充电时，检测到充电输入电压而使能充电
-  41   3                  cur_charge_status = CUR_CHARGE_STATUS_IN_CHARGING;
-  42   3                  printf("in charging\n");
-  43   3              }
-  44   2          }
-  45   1          else // 如果当前正在充电
-  46   1          {
-  47   2              static u8 cur_charging_pwm_status = CUR_CHARGING_PWM_STATUS_NONE;
-  48   2      
-  49   2              if (charging_adc_val <= ADC_VAL_DISABLE_IN_CHARGE_END ||
-  50   2                  // charging_adc_val >= 2420 || /* 充电输入电压大于 13V ，断开充电 ，公式还有
+  40   1      
+  41   1      #if 1
+  42   1          // 如果当前未在充电
+  43   1          if (CUR_CHARGE_STATUS_NONE == cur_charge_status)
+  44   1          {
+  45   2      
+  46   2              if (charging_adc_val <= ADC_VAL_DISABLE_IN_CHARGE_END) /* 如果充电电压过小 */
+  47   2              {
+  48   3                  flag_is_enable_charging = 1; // 使能充电
+  49   3              }
+  50   2      
+  51   2              if (charging_adc_val >= ADC_VAL_ENABLE_IN_CHARGE_END)
+  52   2              {
+C51 COMPILER V9.60.7.0   CHARGE_HANDLE                                                     06/23/2025 11:05:11 PAGE 2   
+
+  53   3                  // 如果在未充电时，检测到充电输入电压而使能充电
+  54   3      
+  55   3                  if (flag_is_enable_charging) // 如果使能了充电
+  56   3                  {
+  57   4                      cur_charge_status = CUR_CHARGE_STATUS_IN_CHARGING;
+  58   4                      printf("in charging\n");
+  59   4                  }
+  60   3              }
+  61   2          }
+  62   1          else // 如果当前正在充电
+  63   1          {
+  64   2              static u8 cur_charging_pwm_status = CUR_CHARGING_PWM_STATUS_NONE;
+  65   2      
+  66   2              if (charging_adc_val <= ADC_VAL_DISABLE_IN_CHARGE_END || /* 如果充电电压过小 */
+  67   2                  // charging_adc_val >= 2420 || /* 充电输入电压大于 13V ，断开充电 ，公式还有
              -缺陷*/
-  51   2                  charging_adc_val >= 2973 || /* 充电输入电压大于 15V ，断开充电 ，公式还有缺
-             -陷*/
-C51 COMPILER V9.60.7.0   CHARGE_HANDLE                                                     06/21/2025 16:45:05 PAGE 2   
+  68   2                  // charging_adc_val >= 2973 || /* 充电输入电压大于 15V ，断开充电 ，公式还有
+             -缺陷 */
+  69   2                  bat_adc_val >= ADC_VAL_BAT_IS_FULL) /* 如果电池已经满电 */
+  70   2              {
+  71   3                  // 充电输入的电压小于一定值，断开充电
+  72   3                  // 电池 已经满电， 断开充电
+  73   3                  // timer0_pwm_disable();
+  74   3                  PWM_CTL_FOR_CHARGING_DISABLE();
+  75   3                  cur_charge_status = CUR_CHARGE_STATUS_NONE;
+  76   3                  cur_charging_pwm_status = CUR_CHARGING_PWM_STATUS_NONE;
+  77   3      
+  78   3                  printf("disable charge\n");
+  79   3                  return;
+  80   3              }
+  81   2      
+  82   2              // 进行涓流充电：
+  83   2              if (bat_adc_val <= ADC_VAL_BAT_IS_LOW || /* 如果电池电压小于一定值 */
+  84   2                  // bat_adc_val >= ADC_VAL_BAT_IS_NEAR_FULL || /* 如果电池电压大于一定值 */
+  85   2                  charging_adc_val < 930) /* 充电电压小于5V */
+  86   2              {
+  87   3                  if (CUR_CHARGING_PWM_STATUS_LOW_FEQ != cur_charging_pwm_status)
+  88   3                  {
+  89   4                      // timer0_pwm_set_low_feq(); // 函数内部设定了固定频率和固定占空比
+  90   4                      PWM_CTL_FOR_CHARGING_SET_LOW_FEQ();
+  91   4                      cur_charging_pwm_status = CUR_CHARGING_PWM_STATUS_LOW_FEQ;
+  92   4      
+  93   4                      printf("low feq charge\n");
+  94   4                  }
+  95   3              }
+  96   2              else // 如果电池电压不是在涓流充电的范围
+  97   2              {
+  98   3                  u32 tmp;
+  99   3      
+ 100   3                  // 如果电池电压不在涓流充电的区间，则正常充电
+ 101   3                  // 注意这里不能随意改变 PWM占空比，最好设置PWM占空比为0
+ 102   3                  if (CUR_CHARGING_PWM_STATUS_HIGH_FRQ != cur_charging_pwm_status)
+ 103   3                  {
+ 104   4                      // timer0_pwm_set_high_feq();
+ 105   4                      PWM_CTL_FOR_CHARGING_SET_HIGH_FEQ();
+ 106   4                      cur_charging_pwm_status = CUR_CHARGING_PWM_STATUS_HIGH_FRQ;
+ 107   4                  }
+ 108   3      
+ 109   3                  // 根据充电电压调整pwm占空比
+ 110   3      
+ 111   3                  // 正常充电时，才调节控制充电的PWM占空比
+ 112   3                  if (CUR_CHARGING_PWM_STATUS_HIGH_FRQ == cur_charging_pwm_status)
+C51 COMPILER V9.60.7.0   CHARGE_HANDLE                                                     06/23/2025 11:05:11 PAGE 3   
 
-  52   2                  bat_adc_val >= ADC_VAL_BAT_IS_FULL)
-  53   2              {
-  54   3                  // 充电输入的电压小于一定值，断开充电
-  55   3                  // 电池 已经满电， 断开充电
-  56   3                  // timer0_pwm_disable();
-  57   3                  PWM_CTL_FOR_CHARGING_DISABLE();
-  58   3                  cur_charge_status = CUR_CHARGE_STATUS_NONE;
-  59   3                  cur_charging_pwm_status = CUR_CHARGING_PWM_STATUS_NONE;
-  60   3      
-  61   3                  printf("disable charge\n");
-  62   3                  return;
-  63   3              }
-  64   2      
-  65   2              // 电池电压小于一定值或是大于一定值，进行涓流充电
-  66   2              if (bat_adc_val <= ADC_VAL_BAT_IS_LOW ||
-  67   2                  bat_adc_val >= ADC_VAL_BAT_IS_NEAR_FULL ||
-  68   2                  charging_adc_val < 930) /* 充电电压小于5V */
-  69   2              {
-  70   3                  if (CUR_CHARGING_PWM_STATUS_LOW_FEQ != cur_charging_pwm_status)
-  71   3                  {
-  72   4                      // timer0_pwm_set_low_feq(); // 函数内部设定了固定频率和固定占空比
-  73   4                      PWM_CTL_FOR_CHARGING_SET_LOW_FEQ();
-  74   4                      cur_charging_pwm_status = CUR_CHARGING_PWM_STATUS_LOW_FEQ;
-  75   4      
-  76   4                      printf("low feq charge\n");
-  77   4                  }
-  78   3              }
-  79   2              else // 如果电池电压不是在涓流充电的范围
-  80   2              {
-  81   3                  u32 tmp;
-  82   3      
-  83   3                  // 如果电池电压不在涓流充电的区间，则正常充电
-  84   3                  // 注意这里不能随意改变 PWM占空比，最好设置PWM占空比为0
-  85   3                  if (CUR_CHARGING_PWM_STATUS_HIGH_FRQ != cur_charging_pwm_status)
-  86   3                  {
-  87   4                      // timer0_pwm_set_high_feq();
-  88   4                      PWM_CTL_FOR_CHARGING_SET_HIGH_FEQ();
-  89   4                      cur_charging_pwm_status = CUR_CHARGING_PWM_STATUS_HIGH_FRQ;
-  90   4                  }
-  91   3      
-  92   3                  // 根据充电电压调整pwm占空比
-  93   3      
-  94   3                  // 正常充电时，才调节控制充电的PWM占空比
-  95   3                  if (CUR_CHARGING_PWM_STATUS_HIGH_FRQ == cur_charging_pwm_status)
-  96   3                  {
-  97   4                      /*
-  98   4                             测得样机充电控制的功能：
-  99   4                             5V输入，pwm 105Khz，90%，（可能要使用 105Khz，85%）；12V输入，pwm 
+ 113   3                  {
+ 114   4                      /*
+ 115   4                             测得样机充电控制的功能：
+ 116   4                             5V输入，pwm 105Khz，90%，（可能要使用 105Khz，85%）；12V输入，pwm 
              -105Khz，30%
- 100   4                             用（5V，85%）和（12V，30%）这两个点来计算，
- 101   4                             已知两点坐标(5,85),(12,30)，求对应的方程，
- 102   4                             对应直线的方程： y  =  -7.857x  + 124.286
- 103   4                             y 对应占空比，单位：%；x 对应充电输入电压，单位：V
- 104   4                             在公式上去掉小数点：
- 105   4                             1000y = -7857x + 124286
- 106   4      
- 107   4                             单片机adc使用内部2.0V参考电压，
- 108   4                             将公式转换成 占空比 和 ad值 的关系:
- 109   4                             外部充电输入的电压 1/11 分压后，到单片机检测脚
- 110   4                             外部输入电压 / 11 / 单片机adc参考电压 * 4096 == 单片机采集到的a
+ 117   4                             用（5V，85%）和（12V，30%）这两个点来计算，
+ 118   4                             已知两点坐标(5,85),(12,30)，求对应的方程，
+ 119   4                             对应直线的方程： y  =  -7.857x  + 124.286
+ 120   4                             y 对应占空比，单位：%；x 对应充电输入电压，单位：V
+ 121   4                             在公式上去掉小数点：
+ 122   4                             1000y = -7857x + 124286
+ 123   4      
+ 124   4                             单片机adc使用内部2.0V参考电压，
+ 125   4                             将公式转换成 占空比 和 ad值 的关系:
+ 126   4                             外部充电输入的电压 1/11 分压后，到单片机检测脚
+ 127   4                             外部输入电压 / 11 / 单片机adc参考电压 * 4096 == 单片机采集到的a
              -d值
- 111   4                             外部输入电压 == 单片机采集到的ad值 / 4096 * 单片机adc参考电压 
-C51 COMPILER V9.60.7.0   CHARGE_HANDLE                                                     06/21/2025 16:45:05 PAGE 3   
-
+ 128   4                             外部输入电压 == 单片机采集到的ad值 / 4096 * 单片机adc参考电压 
              -* 11
- 112   4                             换算成单片机可以计算的形式：
- 113   4                             外部输入电压 == 单片机采集到的ad值 * 单片机adc参考电压 * 11 / 
+ 129   4                             换算成单片机可以计算的形式：
+ 130   4                             外部输入电压 == 单片机采集到的ad值 * 单片机adc参考电压 * 11 / 
              -4096
- 114   4                             x = adc_val * 2 * 11 / 4096
- 115   4      
- 116   4                             得到的公式：
- 117   4                             1000y = 124286 - 7857 (adc_val * 2 * 11 / 4096)
- 118   4                             1000y = 124286 - adc_val * 7857 * 2 * 11 / 4096
- 119   4                             这个公式运算不会超出 2^32 范围
- 120   4                         */
- 121   4                      tmp = (u32)124286 - (u32)charging_adc_val * 7857 * 2 * 11 / 4096;
- 122   4                      // 得到的 tmp 是1000倍的占空比值，需要除以1000， 再乘以 定时器重载
+ 131   4                             x = adc_val * 2 * 11 / 4096
+ 132   4      
+ 133   4                             得到的公式：
+ 134   4                             1000y = 124286 - 7857 (adc_val * 2 * 11 / 4096)
+ 135   4                             1000y = 124286 - adc_val * 7857 * 2 * 11 / 4096
+ 136   4                             这个公式运算不会超出 2^32 范围
+ 137   4                         */
+ 138   4                      tmp = (u32)124286 - (u32)charging_adc_val * 7857 * 2 * 11 / 4096;
+ 139   4                      // 得到的 tmp 是1000倍的占空比值，需要除以1000， 再乘以 定时器重载
              -值/100,得到定时器对应的占空比值
- 123   4                      // T1DATA = (u32)T1LOAD * (u32)tmp / 1000 / 100; // 最终的占空比值
- 124   4                      {
- 125   5                          static u16 cnt = 0;
- 126   5                          cnt++;
- 127   5                          if (cnt >= 100)
- 128   5                          {
- 129   6                              cnt = 0;
- 130   6                              printf("cur pwm percent : %lu %%\n", (u32)tmp / 1000);
- 131   6                              // printf("cal val  : %lu \n", (u32)charging_adc_val * 7857 * 2 * 11 / 4096);
- 132   6                          }
- 133   5                      }
- 134   4      
- 135   4                      // tmp = (((u32)TMR1_PRH << 8) | (u32)TMR1_PRL) * (u32)tmp / 1000; // 最终的占空比�
+ 140   4                      // T1DATA = (u32)T1LOAD * (u32)tmp / 1000 / 100; // 最终的占空比值
+ 141   4                      {
+ 142   5                          static u16 cnt = 0;
+ 143   5                          cnt++;
+ 144   5                          if (cnt >= 100)
+ 145   5                          {
+ 146   6                              cnt = 0;
+ 147   6                              printf("cur pwm percent : %lu %%\n", (u32)tmp / 1000);
+ 148   6                              // printf("cal val  : %lu \n", (u32)charging_adc_val * 7857 * 2 * 11 / 4096);
+ 149   6                          }
+ 150   5                      }
+ 151   4      
+ 152   4                      // tmp = (((u32)TMR1_PRH << 8) | (u32)TMR1_PRL) * (u32)tmp / 1000; // 最终的占空比�
              -�（用这个计算，得出的值是0）
- 136   4                      tmp = (u32)TIMER1_HIGH_FEQ_PEROID_VAL * tmp / 1000 / 100; // 最终的占空比值
- 137   4      
- 138   4                      /*
- 139   4                          由于公式限制，可能充电电压大于15V就会导致占空比变为0，现在�
+ 153   4                      tmp = (u32)TIMER1_HIGH_FEQ_PEROID_VAL * tmp / 1000 / 100; // 最终的占空比值
+ 154   4      
+ 155   4                      /*
+ 156   4                          由于公式限制，可能充电电压大于15V就会导致占空比变为0，现在�
              -��让它到0%
- 140   4                      */
- 141   4                      // if (0 == (u16)tmp)
- 142   4                      if (0 == tmp)
- 143   4                      {
- 144   5                          tmp = 1;
- 145   5                      }
- 146   4      
- 147   4      #if 0
+ 157   4                      */
+ 158   4                      if (0 == (u16)tmp)
+ 159   4                      // if (0 == tmp)
+ 160   4                      {
+ 161   5                          tmp = 1;
+ 162   5                      }
+ 163   4      
+ 164   4      #if 0
                               {
                                   static u16 cnt = 0;
                                   cnt++;
+C51 COMPILER V9.60.7.0   CHARGE_HANDLE                                                     06/23/2025 11:05:11 PAGE 4   
+
                                   if (cnt >= 100)
                                   {
                                       cnt = 0;
@@ -182,24 +202,22 @@ line level    source
                                   }
                               }
               #endif
- 160   4      
- 161   4                      TMR1_PWMH = (tmp >> 8) & 0xFF;
- 162   4                      TMR1_PWML = tmp & 0xFF;
- 163   4                  }
- 164   3              }
- 165   2          }
- 166   1      #endif
- 167   1      }
-C51 COMPILER V9.60.7.0   CHARGE_HANDLE                                                     06/21/2025 16:45:05 PAGE 4   
-
+ 177   4      
+ 178   4                      TMR1_PWMH = (tmp >> 8) & 0xFF;
+ 179   4                      TMR1_PWML = tmp & 0xFF;
+ 180   4                  }
+ 181   3              }
+ 182   2          }
+ 183   1      #endif
+ 184   1      }
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =    382    ----
+   CODE SIZE        =    366    ----
    CONSTANT SIZE    =     71    ----
    XDATA SIZE       =   ----    ----
    PDATA SIZE       =   ----    ----
-   DATA SIZE        =      4       8
+   DATA SIZE        =      5       8
    IDATA SIZE       =   ----    ----
    BIT SIZE         =   ----    ----
 END OF MODULE INFORMATION.

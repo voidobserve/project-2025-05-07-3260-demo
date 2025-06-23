@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.7.0   TIMER0                                                            06/21/2025 15:43:22 PAGE 1   
+C51 COMPILER V9.60.7.0   TIMER0                                                            06/23/2025 08:48:04 PAGE 1   
 
 
 C51 COMPILER V9.60.7.0, COMPILATION OF MODULE TIMER0
@@ -62,7 +62,7 @@ line level    source
   49   3      
   50   3                  // if (ir_fliter == 0x07)
   51   3                  //     filter_level = 1;
-C51 COMPILER V9.60.7.0   TIMER0                                                            06/21/2025 15:43:22 PAGE 2   
+C51 COMPILER V9.60.7.0   TIMER0                                                            06/23/2025 08:48:04 PAGE 2   
 
   52   3                  // else if (ir_fliter == 0x00)
   53   3                  //     filter_level = 0;
@@ -126,7 +126,7 @@ line level    source
  108   6      
  109   6                              // P15D = 1; // 测试红外解码
  110   6                          }
-C51 COMPILER V9.60.7.0   TIMER0                                                            06/21/2025 15:43:22 PAGE 3   
+C51 COMPILER V9.60.7.0   TIMER0                                                            06/23/2025 08:48:04 PAGE 3   
 
  111   5                          else if (ir_level_cnt <= 150) // 小于15000us,说明接收到了格式头
  112   5                          {
@@ -190,7 +190,7 @@ MODULE INFORMATION:   STATIC OVERLAYABLE
    CONSTANT SIZE    =   ----    ----
    XDATA SIZE       =   ----    ----
    PDATA SIZE       =   ----    ----
-C51 COMPILER V9.60.7.0   TIMER0                                                            06/21/2025 15:43:22 PAGE 4   
+C51 COMPILER V9.60.7.0   TIMER0                                                            06/23/2025 08:48:04 PAGE 4   
 
    DATA SIZE        =      6    ----
    IDATA SIZE       =   ----    ----
