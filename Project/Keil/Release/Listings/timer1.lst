@@ -1,0 +1,90 @@
+C51 COMPILER V9.60.7.0   TIMER1                                                            06/21/2025 15:46:02 PAGE 1   
+
+
+C51 COMPILER V9.60.7.0, COMPILATION OF MODULE TIMER1
+OBJECT MODULE PLACED IN .\Release\Objects\timer1.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\..\Hardware\timer1.c OPTIMIZE(8,SPEED) BROWSE INTVECTOR(0X000C) INCDI
+                    -R(..\..\Libraries\Include;..\..\User;..\..\Hardware) INTERVAL(3) DEBUG OBJECTEXTEND PRINT(.\Release\Listings\timer1.lst)
+                    - OBJECT(.\Release\Objects\timer1.obj)
+
+line level    source
+
+   1          #include "timer1.h"
+   2          
+   3          // pwm配置，默认为低频，固定占空比
+   4          void timer1_pwm_config(void)
+   5          {
+   6   1          //  配置 P25 为 PWM 输出端口
+   7   1          P2_MD1 &= ~GPIO_P25_MODE_SEL(0x3);
+   8   1          P2_MD1 |= GPIO_P25_MODE_SEL(0x1); // 输出模式
+   9   1          FOUT_S25 = GPIO_FOUT_TMR1_PWMOUT;
+  10   1      
+  11   1          TMR_ALLCON = TMR1_CNT_CLR(0x1);                                       // 清除计数值
+  12   1          TMR1_PRH = TMR_PERIOD_VAL_H((TIMER1_LOW_FEQ_PEROID_VAL >> 8) & 0xFF); // 周期值
+  13   1          TMR1_PRL = TMR_PERIOD_VAL_L((TIMER1_LOW_FEQ_PEROID_VAL >> 0) & 0xFF);
+  14   1          TMR1_PWMH = TMR_PWM_VAL_H((((u32)TIMER1_LOW_FEQ_PEROID_VAL * 18 / 100) >> 8) & 0xFF); // 占空比设�
+             -��值
+  15   1          TMR1_PWML = TMR_PWM_VAL_L((((u32)TIMER1_LOW_FEQ_PEROID_VAL * 18 / 100) >> 0) & 0xFF);
+  16   1          TMR1_CONH = TMR_PRD_PND(0x1) | TMR_PRD_IRQ_EN(0x1);  // 使能计数中断
+  17   1          TMR1_CONL = TMR_SOURCE_SEL(0x7) | TMR_MODE_SEL(0x2); // 选择系统时钟，时钟源不分频，PWM�
+             -��式
+  18   1      }
+  19          
+  20          // 将pwm设置为高频率、0%占空比
+  21          void timer1_set_pwm_high_feq(void)
+  22          {
+  23   1          FOUT_S25 = GPIO_FOUT_TMR1_PWMOUT;
+  24   1      
+  25   1          // 105KHz
+  26   1          TMR_ALLCON = TMR1_CNT_CLR(0x1);                                        // 清除计数值
+  27   1          TMR1_PRH = TMR_PERIOD_VAL_H((TIMER1_HIGH_FEQ_PEROID_VAL >> 8) & 0xFF); // 周期值
+  28   1          TMR1_PRL = TMR_PERIOD_VAL_L((TIMER1_HIGH_FEQ_PEROID_VAL >> 0) & 0xFF);
+  29   1          // TMR1_PWMH = TMR_PWM_VAL_H((((u32)TIMER1_HIGH_FEQ_PEROID_VAL * 18 / 100) >> 8) & 0xFF); // 占空比
+             -设置值
+  30   1          // TMR1_PWML = TMR_PWM_VAL_L((((u32)TIMER1_HIGH_FEQ_PEROID_VAL * 18 / 100) >> 0) & 0xFF);
+  31   1          TMR1_PWMH = TMR_PWM_VAL_H((((u32)TIMER1_HIGH_FEQ_PEROID_VAL * 0 / 100) >> 8) & 0xFF); // 占空比设�
+             -��值
+  32   1          TMR1_PWML = TMR_PWM_VAL_L((((u32)TIMER1_HIGH_FEQ_PEROID_VAL * 0 / 100) >> 0) & 0xFF);
+  33   1          TMR1_CONH = TMR_PRD_PND(0x1) | TMR_PRD_IRQ_EN(0x1);  // 使能计数中断
+  34   1          TMR1_CONL = TMR_SOURCE_SEL(0x7) | TMR_MODE_SEL(0x2); // 选择系统时钟，不分频，PWM模式
+  35   1      }
+  36          
+  37          // 将pwm设置为低频率，固定占空比
+  38          void tiemr1_set_pwm_low_feq(void)
+  39          {
+  40   1          FOUT_S25 = GPIO_FOUT_TMR1_PWMOUT;
+  41   1      
+  42   1          TMR_ALLCON = TMR1_CNT_CLR(0x1);                                       // 清除计数值
+  43   1          TMR1_PRH = TMR_PERIOD_VAL_H((TIMER1_LOW_FEQ_PEROID_VAL >> 8) & 0xFF); // 周期值
+  44   1          TMR1_PRL = TMR_PERIOD_VAL_L((TIMER1_LOW_FEQ_PEROID_VAL >> 0) & 0xFF);
+  45   1          TMR1_PWMH = TMR_PWM_VAL_H((((u32)TIMER1_LOW_FEQ_PEROID_VAL * 18 / 100) >> 8) & 0xFF); // 占空比设�
+             -��值
+  46   1          TMR1_PWML = TMR_PWM_VAL_L((((u32)TIMER1_LOW_FEQ_PEROID_VAL * 18 / 100) >> 0) & 0xFF);
+  47   1          TMR1_CONH = TMR_PRD_PND(0x1) | TMR_PRD_IRQ_EN(0x1);  // 使能计数中断
+  48   1          TMR1_CONL = TMR_SOURCE_SEL(0x7) | TMR_MODE_SEL(0x2); // 选择系统时钟，时钟源不分频，PWM�
+C51 COMPILER V9.60.7.0   TIMER1                                                            06/21/2025 15:46:02 PAGE 2   
+
+             -��式
+  49   1      }
+  50          
+  51          // 关闭pwm，引脚输出低电平
+  52          void timer1_pwm_disable(void)
+  53          {
+  54   1          TMR1_CONL &= ~(0x03 << 0);    // 不使能定时器计数
+  55   1          FOUT_S25 = GPIO_FOUT_AF_FUNC; // 数字复用功能输出
+  56   1          P25 = 0;
+  57   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    132    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

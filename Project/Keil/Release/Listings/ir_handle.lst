@@ -1,0 +1,30 @@
+C51 COMPILER V9.60.7.0   IR_HANDLE                                                         06/21/2025 15:43:23 PAGE 1   
+
+
+C51 COMPILER V9.60.7.0, COMPILATION OF MODULE IR_HANDLE
+OBJECT MODULE PLACED IN .\Release\Objects\ir_handle.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\..\User\ir_handle.c OPTIMIZE(8,SPEED) BROWSE INTVECTOR(0X000C) INCDIR
+                    -(..\..\Libraries\Include;..\..\User;..\..\Hardware) INTERVAL(3) DEBUG OBJECTEXTEND PRINT(.\Release\Listings\ir_handle.ls
+                    -t) OBJECT(.\Release\Objects\ir_handle.obj)
+
+line level    source
+
+   1          #include "ir_handle.h"
+   2          
+   3          volatile u8 ir_data = 0;
+   4          volatile bit flag_is_recv_ir_repeat_code = 0;
+   5          volatile bit flag_is_recved_data = 0;
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   ----    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      1    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      2    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
