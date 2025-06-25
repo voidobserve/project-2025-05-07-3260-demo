@@ -1,6 +1,7 @@
 #include "timer0.h"
 
 #include "ir_handle.h"
+#include "user_config.h"
 
 void timer0_config(void)
 {
@@ -31,7 +32,7 @@ void TIMR0_IRQHandler(void) interrupt TMR0_IRQn
         { // 红外解码
             // static volatile u8 ir_fliter;
             static volatile u16 ir_level_cnt; // 红外信号的下降沿时间间隔计数
-            static volatile u32 __ir_data;    // 
+            static volatile u32 __ir_data;    //
             static volatile bit last_level_in_ir_pin = 0;
             // static volatile u16 ir_long_press_cnt; // 檢測紅外遙控長按的計數值
 
@@ -157,6 +158,55 @@ void TIMR0_IRQHandler(void) interrupt TMR0_IRQn
             }
         } // 红外解码
 #endif // 红外解码【需要放到100us的定时器中断来处理】
+
+#if 1  // 控制LED指示灯
+        {                   // 控制LED指示灯--需要放在100us的中断
+            static u16 cnt; // 用软件实现PWM驱动LED的相关变量
+            cnt++;
+
+            if (cnt <= 20) // 20 * 100us
+            {
+                if (flag_is_led_1_enable)
+                {
+                    LED_1_PIN = LED_ON_LEVEL;
+                }
+
+                if (flag_is_led_2_enable)
+                {
+                    LED_2_PIN = LED_ON_LEVEL;
+                }
+
+                if (flag_is_led_3_enable)
+                {
+                    LED_3_PIN = LED_ON_LEVEL;
+                }
+
+                if (flag_is_led_4_enable)
+                {
+                    LED_4_PIN = LED_ON_LEVEL;
+                }
+
+                if (flag_is_led_5_enable)
+                {
+                    LED_5_PIN = LED_ON_LEVEL;
+                }
+            }
+            else
+            {
+                LED_1_PIN = LED_OFF_LEVEL;
+                LED_2_PIN = LED_OFF_LEVEL;
+                LED_3_PIN = LED_OFF_LEVEL;
+                LED_4_PIN = LED_OFF_LEVEL;
+                LED_5_PIN = LED_OFF_LEVEL;
+            }
+
+            if (cnt >= 100) // 100 * 100us
+            {
+                cnt = 0;
+            }
+
+        } // 控制LED指示灯--需要放在100us的中断
+#endif // 控制LED指示灯
     }
 
     // 退出中断设置IP，不可删除
