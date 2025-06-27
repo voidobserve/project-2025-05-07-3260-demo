@@ -1,6 +1,8 @@
 {
     "files.associations": {
         "include.h": "c",
-        "debug.h": "c"
+        "debug.h": "c",
+        "timer0.h": "c",
+        "user_config.h": "c"
     }
 }

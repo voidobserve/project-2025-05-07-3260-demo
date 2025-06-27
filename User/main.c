@@ -92,7 +92,7 @@ void main(void)
     // adc_sel_pin(ADC_PIN_DETECT_CHARGE); // 测试通过，可以正常检测对应的电压值
     // adc_sel_pin(ADC_PIN_DETECT_BATTERY); // 测试通过，可以正常检测对应的电压值
 
-    PWM_CTL_FOR_CHARGING_SET_HIGH_FEQ();
+    // PWM_CTL_FOR_CHARGING_SET_HIGH_FEQ();
     // 用下面的占空比充电，电流会非常大：
     // TMR1_PWMH = ((TIMER1_HIGH_FEQ_PEROID_VAL * 10 / 100) >> 8) & 0xFF; // 10%
     // TMR1_PWML = (TIMER1_HIGH_FEQ_PEROID_VAL * 10 / 100) & 0xFF;
@@ -109,8 +109,8 @@ void main(void)
     // TMR1_PWML = (TIMER1_HIGH_FEQ_PEROID_VAL * 5 / 100) & 0xFF;
 
     // 充电电压到11.3V时，电流会到1A，电压越高，电流越大
-    TMR1_PWMH = ((TIMER1_HIGH_FEQ_PEROID_VAL * 2 / 100) >> 8) & 0xFF; // 2%
-    TMR1_PWML = (TIMER1_HIGH_FEQ_PEROID_VAL * 2 / 100) & 0xFF;
+    // TMR1_PWMH = ((TIMER1_HIGH_FEQ_PEROID_VAL * 2 / 100) >> 8) & 0xFF; // 2%
+    // TMR1_PWML = (TIMER1_HIGH_FEQ_PEROID_VAL * 2 / 100) & 0xFF;
 
     // 5V，电流会到10A
     // TMR1_PWMH = ((TIMER1_HIGH_FEQ_PEROID_VAL * 80 / 100) >> 8) & 0xFF; //
@@ -127,15 +127,16 @@ void main(void)
     //     TMR1_PWML = tmp & 0xFF;
     // }
 
-    LED_1_ON();
-    LED_2_ON();
-    LED_3_ON();
-    LED_4_ON();
-    LED_5_ON();
+    // LED_1_ON();
+    // LED_2_ON();
+    // LED_3_ON();
+    // LED_4_ON();
+    // LED_5_ON();
 
     while (1)
     {
         // charge_handle();
+        led_handle_update_percent_of_bat();
     }
 }
 

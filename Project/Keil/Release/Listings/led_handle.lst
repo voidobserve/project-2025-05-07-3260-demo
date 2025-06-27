@@ -1,0 +1,123 @@
+C51 COMPILER V9.60.7.0   LED_HANDLE                                                        06/27/2025 17:21:24 PAGE 1   
+
+
+C51 COMPILER V9.60.7.0, COMPILATION OF MODULE LED_HANDLE
+OBJECT MODULE PLACED IN .\Release\Objects\led_handle.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\..\User\led_handle.c OPTIMIZE(8,SPEED) BROWSE INTVECTOR(0X000C) INCDI
+                    -R(..\..\Libraries\Include;..\..\User;..\..\Hardware) INTERVAL(3) DEBUG OBJECTEXTEND PRINT(.\Release\Listings\led_handle.
+                    -lst) OBJECT(.\Release\Objects\led_handle.obj)
+
+line level    source
+
+   1          #include "led_handle.h"
+   2          
+   3          // 3.5V以上（1）（2）（3）（4）点亮
+   4          // 3.1~3.5V，（1）（2）（3）点亮
+   5          // 2.8~3.1V，（1）（2）点亮
+   6          // <2.8V，（1）点亮
+   7          
+   8          // 指示灯从左往右数,分为1~5
+   9          // 电池电压检测脚检测到的电压,为电池的1/2分压
+  10          // 定义电池各个电压下对应的AD值:
+  11          enum
+  12          {
+  13              BAT_ADC_VAL_1 = 2687, /* 2687.2 -- 电池2.8V对应的ad值 */
+  14              BAT_ADC_VAL_2 = 3174, /* 3174.4 -- 电池3.1V对应的ad值 */
+  15              BAT_ADC_VAL_3 = 3584, /* 3584 -- 电池3.5V对应的ad值 */
+  16              // BAT_AD_VAL_4 = , /*  */
+  17              // BAT_AD_VAL_5 = , /*  */
+  18          };
+  19          
+  20          #define BAT_ADC_VAL_DEAD_ZONE (50) // 电池电压对应的ad值死区
+  21          
+  22          enum
+  23          {
+  24              CUR_LED_MODE_BAT_INDICATOR = 0,      // 电池电量指示模式
+  25              CUR_LED_MODE_INITIAL_DISCHARGE_GEAR, // 初始放电挡位 -- 从 xx% PWW开始放电
+  26              CUR_LED_MODE_DISCHARGE_RATE,         // 放电速率
+  27          };
+  28          
+  29          volatile u8 cur_led_mode; // 当前的LED模式
+  30          
+  31          /* 滑动平均 */
+  32          #define BAT_ADC_VAL_SAMPLE_COUNT 20 // 样本计数
+  33          // static volatile u16 samples[SAMPLE_COUNT] = {0};
+  34          static volatile u16 bat_adc_val_samples[BAT_ADC_VAL_SAMPLE_COUNT];
+  35          static volatile u8 bat_adc_val_sample_index = 0;
+  36          u16 get_filtered_bat_adc_val(u16 bat_adc_val)
+  37          {
+  38   1          u8 i = 0;
+  39   1          u32 sum = 0;
+  40   1          bat_adc_val_samples[bat_adc_val_sample_index++] = bat_adc_val;
+  41   1          if (bat_adc_val_sample_index >= BAT_ADC_VAL_SAMPLE_COUNT)
+  42   1              bat_adc_val_sample_index = 0;
+  43   1      
+  44   1          for (i = 0; i < BAT_ADC_VAL_SAMPLE_COUNT; i++)
+  45   1              sum += bat_adc_val_samples[i];
+  46   1      
+  47   1          return sum / BAT_ADC_VAL_SAMPLE_COUNT;
+  48   1      }
+  49          
+  50          void led_handle_update_percent_of_bat(void)
+  51          {
+  52   1          u16 bat_adc_val;
+  53   1      
+C51 COMPILER V9.60.7.0   LED_HANDLE                                                        06/27/2025 17:21:24 PAGE 2   
+
+  54   1          adc_sel_pin(ADC_PIN_DETECT_BATTERY);
+  55   1          bat_adc_val = adc_getval(); // 采集电池电压对应的ad值
+  56   1          bat_adc_val = get_filtered_bat_adc_val(bat_adc_val); // 得到滑动平均滤波后的值
+  57   1      
+  58   1          // 如果当前处于电池电量指示模式
+  59   1          if (CUR_LED_MODE_BAT_INDICATOR == cur_led_mode)
+  60   1          {
+  61   2      
+  62   2      
+  63   2              /* 点亮指示灯1 */
+  64   2              LED_1_ON();
+  65   2      
+  66   2              /* 点亮指示灯1 指示灯2 */
+  67   2              if (bat_adc_val >= BAT_ADC_VAL_1 + BAT_ADC_VAL_DEAD_ZONE)
+  68   2              {
+  69   3                  LED_2_ON();
+  70   3              }
+  71   2              else
+  72   2              {
+  73   3                  LED_2_OFF();
+  74   3              }
+  75   2      
+  76   2              /* 点亮指示灯1 指示灯2 指示灯3 */
+  77   2              if (bat_adc_val >= BAT_ADC_VAL_2 + BAT_ADC_VAL_DEAD_ZONE)
+  78   2              {
+  79   3                  LED_3_ON();
+  80   3              }
+  81   2              else
+  82   2              {
+  83   3                  LED_3_OFF();
+  84   3              }
+  85   2      
+  86   2              /* 点亮指示灯1 指示灯2 指示灯3 指示灯4 */
+  87   2              if (bat_adc_val >= BAT_ADC_VAL_3 + BAT_ADC_VAL_DEAD_ZONE)
+  88   2              {
+  89   3                  LED_4_ON();
+  90   3              } 
+  91   2              else
+  92   2              {
+  93   3                  LED_4_OFF();
+  94   3              }
+  95   2          }
+  96   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    164    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =     42       4
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

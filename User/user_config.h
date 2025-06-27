@@ -12,6 +12,7 @@
 #include "timer1.h"
 #include "adc.h"
 #include "charge_handle.h"
+#include "led_handle.h" 
 
 #define LED_1_PIN P11
 #define LED_2_PIN P12
