@@ -3,7 +3,7 @@
 
 #include "include.h"
 
-#define IR_RECV_PIN P30
+#define IR_RECV_PIN P23
 
 // 定义红外按键键值
 enum
@@ -41,5 +41,11 @@ enum
 extern volatile u8 ir_data;
 extern volatile bit flag_is_recv_ir_repeat_code;
 extern volatile bit flag_is_recved_data;
+
+extern volatile bit flag_is_in_setting_mode ; // 是否处于设置模式
+
+void ir_handle(void);
+
+void refresh_led_mode_status(void);
 
 #endif

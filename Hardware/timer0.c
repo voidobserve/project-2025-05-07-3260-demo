@@ -3,6 +3,9 @@
 #include "ir_handle.h"
 #include "user_config.h"
 
+// 特殊的LED模式，退出时间计数
+u16 special_led_mode_times_cnt = 0;
+
 void timer0_config(void)
 {
     __EnableIRQ(TMR0_IRQn); // 使能timer0中断
@@ -159,7 +162,8 @@ void TIMR0_IRQHandler(void) interrupt TMR0_IRQn
         } // 红外解码
 #endif // 红外解码【需要放到100us的定时器中断来处理】
 
-#if 1  // 控制LED指示灯
+#if 1 // 控制LED指示灯
+
         {                   // 控制LED指示灯--需要放在100us的中断
             static u16 cnt; // 用软件实现PWM驱动LED的相关变量
             cnt++;
@@ -207,6 +211,131 @@ void TIMR0_IRQHandler(void) interrupt TMR0_IRQn
 
         } // 控制LED指示灯--需要放在100us的中断
 #endif // 控制LED指示灯
+
+        {
+            static u8 cnt = 0;
+            static u8 blink_cnt = 0;
+            static bit flag_blink_dir = 0;
+
+            cnt++;
+
+            if (cnt >= 10) // 10 * 100us == 1ms
+            {
+                cnt = 0;
+
+#if 1 // 控制LED指示灯的闪烁效果
+                blink_cnt++;
+                if (blink_cnt >= 200)
+                {
+                    blink_cnt = 0;
+
+                    // 处于初始放电挡位指示模式，才进入
+                    if (CUR_LED_MODE_INITIAL_DISCHARGE_GEAR == cur_led_mode)
+                    {
+                        if (0 == flag_blink_dir)
+                        {
+                            // LED_1_ON();
+                            switch (cur_initial_discharge_gear)
+                            {
+                            case 1:
+                                LED_1_ON();
+                                break;
+                            case 2:
+                                LED_2_ON();
+                                break;
+                            case 3:
+                                LED_3_ON();
+                                break;
+                            case 4:
+                                LED_4_ON();
+                                break;
+                            case 5:
+                                LED_5_ON();
+                                break;
+                            }
+
+                            flag_blink_dir = 1;
+                        }
+                        else
+                        {
+                            // LED_1_OFF();
+                            switch (cur_initial_discharge_gear)
+                            {
+                            case 1:
+                                LED_1_OFF();
+                                break;
+                            case 2:
+                                LED_2_OFF();
+                                break;
+                            case 3:
+                                LED_3_OFF();
+                                break;
+                            case 4:
+                                LED_4_OFF();
+                                break;
+                            case 5:
+                                LED_5_OFF();
+                                break;
+                            }
+
+                            flag_blink_dir = 0;
+                        }
+                    } // if (CUR_LED_MODE_INITIAL_DISCHARGE_GEAR == cur_led_mode)
+                } // if (blink_cnt >= 200)
+#endif // 控制LED指示灯的闪烁效果
+
+#if 1           // 退出特殊的led指示模式的时间计数
+                // if (cur_led_mode != CUR_LED_MODE_BAT_INDICATOR) // 不处于电池电量指示模式，开始累计时间
+                {
+                    special_led_mode_times_cnt++;
+                    if (special_led_mode_times_cnt >= 5000)
+                    {
+                        special_led_mode_times_cnt = 0;
+                        flag_is_update_led_mode_times_come = 1;
+                    }
+                }
+#endif // 退出特殊的led指示模式的时间计数
+
+            } // if (cnt >= 10) // 10 * 100us == 1ms
+        }
+ 
+
+#if 1 // 放电时间控制
+
+        // TODO: 如果在充电，不执行该功能
+        {
+            static u16 cnt = 0;
+            cnt++;
+            if (cnt >= 10000) // 10000 * 100us，1s
+            {
+                cnt = 0;
+                flag_is_light_adjust_time_come = 1;
+            }
+        }
+
+#endif // 放电时间控制
+
+#if 0 // 缓慢调节驱动灯光的pwm占空比
+
+        {
+            // static u8 cnt =0;
+
+            // 暂定每100us调节一次
+
+            if (cur_light_pwm_duty_val > expect_light_pwm_duty_val)
+            {
+                cur_light_pwm_duty_val--;
+            }
+            else if (cur_light_pwm_duty_val < expect_light_pwm_duty_val)
+            {
+                cur_light_pwm_duty_val++;
+            }
+
+            // SET_LIGHT_PWM_DUTY(cur_light_pwm_duty_val);
+            // timer2_set_pwm_duty(cur_light_pwm_duty_val);
+        }
+
+#endif // 缓慢调节驱动灯光的pwm占空比
     }
 
     // 退出中断设置IP，不可删除

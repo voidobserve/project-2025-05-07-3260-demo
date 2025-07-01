@@ -1,0 +1,74 @@
+C51 COMPILER V9.60.7.0   TIMER2                                                            07/01/2025 17:03:25 PAGE 1   
+
+
+C51 COMPILER V9.60.7.0, COMPILATION OF MODULE TIMER2
+OBJECT MODULE PLACED IN .\Release\Objects\timer2.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\..\Hardware\timer2.c OPTIMIZE(8,SPEED) BROWSE INTVECTOR(0X000C) INCDI
+                    -R(..\..\Libraries\Include;..\..\User;..\..\Hardware) INTERVAL(3) DEBUG OBJECTEXTEND PRINT(.\Release\Listings\timer2.lst)
+                    - OBJECT(.\Release\Objects\timer2.obj)
+
+line level    source
+
+   1          #include "timer2.h"
+   2          
+   3          #define TIMER2_FEQ (SYSCLK / 128 / 1000 - 1) // 周期值=系统时钟/分频/频率 - 1
+   4          
+   5          // pwm配置
+   6          void timer2_pwm_config(void)
+   7          {
+   8   1          // 配置 xx 为 PWM 输出端口
+   9   1          P2_MD1 &= ~GPIO_P24_MODE_SEL(0x3);
+  10   1          P2_MD1 |= GPIO_P24_MODE_SEL(0x1); // 输出模式
+  11   1          FOUT_S24 = GPIO_FOUT_TMR2_PWMOUT;
+  12   1      
+  13   1          TMR_ALLCON = TMR2_CNT_CLR(0x1);                        // 清除计数值
+  14   1          TMR2_PRH = TMR_PERIOD_VAL_H((TIMER2_FEQ >> 8) & 0xFF); // 周期值
+  15   1          TMR2_PRL = TMR_PERIOD_VAL_L((TIMER2_FEQ >> 0) & 0xFF);
+  16   1          TMR2_PWMH = TMR_PWM_VAL_H((((u32)TIMER2_FEQ * 50 / 100) >> 8) & 0xFF); // 占空比设置值
+  17   1          TMR2_PWML = TMR_PWM_VAL_L((((u32)TIMER2_FEQ * 50 / 100) >> 0) & 0xFF);
+  18   1          TMR2_CONH = TMR_PRD_PND(0x1) | TMR_PRD_IRQ_EN(0x1);                           // 使能计数中断
+  19   1          TMR2_CONL = TMR_SOURCE_SEL(0x7) | TMR_PRESCALE_SEL(0x07) | TMR_MODE_SEL(0x2); // 选择系统时钟，
+             -时钟源 128 分频，PWM模式
+  20   1      }
+  21          
+  22          // 开启PWM，引脚复用为pwm输出
+  23          void timer2_pwm_enable(void)
+  24          {
+  25   1          FOUT_S24 = GPIO_FOUT_TMR2_PWMOUT;
+  26   1          TMR2_CONL = TMR_SOURCE_SEL(0x7) | TMR_PRESCALE_SEL(0x07) | TMR_MODE_SEL(0x2); // 选择系统时钟，
+             -时钟源 128 分频，PWM模式
+  27   1      }
+  28          
+  29          // 关闭pwm，引脚输出低电平
+  30          void timer2_pwm_disable(void)
+  31          {
+  32   1          TMR2_CONL &= ~(0x03 << 0);    // 不使能定时器计数
+  33   1          FOUT_S24 = GPIO_FOUT_AF_FUNC; // 数字复用功能输出
+  34   1          P24 = 0;
+  35   1      }
+  36          
+  37          // pwm_duty_val占空比值，不是以百分比为单位， 0 ~ 255，用7361最大只能在 0~255调节�
+             -��空比，而且上限可能到不了255
+  38          void timer2_set_pwm_duty(u8 pwm_duty_val)
+  39          {
+  40   1          // TMR2_PWMH = TMR_PWM_VAL_H((((u32)TIMER2_FEQ * pwm_duty / 100) >> 8) & 0xFF); // 占空比设置值
+  41   1          // TMR2_PWML = TMR_PWM_VAL_L((((u32)TIMER2_FEQ * pwm_duty / 100) >> 0) & 0xFF);
+  42   1          TMR2_PWMH = TMR_PWM_VAL_H((((u32)TIMER2_FEQ * pwm_duty_val / 255) >> 8) & 0xFF); // 占空比设置值
+  43   1          TMR2_PWML = TMR_PWM_VAL_L((((u32)TIMER2_FEQ * pwm_duty_val / 255) >> 0) & 0xFF);
+  44   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    139    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+C51 COMPILER V9.60.7.0   TIMER2                                                            07/01/2025 17:03:25 PAGE 2   
+
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----       1
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

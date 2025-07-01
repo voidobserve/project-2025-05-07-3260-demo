@@ -411,6 +411,11 @@
               <FileType>1</FileType>
               <FilePath>..\..\Hardware\uart0.c</FilePath>
             </File>
+            <File>
+              <FileName>timer2.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Hardware\timer2.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -440,6 +445,11 @@
               <FileName>led_handle.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\User\led_handle.c</FilePath>
+            </File>
+            <File>
+              <FileName>light_handle.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\User\light_handle.c</FilePath>
             </File>
           </Files>
         </Group>

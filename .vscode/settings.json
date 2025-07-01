@@ -3,6 +3,8 @@
         "include.h": "c",
         "debug.h": "c",
         "timer0.h": "c",
-        "user_config.h": "c"
+        "user_config.h": "c",
+        "led_handle.h": "c",
+        "ir_handle.h": "c"
     }
 }

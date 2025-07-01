@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.7.0   TIMER0                                                            06/27/2025 15:21:54 PAGE 1   
+C51 COMPILER V9.60.7.0   TIMER0                                                            07/01/2025 17:13:45 PAGE 1   
 
 
 C51 COMPILER V9.60.7.0, COMPILATION OF MODULE TIMER0
@@ -14,129 +14,132 @@ line level    source
    3          #include "ir_handle.h"
    4          #include "user_config.h"
    5          
-   6          void timer0_config(void)
-   7          {
-   8   1          __EnableIRQ(TMR0_IRQn); // 使能timer0中断
-   9   1          IE_EA = 1;              // 使能总中断
-  10   1      
-  11   1          // 设置timer0的计数功能，配置一个频率为1kHz的中断
-  12   1          TMR_ALLCON = TMR0_CNT_CLR(0x1);                               // 清除计数值
-  13   1          TMR0_PRH = TMR_PERIOD_VAL_H((TIMER0_PERIOD_VAL >> 8) & 0xFF); // 周期值
-  14   1          TMR0_PRL = TMR_PERIOD_VAL_L((TIMER0_PERIOD_VAL >> 0) & 0xFF);
-  15   1          TMR0_CONH = TMR_PRD_PND(0x1) | TMR_PRD_IRQ_EN(0x1);                          // 计数等于周期时�
+   6          // 特殊的LED模式，退出时间计数
+   7          u16 special_led_mode_times_cnt = 0;
+   8          
+   9          void timer0_config(void)
+  10          {
+  11   1          __EnableIRQ(TMR0_IRQn); // 使能timer0中断
+  12   1          IE_EA = 1;              // 使能总中断
+  13   1      
+  14   1          // 设置timer0的计数功能，配置一个频率为1kHz的中断
+  15   1          TMR_ALLCON = TMR0_CNT_CLR(0x1);                               // 清除计数值
+  16   1          TMR0_PRH = TMR_PERIOD_VAL_H((TIMER0_PERIOD_VAL >> 8) & 0xFF); // 周期值
+  17   1          TMR0_PRL = TMR_PERIOD_VAL_L((TIMER0_PERIOD_VAL >> 0) & 0xFF);
+  18   1          TMR0_CONH = TMR_PRD_PND(0x1) | TMR_PRD_IRQ_EN(0x1);                          // 计数等于周期时�
              -��许发生中断
-  16   1          TMR0_CONL = TMR_SOURCE_SEL(0x7) | TMR_PRESCALE_SEL(0x7) | TMR_MODE_SEL(0x1); // 选择系统时钟，1
+  19   1          TMR0_CONL = TMR_SOURCE_SEL(0x7) | TMR_PRESCALE_SEL(0x7) | TMR_MODE_SEL(0x1); // 选择系统时钟，1
              -28分频，计数模式
-  17   1      }
-  18          
-  19          void TIMR0_IRQHandler(void) interrupt TMR0_IRQn
-  20          {
-  21   1          // 进入中断设置IP，不可删除
-  22   1          __IRQnIPnPush(TMR0_IRQn);
-  23   1      
-  24   1          // ---------------- 用户函数处理 -------------------
-  25   1      
-  26   1          // 周期中断
-  27   1          if (TMR0_CONH & TMR_PRD_PND(0x1))
-  28   1          {
-  29   2              TMR0_CONH |= TMR_PRD_PND(0x1); // 清除pending
-  30   2      
-  31   2      #if 1     // 红外解码【需要放到100us的定时器中断来处理】
-  32   2              { // 红外解码
-  33   3                  // static volatile u8 ir_fliter;
-  34   3                  static volatile u16 ir_level_cnt; // 红外信号的下降沿时间间隔计数
-  35   3                  static volatile u32 __ir_data;    //
-  36   3                  static volatile bit last_level_in_ir_pin = 0;
-  37   3                  // static volatile u16 ir_long_press_cnt; // 檢測紅外遙控長按的計數值
-  38   3      
-  39   3                  // 对每个下降沿进行计数
-  40   3                  if (ir_level_cnt <= 1300)
-  41   3                      ir_level_cnt++;
-  42   3      
-  43   3                  // 滤波操作
-  44   3                  // ir_fliter <<= 1;
-  45   3                  // if (IR_RECV_PIN)
-  46   3                  // {
-  47   3                  //     ir_fliter |= 1;
-  48   3                  // }
-  49   3                  // ir_fliter &= 0x07;
-  50   3      
-  51   3                  // if (ir_fliter == 0x07)
-C51 COMPILER V9.60.7.0   TIMER0                                                            06/27/2025 15:21:54 PAGE 2   
+  20   1      }
+  21          
+  22          void TIMR0_IRQHandler(void) interrupt TMR0_IRQn
+  23          {
+  24   1          // 进入中断设置IP，不可删除
+  25   1          __IRQnIPnPush(TMR0_IRQn);
+  26   1      
+  27   1          // ---------------- 用户函数处理 -------------------
+  28   1      
+  29   1          // 周期中断
+  30   1          if (TMR0_CONH & TMR_PRD_PND(0x1))
+  31   1          {
+  32   2              TMR0_CONH |= TMR_PRD_PND(0x1); // 清除pending
+  33   2      
+  34   2      #if 1     // 红外解码【需要放到100us的定时器中断来处理】
+  35   2              { // 红外解码
+  36   3                  // static volatile u8 ir_fliter;
+  37   3                  static volatile u16 ir_level_cnt; // 红外信号的下降沿时间间隔计数
+  38   3                  static volatile u32 __ir_data;    //
+  39   3                  static volatile bit last_level_in_ir_pin = 0;
+  40   3                  // static volatile u16 ir_long_press_cnt; // 檢測紅外遙控長按的計數值
+  41   3      
+  42   3                  // 对每个下降沿进行计数
+  43   3                  if (ir_level_cnt <= 1300)
+  44   3                      ir_level_cnt++;
+  45   3      
+  46   3                  // 滤波操作
+  47   3                  // ir_fliter <<= 1;
+  48   3                  // if (IR_RECV_PIN)
+  49   3                  // {
+  50   3                  //     ir_fliter |= 1;
+  51   3                  // }
+C51 COMPILER V9.60.7.0   TIMER0                                                            07/01/2025 17:13:45 PAGE 2   
 
-  52   3                  //     filter_level = 1;
-  53   3                  // else if (ir_fliter == 0x00)
-  54   3                  //     filter_level = 0;
-  55   3      
-  56   3                  // if (filter_level)
-  57   3                  if (IR_RECV_PIN)
-  58   3                  {
-  59   4                      last_level_in_ir_pin = 1; // 表示接收到的是高电平
-  60   4      
-  61   4                      // 如果之前也是高电平
-  62   4                      if (ir_level_cnt > 1200) // 超时时间(120000us,120ms)
-  63   4                      {
-  64   5                          // if (__ir_data != 0) // 超时，且接收到数据(红外接收处理函数中会�
+  52   3                  // ir_fliter &= 0x07;
+  53   3      
+  54   3                  // if (ir_fliter == 0x07)
+  55   3                  //     filter_level = 1;
+  56   3                  // else if (ir_fliter == 0x00)
+  57   3                  //     filter_level = 0;
+  58   3      
+  59   3                  // if (filter_level)
+  60   3                  if (IR_RECV_PIN)
+  61   3                  {
+  62   4                      last_level_in_ir_pin = 1; // 表示接收到的是高电平
+  63   4      
+  64   4                      // 如果之前也是高电平
+  65   4                      if (ir_level_cnt > 1200) // 超时时间(120000us,120ms)
+  66   4                      {
+  67   5                          // if (__ir_data != 0) // 超时，且接收到数据(红外接收处理函数中会�
              -�ir_data清零)
-  65   5                          if (__ir_data != 0) // 超时，且接收到数据(现在是在中断服务函数中�
+  68   5                          if (__ir_data != 0) // 超时，且接收到数据(现在是在中断服务函数中�
              -�__ir_data自动清零)
-  66   5                          {
-  67   6                              // // 带校验的版本：
-  68   6                              // if ((u8)(__ir_data >> 8) == (u8)(~__ir_data)) // 如果键值的原码和反码
+  69   5                          {
+  70   6                              // // 带校验的版本：
+  71   6                              // if ((u8)(__ir_data >> 8) == (u8)(~__ir_data)) // 如果键值的原码和反码
              -相等
-  69   6                              // {
-  70   6                              // flag_is_recved_data = 1;
-  71   6                              // }
-  72   6      
-  73   6                              // 不带校验的版本
-  74   6                              if (0 == flag_is_recved_data)
-  75   6                              {
-  76   7                                  // if ((__ir_data & 0xFF0000) == 0xFF0000)
-  77   7                                  {
-  78   8                                      ir_data = ~__ir_data;
-  79   8                                      __ir_data = 0;
-  80   8                                      flag_is_recved_data = 1;
-  81   8                                  }
-  82   7                              }
-  83   6                          }
-  84   5      
-  85   5                          flag_is_recv_ir_repeat_code = 0; // 认为遥控器按键已经按下，然后松开
-  86   5                      }
-  87   4                  }
-  88   3                  else
-  89   3                  {
-  90   4                      if (last_level_in_ir_pin)
-  91   4                      {
-  92   5                          // 如果之前检测到的是高电平，现在检测到了低电平
-  93   5                          if (ir_level_cnt <= 8) // 小于800us，说明接收到无效的数据，重新接收
-  94   5                          {
-  95   6                              // FLAG_IS_RECVED_ERR_IR_DATA = 1;
-  96   6                              flag_is_recv_ir_repeat_code = 0;
-  97   6                          }
-  98   5                          else if (ir_level_cnt <= 18) // 小于1800us,说明接收到了逻辑0
-  99   5                          {
- 100   6                              __ir_data <<= 1;
- 101   6      
- 102   6                              // P15D = 0; // 测试红外解码
- 103   6                              // P15D = ~P15D; // 测试红外解码
- 104   6                          }
- 105   5                          else if (ir_level_cnt <= 26) // 小于2600us,说明接收到了逻辑1
- 106   5                          {
- 107   6                              __ir_data <<= 1;
- 108   6                              __ir_data |= 0x01;
- 109   6      
- 110   6                              // P15D = 1; // 测试红外解码
-C51 COMPILER V9.60.7.0   TIMER0                                                            06/27/2025 15:21:54 PAGE 3   
+  72   6                              // {
+  73   6                              // flag_is_recved_data = 1;
+  74   6                              // }
+  75   6      
+  76   6                              // 不带校验的版本
+  77   6                              if (0 == flag_is_recved_data)
+  78   6                              {
+  79   7                                  // if ((__ir_data & 0xFF0000) == 0xFF0000)
+  80   7                                  {
+  81   8                                      ir_data = ~__ir_data;
+  82   8                                      __ir_data = 0;
+  83   8                                      flag_is_recved_data = 1;
+  84   8                                  }
+  85   7                              }
+  86   6                          }
+  87   5      
+  88   5                          flag_is_recv_ir_repeat_code = 0; // 认为遥控器按键已经按下，然后松开
+  89   5                      }
+  90   4                  }
+  91   3                  else
+  92   3                  {
+  93   4                      if (last_level_in_ir_pin)
+  94   4                      {
+  95   5                          // 如果之前检测到的是高电平，现在检测到了低电平
+  96   5                          if (ir_level_cnt <= 8) // 小于800us，说明接收到无效的数据，重新接收
+  97   5                          {
+  98   6                              // FLAG_IS_RECVED_ERR_IR_DATA = 1;
+  99   6                              flag_is_recv_ir_repeat_code = 0;
+ 100   6                          }
+ 101   5                          else if (ir_level_cnt <= 18) // 小于1800us,说明接收到了逻辑0
+ 102   5                          {
+ 103   6                              __ir_data <<= 1;
+ 104   6      
+ 105   6                              // P15D = 0; // 测试红外解码
+ 106   6                              // P15D = ~P15D; // 测试红外解码
+ 107   6                          }
+ 108   5                          else if (ir_level_cnt <= 26) // 小于2600us,说明接收到了逻辑1
+ 109   5                          {
+ 110   6                              __ir_data <<= 1;
+C51 COMPILER V9.60.7.0   TIMER0                                                            07/01/2025 17:13:45 PAGE 3   
 
- 111   6                          }
- 112   5                          else if (ir_level_cnt <= 150) // 小于15000us,说明接收到了格式头
- 113   5                          {
- 114   6                              // FLAG_IS_RECVED_ERR_IR_DATA = 1;
- 115   6                              // ir_long_press_cnt = 0; // 加上这一条会检测不到长按
- 116   6                          }
- 117   5                          else if (ir_level_cnt <= 420) // 小于42ms,说明接收完一次完整的红外信号
- 118   5                          {
- 119   6      #if 0 // 带校验的版本，命令源码与命令反码进行校验
+ 111   6                              __ir_data |= 0x01;
+ 112   6      
+ 113   6                              // P15D = 1; // 测试红外解码
+ 114   6                          }
+ 115   5                          else if (ir_level_cnt <= 150) // 小于15000us,说明接收到了格式头
+ 116   5                          {
+ 117   6                              // FLAG_IS_RECVED_ERR_IR_DATA = 1;
+ 118   6                              // ir_long_press_cnt = 0; // 加上这一条会检测不到长按
+ 119   6                          }
+ 120   5                          else if (ir_level_cnt <= 420) // 小于42ms,说明接收完一次完整的红外信号
+ 121   5                          {
+ 122   6      #if 0 // 带校验的版本，命令源码与命令反码进行校验
                   
                               if ((u8)(__ir_data >> 8) == (u8)(~__ir_data)) // 如果键值的原码和反码相等
                               {
@@ -146,105 +149,236 @@ line level    source
                               }
               
               #else // 不带校验的版本
- 129   6      
- 130   6                              if (0 == flag_is_recved_data) // 如果之前未接收到数据/接收到的数据
+ 132   6      
+ 133   6                              if (0 == flag_is_recved_data) // 如果之前未接收到数据/接收到的数据
              -已经处理完毕
- 131   6                              {
- 132   7                                  // if ((__ir_data & 0xFF0000) == 0xFF0000)
- 133   7                                  {
- 134   8                                      ir_data = ~__ir_data;
- 135   8                                      __ir_data = 0;
- 136   8                                      flag_is_recved_data = 1;
- 137   8                                      // flag_is_recv_ir_repeat_code = 1; //
- 138   8                                  }
- 139   7                              }
- 140   6      
- 141   6      #endif // 不带校验的版本
- 142   6                          }
- 143   5                          else if (ir_level_cnt <= 1200) // 小于120000,120ms,说明接收到了重复码
- 144   5                          {
- 145   6                              // if (ir_long_press_cnt < 65535)
- 146   6                              //     ir_long_press_cnt++;
- 147   6      
- 148   6                              flag_is_recv_ir_repeat_code = 1;
- 149   6                          }
- 150   5                          // else // 超过120000,说明接收到无效的数据
- 151   5                          // {
- 152   5                          // }
- 153   5      
- 154   5                          ir_level_cnt = 0;
- 155   5                      }
- 156   4      
- 157   4                      last_level_in_ir_pin = 0; // 表示接收到的是低电平
- 158   4                  }
- 159   3              } // 红外解码
- 160   2      #endif // 红外解码【需要放到100us的定时器中断来处理】
- 161   2      
- 162   2      #if 1  // 控制LED指示灯
- 163   2              {                   // 控制LED指示灯--需要放在100us的中断
- 164   3                  static u16 cnt; // 用软件实现PWM驱动LED的相关变量
- 165   3                  cnt++;
- 166   3      
- 167   3                  if (cnt <= 20) // 20 * 100us
- 168   3                  {
- 169   4                      if (flag_is_led_1_enable)
- 170   4                      {
- 171   5                          LED_1_PIN = LED_ON_LEVEL;
-C51 COMPILER V9.60.7.0   TIMER0                                                            06/27/2025 15:21:54 PAGE 4   
+ 134   6                              {
+ 135   7                                  // if ((__ir_data & 0xFF0000) == 0xFF0000)
+ 136   7                                  {
+ 137   8                                      ir_data = ~__ir_data;
+ 138   8                                      __ir_data = 0;
+ 139   8                                      flag_is_recved_data = 1;
+ 140   8                                      // flag_is_recv_ir_repeat_code = 1; //
+ 141   8                                  }
+ 142   7                              }
+ 143   6      
+ 144   6      #endif // 不带校验的版本
+ 145   6                          }
+ 146   5                          else if (ir_level_cnt <= 1200) // 小于120000,120ms,说明接收到了重复码
+ 147   5                          {
+ 148   6                              // if (ir_long_press_cnt < 65535)
+ 149   6                              //     ir_long_press_cnt++;
+ 150   6      
+ 151   6                              flag_is_recv_ir_repeat_code = 1;
+ 152   6                          }
+ 153   5                          // else // 超过120000,说明接收到无效的数据
+ 154   5                          // {
+ 155   5                          // }
+ 156   5      
+ 157   5                          ir_level_cnt = 0;
+ 158   5                      }
+ 159   4      
+ 160   4                      last_level_in_ir_pin = 0; // 表示接收到的是低电平
+ 161   4                  }
+ 162   3              } // 红外解码
+ 163   2      #endif // 红外解码【需要放到100us的定时器中断来处理】
+ 164   2      
+ 165   2      #if 1 // 控制LED指示灯
+ 166   2      
+ 167   2              {                   // 控制LED指示灯--需要放在100us的中断
+ 168   3                  static u16 cnt; // 用软件实现PWM驱动LED的相关变量
+ 169   3                  cnt++;
+ 170   3      
+ 171   3                  if (cnt <= 20) // 20 * 100us
+C51 COMPILER V9.60.7.0   TIMER0                                                            07/01/2025 17:13:45 PAGE 4   
 
- 172   5                      }
- 173   4      
- 174   4                      if (flag_is_led_2_enable)
- 175   4                      {
- 176   5                          LED_2_PIN = LED_ON_LEVEL;
- 177   5                      }
- 178   4      
- 179   4                      if (flag_is_led_3_enable)
- 180   4                      {
- 181   5                          LED_3_PIN = LED_ON_LEVEL;
- 182   5                      }
- 183   4      
- 184   4                      if (flag_is_led_4_enable)
- 185   4                      {
- 186   5                          LED_4_PIN = LED_ON_LEVEL;
- 187   5                      }
- 188   4      
- 189   4                      if (flag_is_led_5_enable)
- 190   4                      {
- 191   5                          LED_5_PIN = LED_ON_LEVEL;
- 192   5                      }
- 193   4                  }
- 194   3                  else
- 195   3                  {
- 196   4                      LED_1_PIN = LED_OFF_LEVEL;
- 197   4                      LED_2_PIN = LED_OFF_LEVEL;
- 198   4                      LED_3_PIN = LED_OFF_LEVEL;
- 199   4                      LED_4_PIN = LED_OFF_LEVEL;
- 200   4                      LED_5_PIN = LED_OFF_LEVEL;
- 201   4                  }
- 202   3      
- 203   3                  if (cnt >= 100) // 100 * 100us
- 204   3                  {
- 205   4                      cnt = 0;
- 206   4                  }
- 207   3      
- 208   3              } // 控制LED指示灯--需要放在100us的中断
- 209   2      #endif // 控制LED指示灯
- 210   2          }
- 211   1      
- 212   1          // 退出中断设置IP，不可删除
- 213   1          __IRQnIPnPop(TMR0_IRQn);
- 214   1      }
+ 172   3                  {
+ 173   4                      if (flag_is_led_1_enable)
+ 174   4                      {
+ 175   5                          LED_1_PIN = LED_ON_LEVEL;
+ 176   5                      }
+ 177   4      
+ 178   4                      if (flag_is_led_2_enable)
+ 179   4                      {
+ 180   5                          LED_2_PIN = LED_ON_LEVEL;
+ 181   5                      }
+ 182   4      
+ 183   4                      if (flag_is_led_3_enable)
+ 184   4                      {
+ 185   5                          LED_3_PIN = LED_ON_LEVEL;
+ 186   5                      }
+ 187   4      
+ 188   4                      if (flag_is_led_4_enable)
+ 189   4                      {
+ 190   5                          LED_4_PIN = LED_ON_LEVEL;
+ 191   5                      }
+ 192   4      
+ 193   4                      if (flag_is_led_5_enable)
+ 194   4                      {
+ 195   5                          LED_5_PIN = LED_ON_LEVEL;
+ 196   5                      }
+ 197   4                  }
+ 198   3                  else
+ 199   3                  {
+ 200   4                      LED_1_PIN = LED_OFF_LEVEL;
+ 201   4                      LED_2_PIN = LED_OFF_LEVEL;
+ 202   4                      LED_3_PIN = LED_OFF_LEVEL;
+ 203   4                      LED_4_PIN = LED_OFF_LEVEL;
+ 204   4                      LED_5_PIN = LED_OFF_LEVEL;
+ 205   4                  }
+ 206   3      
+ 207   3                  if (cnt >= 100) // 100 * 100us
+ 208   3                  {
+ 209   4                      cnt = 0;
+ 210   4                  }
+ 211   3      
+ 212   3              } // 控制LED指示灯--需要放在100us的中断
+ 213   2      #endif // 控制LED指示灯
+ 214   2      
+ 215   2              {
+ 216   3                  static u8 cnt = 0;
+ 217   3                  static u8 blink_cnt = 0;
+ 218   3                  static bit flag_blink_dir = 0;
+ 219   3      
+ 220   3                  cnt++;
+ 221   3      
+ 222   3                  if (cnt >= 10) // 10 * 100us == 1ms
+ 223   3                  {
+ 224   4                      cnt = 0;
+ 225   4      
+ 226   4      #if 1 // 控制LED指示灯的闪烁效果
+ 227   4                      blink_cnt++;
+ 228   4                      if (blink_cnt >= 200)
+ 229   4                      {
+ 230   5                          blink_cnt = 0;
+ 231   5      
+ 232   5                          // 处于初始放电挡位指示模式，才进入
+ 233   5                          if (CUR_LED_MODE_INITIAL_DISCHARGE_GEAR == cur_led_mode)
+C51 COMPILER V9.60.7.0   TIMER0                                                            07/01/2025 17:13:45 PAGE 5   
+
+ 234   5                          {
+ 235   6                              if (0 == flag_blink_dir)
+ 236   6                              {
+ 237   7                                  // LED_1_ON();
+ 238   7                                  switch (cur_initial_discharge_gear)
+ 239   7                                  {
+ 240   8                                  case 1:
+ 241   8                                      LED_1_ON();
+ 242   8                                      break;
+ 243   8                                  case 2:
+ 244   8                                      LED_2_ON();
+ 245   8                                      break;
+ 246   8                                  case 3:
+ 247   8                                      LED_3_ON();
+ 248   8                                      break;
+ 249   8                                  case 4:
+ 250   8                                      LED_4_ON();
+ 251   8                                      break;
+ 252   8                                  case 5:
+ 253   8                                      LED_5_ON();
+ 254   8                                      break;
+ 255   8                                  }
+ 256   7      
+ 257   7                                  flag_blink_dir = 1;
+ 258   7                              }
+ 259   6                              else
+ 260   6                              {
+ 261   7                                  // LED_1_OFF();
+ 262   7                                  switch (cur_initial_discharge_gear)
+ 263   7                                  {
+ 264   8                                  case 1:
+ 265   8                                      LED_1_OFF();
+ 266   8                                      break;
+ 267   8                                  case 2:
+ 268   8                                      LED_2_OFF();
+ 269   8                                      break;
+ 270   8                                  case 3:
+ 271   8                                      LED_3_OFF();
+ 272   8                                      break;
+ 273   8                                  case 4:
+ 274   8                                      LED_4_OFF();
+ 275   8                                      break;
+ 276   8                                  case 5:
+ 277   8                                      LED_5_OFF();
+ 278   8                                      break;
+ 279   8                                  }
+ 280   7      
+ 281   7                                  flag_blink_dir = 0;
+ 282   7                              }
+ 283   6                          } // if (CUR_LED_MODE_INITIAL_DISCHARGE_GEAR == cur_led_mode)
+ 284   5                      } // if (blink_cnt >= 200)
+ 285   4      #endif // 控制LED指示灯的闪烁效果
+ 286   4      
+ 287   4      #if 1           // 退出特殊的led指示模式的时间计数
+ 288   4                      // if (cur_led_mode != CUR_LED_MODE_BAT_INDICATOR) // 不处于电池电量指示模式，
+             -开始累计时间
+ 289   4                      {
+ 290   5                          special_led_mode_times_cnt++;
+ 291   5                          if (special_led_mode_times_cnt >= 5000)
+ 292   5                          {
+ 293   6                              special_led_mode_times_cnt = 0;
+ 294   6                              flag_is_update_led_mode_times_come = 1;
+C51 COMPILER V9.60.7.0   TIMER0                                                            07/01/2025 17:13:45 PAGE 6   
+
+ 295   6                          }
+ 296   5                      }
+ 297   4      #endif // 退出特殊的led指示模式的时间计数
+ 298   4      
+ 299   4                  } // if (cnt >= 10) // 10 * 100us == 1ms
+ 300   3              }
+ 301   2       
+ 302   2      
+ 303   2      #if 1 // 放电时间控制
+ 304   2      
+ 305   2              // TODO: 如果在充电，不执行该功能
+ 306   2              {
+ 307   3                  static u16 cnt = 0;
+ 308   3                  cnt++;
+ 309   3                  if (cnt >= 10000) // 10000 * 100us，1s
+ 310   3                  {
+ 311   4                      cnt = 0;
+ 312   4                      flag_is_light_adjust_time_come = 1;
+ 313   4                  }
+ 314   3              }
+ 315   2      
+ 316   2      #endif // 放电时间控制
+ 317   2      
+ 318   2      #if 0 // 缓慢调节驱动灯光的pwm占空比
+              
+                      {
+                          // static u8 cnt =0;
+              
+                          // 暂定每100us调节一次
+              
+                          if (cur_light_pwm_duty_val > expect_light_pwm_duty_val)
+                          {
+                              cur_light_pwm_duty_val--;
+                          }
+                          else if (cur_light_pwm_duty_val < expect_light_pwm_duty_val)
+                          {
+                              cur_light_pwm_duty_val++;
+                          }
+              
+                          // SET_LIGHT_PWM_DUTY(cur_light_pwm_duty_val);
+                          // timer2_set_pwm_duty(cur_light_pwm_duty_val);
+                      }
+              
+              #endif // 缓慢调节驱动灯光的pwm占空比
+ 339   2          }
+ 340   1      
+ 341   1          // 退出中断设置IP，不可删除
+ 342   1          __IRQnIPnPop(TMR0_IRQn);
+ 343   1      }
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =    450    ----
+   CODE SIZE        =    627    ----
    CONSTANT SIZE    =   ----    ----
    XDATA SIZE       =   ----    ----
    PDATA SIZE       =   ----    ----
-   DATA SIZE        =      8    ----
+   DATA SIZE        =     14    ----
    IDATA SIZE       =   ----    ----
-   BIT SIZE         =      1    ----
+   BIT SIZE         =      2    ----
 END OF MODULE INFORMATION.
 
 

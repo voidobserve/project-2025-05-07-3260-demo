@@ -10,9 +10,21 @@
 #include "uart0.h"
 #include "timer0.h"
 #include "timer1.h"
+#include "timer2.h"
 #include "adc.h"
 #include "charge_handle.h"
-#include "led_handle.h" 
+#include "led_handle.h"
+#include "ir_handle.h"
+#include "light_handle.h"
+
+extern volatile u16 bat_adc_val;
+
+extern volatile u8 cur_light_pwm_duty_val;    // 当前灯光对应的占空比值
+extern volatile u8 expect_light_pwm_duty_val; // 期望调节到的、灯光对应的占空比值
+
+extern volatile u8 flag_is_light_adjust_time_come; // 调节灯光的时间到来，目前为1s
+
+extern volatile u16 light_adjust_time_cnt;
 
 #define LED_1_PIN P11
 #define LED_2_PIN P12

@@ -4,11 +4,13 @@
 ".\Release\Objects\timer0.obj",
 ".\Release\Objects\timer1.obj",
 ".\Release\Objects\uart0.obj",
+".\Release\Objects\timer2.obj",
 ".\Release\Objects\main.obj",
 ".\Release\Objects\debug.obj",
 ".\Release\Objects\charge_handle.obj",
 ".\Release\Objects\ir_handle.obj",
-".\Release\Objects\led_handle.obj" 
+".\Release\Objects\led_handle.obj",
+".\Release\Objects\light_handle.obj" 
 TO ".\Release\Objects\Demo" 
 PRINT(".\Release\Listings\Demo.m51") RAMSIZE(256) 
 CODE( 0X0000-0X3EEF )

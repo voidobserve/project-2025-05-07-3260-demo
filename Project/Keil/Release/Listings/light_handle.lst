@@ -1,0 +1,81 @@
+C51 COMPILER V9.60.7.0   LIGHT_HANDLE                                                      07/01/2025 17:03:26 PAGE 1   
+
+
+C51 COMPILER V9.60.7.0, COMPILATION OF MODULE LIGHT_HANDLE
+OBJECT MODULE PLACED IN .\Release\Objects\light_handle.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\..\User\light_handle.c OPTIMIZE(8,SPEED) BROWSE INTVECTOR(0X000C) INC
+                    -DIR(..\..\Libraries\Include;..\..\User;..\..\Hardware) INTERVAL(3) DEBUG OBJECTEXTEND PRINT(.\Release\Listings\light_han
+                    -dle.lst) OBJECT(.\Release\Objects\light_handle.obj)
+
+line level    source
+
+   1          #include "light_handle.h"
+   2          
+   3          void light_blink(void)
+   4          {
+   5   1          u8 i;
+   6   1          for (i = 0; i < 3; i++)
+   7   1          {
+   8   2              LIGHT_ON();
+   9   2              delay_ms(161);
+  10   2              LIGHT_OFF();
+  11   2              delay_ms(161);
+  12   2          }
+  13   1      }
+  14          
+  15          // 灯光控制
+  16          void light_handle(void)
+  17          {
+  18   1          // 如果正在充电，直接返回
+  19   1      
+  20   1          // 如果未在充电
+  21   1      
+  22   1          if (flag_is_light_adjust_time_come)
+  23   1          {
+  24   2              flag_is_light_adjust_time_come = 0;
+  25   2              light_adjust_time_cnt++;
+  26   2          }
+  27   1      
+  28   1          if (1 == cur_discharge_rate)
+  29   1          {
+  30   2              /*
+  31   2                  速度为M1，
+  32   2                  1200s后变化一次占空比，
+  33   2                  3600s后再变化一次，
+  34   2                  7200s后再变化一次，
+  35   2                  ...
+  36   2                  每次变化约10%占空比
+  37   2              */
+  38   2              static u8 phase ;
+  39   2              if (light_adjust_time_cnt >= (1200 * (phase + 1)))
+  40   2              {
+  41   3                  phase++;
+  42   3                  expect_light_pwm_duty_val -= (255 * 10 / 100);
+  43   3                  // SET_LIGHT_PWM_DUTY(cur_light_pwm_duty_val);
+  44   3              }
+  45   2          }
+  46   1          else // 2 == cur_discharge_rate || 3 == cur_discharge_rate
+  47   1          {
+  48   2              /*
+  49   2                  一开始每40s降低一次占空比
+  50   2                  从47%开始，每240s降低一次占空比
+  51   2                  从42%开始，每420s降低一次占空比
+  52   2              */
+  53   2          }
+C51 COMPILER V9.60.7.0   LIGHT_HANDLE                                                      07/01/2025 17:03:26 PAGE 2   
+
+  54   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =     86    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      1       1
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

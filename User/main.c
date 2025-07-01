@@ -24,15 +24,14 @@
 volatile bit_flag flag1 = {0};
 volatile bit_flag flag2 = {0};
 
+volatile u8 cur_light_pwm_duty_val = 0;    // 当前灯光对应的占空比值
+volatile u8 expect_light_pwm_duty_val = 0; // 期望调节到的、灯光对应的占空比值
 
-enum
-{
-    CUR_LED_STATUS_NONE = 0x00,
-    CUR_LED_SHOW_BAT_PERCENT, // 显示电池电量百分比
-    CUR_LED_SHOW_DISCHARGE_GEAR, // 显示放电挡位 1~5档
-    // CUR_LED_SHOW_
-}
-volatile cur_led_status =0 ;
+volatile u16 bat_adc_val;
+
+volatile u8 flag_is_light_adjust_time_come = 0; // 调节灯光的时间到来，目前为1s
+
+volatile u16 light_adjust_time_cnt = 0;
 
 //
 void led_pin_config(void)
@@ -40,22 +39,27 @@ void led_pin_config(void)
     P1_MD0 &= ~GPIO_P11_MODE_SEL(0x03);
     P1_MD0 |= GPIO_P11_MODE_SEL(0x01);
     FOUT_S11 = GPIO_FOUT_AF_FUNC;
+    P11 = 0; // 如果不给初始值，上电之后，指示灯会闪一下
 
     P1_MD0 &= ~GPIO_P12_MODE_SEL(0x03);
     P1_MD0 |= GPIO_P12_MODE_SEL(0x01);
     FOUT_S12 = GPIO_FOUT_AF_FUNC;
+    P12 = 0;
 
     P1_MD0 &= ~GPIO_P13_MODE_SEL(0x03);
     P1_MD0 |= GPIO_P13_MODE_SEL(0x01);
     FOUT_S13 = GPIO_FOUT_AF_FUNC;
+    P13 = 0;
 
     P1_MD1 &= ~GPIO_P14_MODE_SEL(0x03);
     P1_MD1 |= GPIO_P14_MODE_SEL(0x01);
     FOUT_S14 = GPIO_FOUT_AF_FUNC;
+    P14 = 0;
 
     P1_MD1 &= ~GPIO_P15_MODE_SEL(0x03);
     P1_MD1 |= GPIO_P15_MODE_SEL(0x01);
     FOUT_S15 = GPIO_FOUT_AF_FUNC;
+    P15 = 0;
 }
 
 /**
@@ -79,11 +83,16 @@ void main(void)
     timer0_config();
     timer1_pwm_config();
     timer1_pwm_disable();
+    timer2_pwm_config(); // 控制灯光的pwm
+    timer2_pwm_disable();
 
     // timer1_set_pwm_high_feq();
     // TODO: 7361不用加这个引脚配置:
     led_pin_config();
 
+    // 红外接收引脚：
+    P2_MD0 &= ~(GPIO_P23_MODE_SEL(0x03)); // 输入模式
+    P2_PU |= GPIO_P23_PULL_UP(0x01);      // 上拉
 
     adc_config();
 
@@ -133,10 +142,46 @@ void main(void)
     // LED_4_ON();
     // LED_5_ON();
 
+    // TODO:
+    // 上电后，需要先点亮红色指示灯，再变为电池电量指示模式
+    LED_1_ON();
+    delay_ms(1000);
+
+    // cur_led_mode = CUR_LED_MODE_INITIAL_DISCHARGE_GEAR;
+    cur_led_mode = CUR_LED_MODE_BAT_INDICATOR; // 电池电量指示模式
+    cur_initial_discharge_gear = 5;
+    cur_discharge_rate = 3;
+
     while (1)
     {
+        adc_sel_pin(ADC_PIN_DETECT_BATTERY);
+        bat_adc_val = adc_getval(); // 采集电池电压对应的ad值
+
+        ir_handle();
         // charge_handle();
         led_handle_update_percent_of_bat();
+
+#if 1 // 缓慢调节驱动灯光的pwm占空比
+
+        {
+            // static u8 cnt =0;
+
+            // 暂定每100us调节一次
+
+            if (cur_light_pwm_duty_val > expect_light_pwm_duty_val)
+            {
+                cur_light_pwm_duty_val--;
+            }
+            else if (cur_light_pwm_duty_val < expect_light_pwm_duty_val)
+            {
+                cur_light_pwm_duty_val++;
+            }
+
+            SET_LIGHT_PWM_DUTY(cur_light_pwm_duty_val);
+            // timer2_set_pwm_duty(cur_light_pwm_duty_val);
+        }
+
+#endif // 缓慢调节驱动灯光的pwm占空比
     }
 }
 
