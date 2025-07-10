@@ -1,11 +1,11 @@
-C51 COMPILER V9.60.7.0   CHARGE_HANDLE                                                     07/01/2025 17:03:25 PAGE 1   
+C51 COMPILER V9.60.7.0   CHARGE_HANDLE                                                     07/09/2025 10:39:37 PAGE 1   
 
 
 C51 COMPILER V9.60.7.0, COMPILATION OF MODULE CHARGE_HANDLE
 OBJECT MODULE PLACED IN .\Release\Objects\charge_handle.obj
-COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\..\User\charge_handle.c OPTIMIZE(8,SPEED) BROWSE INTVECTOR(0X000C) IN
-                    -CDIR(..\..\Libraries\Include;..\..\User;..\..\Hardware) INTERVAL(3) DEBUG OBJECTEXTEND PRINT(.\Release\Listings\charge_h
-                    -andle.lst) OBJECT(.\Release\Objects\charge_handle.obj)
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\..\User\charge_handle.c LARGE OPTIMIZE(8,SPEED) BROWSE INTVECTOR(0X00
+                    -0C) INCDIR(..\..\Libraries\Include;..\..\User;..\..\Hardware) INTERVAL(3) DEBUG OBJECTEXTEND PRINT(.\Release\Listings\ch
+                    -arge_handle.lst) OBJECT(.\Release\Objects\charge_handle.obj)
 
 line level    source
 
@@ -26,14 +26,14 @@ line level    source
   14   1          */
   15   1          static volatile u8 flag_is_enable_charging = 0;
   16   1      
-  17   1          volatile u16 charging_adc_val;
-  18   1          volatile u16 bat_adc_val;
+  17   1          // volatile u16 charging_adc_val;
+  18   1          // volatile u16 bat_adc_val;
   19   1          u32 tmp;
   20   1      
-  21   1          adc_sel_pin(ADC_PIN_DETECT_CHARGE);
-  22   1          charging_adc_val = adc_getval(); // 采集充电输入对应的ad值
-  23   1          adc_sel_pin(ADC_PIN_DETECT_BATTERY);
-  24   1          bat_adc_val = adc_getval(); // 采集电池电压对应的ad值
+  21   1          // adc_sel_pin(ADC_PIN_DETECT_CHARGE);
+  22   1          // charging_adc_val = adc_getval(); // 采集充电输入对应的ad值
+  23   1          // adc_sel_pin(ADC_PIN_DETECT_BATTERY);
+  24   1          // bat_adc_val = adc_getval(); // 采集电池电压对应的ad值
   25   1      
   26   1      #if 0
                   {
@@ -62,7 +62,7 @@ line level    source
   50   3              }
   51   2      
   52   2              if (charging_adc_val >= ADC_VAL_ENABLE_IN_CHARGE_END)
-C51 COMPILER V9.60.7.0   CHARGE_HANDLE                                                     07/01/2025 17:03:25 PAGE 2   
+C51 COMPILER V9.60.7.0   CHARGE_HANDLE                                                     07/09/2025 10:39:37 PAGE 2   
 
   53   2              {
   54   3                  // 如果在未充电时，检测到充电输入电压而使能充电
@@ -126,7 +126,7 @@ line level    source
  110   4                      cur_charging_pwm_status = CUR_CHARGING_PWM_STATUS_HIGH_FRQ;
  111   4                  }
  112   3      
-C51 COMPILER V9.60.7.0   CHARGE_HANDLE                                                     07/01/2025 17:03:25 PAGE 3   
+C51 COMPILER V9.60.7.0   CHARGE_HANDLE                                                     07/09/2025 10:39:37 PAGE 3   
 
  113   3                  // 根据充电电压调整pwm占空比
  114   3      
@@ -161,38 +161,39 @@ line level    source
  139   4                             1000y = 124286 - adc_val * 7857 * 2 * 11 / 4096
  140   4                             这个公式运算不会超出 2^32 范围
  141   4                         */
- 142   4                      tmp = (u32)124286 - (u32)charging_adc_val * 7857 * 2 * 11 / 4096;
- 143   4                      // 得到的 tmp 是1000倍的占空比值，需要除以1000， 再乘以 定时器重载
+ 142   4                      // tmp = (u32)124286 - (u32)charging_adc_val * 7857 * 2 * 11 / 4096;
+ 143   4                      tmp = (u32)88101 - (u32)charging_adc_val * 2471 * 2 * 11 / 4096;
+ 144   4                      // 得到的 tmp 是1000倍的占空比值，需要除以1000， 再乘以 定时器重载
              -值/100,得到定时器对应的占空比值
- 144   4                      // T1DATA = (u32)T1LOAD * (u32)tmp / 1000 / 100; // 最终的占空比值
- 145   4                      {
- 146   5                          static u16 cnt = 0;
- 147   5                          cnt++;
- 148   5                          if (cnt >= 100)
- 149   5                          {
- 150   6                              cnt = 0;
- 151   6                              printf("cur pwm percent : %lu %%\n", (u32)tmp / 1000);
- 152   6                              // printf("cal val  : %lu \n", (u32)charging_adc_val * 7857 * 2 * 11 / 4096);
- 153   6                          }
- 154   5                      }
- 155   4      
- 156   4                      // tmp = (((u32)TMR1_PRH << 8) | (u32)TMR1_PRL) * (u32)tmp / 1000; // 最终的占空比�
+ 145   4                      // // T1DATA = (u32)T1LOAD * (u32)tmp / 1000 / 100; // 最终的占空比值
+ 146   4                      // {
+ 147   4                      //     static u16 cnt = 0;
+ 148   4                      //     cnt++;
+ 149   4                      //     if (cnt >= 100)
+ 150   4                      //     {
+ 151   4                      //         cnt = 0;
+ 152   4                      //         printf("cur pwm percent : %lu %%\n", (u32)tmp / 1000);
+ 153   4                      //         // printf("cal val  : %lu \n", (u32)charging_adc_val * 7857 * 2 * 11 / 4096);
+ 154   4                      //     }
+ 155   4                      // }
+ 156   4      
+ 157   4                      // tmp = (((u32)TMR1_PRH << 8) | (u32)TMR1_PRL) * (u32)tmp / 1000; // 最终的占空比�
              -�（用这个计算，得出的值是0）
- 157   4                      tmp = (u32)TIMER1_HIGH_FEQ_PEROID_VAL * tmp / 1000 / 100; // 最终的占空比值
- 158   4      
- 159   4                      /*
- 160   4                          由于公式限制，可能充电电压大于15V就会导致占空比变为0，现在�
+ 158   4                      tmp = (u32)TIMER1_HIGH_FEQ_PEROID_VAL * tmp / 1000 / 100; // 最终的占空比值
+ 159   4      
+ 160   4                      /*
+ 161   4                          由于公式限制，可能充电电压大于15V就会导致占空比变为0，现在�
              -��让它到0%
- 161   4                      */
- 162   4                      if (0 == (u16)tmp)
- 163   4                      // if (0 == tmp)
- 164   4                      {
- 165   5                          tmp = 1;
- 166   5                      }
- 167   4      
-C51 COMPILER V9.60.7.0   CHARGE_HANDLE                                                     07/01/2025 17:03:25 PAGE 4   
+ 162   4                      */
+ 163   4                      if (0 == (u16)tmp)
+ 164   4                      // if (0 == tmp)
+ 165   4                      {
+ 166   5                          tmp = 0;
+ 167   5                      }
+C51 COMPILER V9.60.7.0   CHARGE_HANDLE                                                     07/09/2025 10:39:37 PAGE 4   
 
- 168   4      #if 0
+ 168   4      
+ 169   4      #if 0
                               {
                                   static u16 cnt = 0;
                                   cnt++;
@@ -206,22 +207,22 @@ line level    source
                                   }
                               }
               #endif
- 181   4      
- 182   4                      TMR1_PWMH = (tmp >> 8) & 0xFF;
- 183   4                      TMR1_PWML = tmp & 0xFF;
- 184   4                  }
- 185   3              }
- 186   2          }
- 187   1      #endif
- 188   1      }
+ 182   4      
+ 183   4                      TMR1_PWMH = (tmp >> 8) & 0xFF;
+ 184   4                      TMR1_PWML = tmp & 0xFF;
+ 185   4                  }
+ 186   3              }
+ 187   2          }
+ 188   1      #endif
+ 189   1      }
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =    403    ----
-   CONSTANT SIZE    =     58    ----
-   XDATA SIZE       =   ----    ----
+   CODE SIZE        =    407    ----
+   CONSTANT SIZE    =     32    ----
+   XDATA SIZE       =      3       4
    PDATA SIZE       =   ----    ----
-   DATA SIZE        =      5       8
+   DATA SIZE        =   ----    ----
    IDATA SIZE       =   ----    ----
    BIT SIZE         =   ----    ----
 END OF MODULE INFORMATION.

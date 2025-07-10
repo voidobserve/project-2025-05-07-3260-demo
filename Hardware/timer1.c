@@ -11,8 +11,8 @@ void timer1_pwm_config(void)
     TMR_ALLCON = TMR1_CNT_CLR(0x1);                                       // 清除计数值
     TMR1_PRH = TMR_PERIOD_VAL_H((TIMER1_LOW_FEQ_PEROID_VAL >> 8) & 0xFF); // 周期值
     TMR1_PRL = TMR_PERIOD_VAL_L((TIMER1_LOW_FEQ_PEROID_VAL >> 0) & 0xFF);
-    TMR1_PWMH = TMR_PWM_VAL_H((((u32)TIMER1_LOW_FEQ_PEROID_VAL * 18 / 100) >> 8) & 0xFF); // 占空比设置值
-    TMR1_PWML = TMR_PWM_VAL_L((((u32)TIMER1_LOW_FEQ_PEROID_VAL * 18 / 100) >> 0) & 0xFF);
+    TMR1_PWMH = TMR_PWM_VAL_H((((u32)TIMER1_LOW_FEQ_PEROID_VAL * 0 / 100) >> 8) & 0xFF); // 占空比设置值
+    TMR1_PWML = TMR_PWM_VAL_L((((u32)TIMER1_LOW_FEQ_PEROID_VAL * 0 / 100) >> 0) & 0xFF);
     TMR1_CONH = TMR_PRD_PND(0x1) | TMR_PRD_IRQ_EN(0x1);  // 使能计数中断
     TMR1_CONL = TMR_SOURCE_SEL(0x7) | TMR_MODE_SEL(0x2); // 选择系统时钟，时钟源不分频，PWM模式
 }

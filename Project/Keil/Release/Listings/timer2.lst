@@ -1,11 +1,11 @@
-C51 COMPILER V9.60.7.0   TIMER2                                                            07/01/2025 17:03:25 PAGE 1   
+C51 COMPILER V9.60.7.0   TIMER2                                                            07/09/2025 10:39:37 PAGE 1   
 
 
 C51 COMPILER V9.60.7.0, COMPILATION OF MODULE TIMER2
 OBJECT MODULE PLACED IN .\Release\Objects\timer2.obj
-COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\..\Hardware\timer2.c OPTIMIZE(8,SPEED) BROWSE INTVECTOR(0X000C) INCDI
-                    -R(..\..\Libraries\Include;..\..\User;..\..\Hardware) INTERVAL(3) DEBUG OBJECTEXTEND PRINT(.\Release\Listings\timer2.lst)
-                    - OBJECT(.\Release\Objects\timer2.obj)
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\..\Hardware\timer2.c LARGE OPTIMIZE(8,SPEED) BROWSE INTVECTOR(0X000C)
+                    - INCDIR(..\..\Libraries\Include;..\..\User;..\..\Hardware) INTERVAL(3) DEBUG OBJECTEXTEND PRINT(.\Release\Listings\timer
+                    -2.lst) OBJECT(.\Release\Objects\timer2.obj)
 
 line level    source
 
@@ -59,13 +59,13 @@ line level    source
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =    139    ----
+   CODE SIZE        =    145    ----
    CONSTANT SIZE    =   ----    ----
-   XDATA SIZE       =   ----    ----
-C51 COMPILER V9.60.7.0   TIMER2                                                            07/01/2025 17:03:25 PAGE 2   
+   XDATA SIZE       =   ----       1
+C51 COMPILER V9.60.7.0   TIMER2                                                            07/09/2025 10:39:37 PAGE 2   
 
    PDATA SIZE       =   ----    ----
-   DATA SIZE        =   ----       1
+   DATA SIZE        =   ----    ----
    IDATA SIZE       =   ----    ----
    BIT SIZE         =   ----    ----
 END OF MODULE INFORMATION.

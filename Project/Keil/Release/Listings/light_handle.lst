@@ -1,11 +1,11 @@
-C51 COMPILER V9.60.7.0   LIGHT_HANDLE                                                      07/01/2025 17:03:26 PAGE 1   
+C51 COMPILER V9.60.7.0   LIGHT_HANDLE                                                      07/09/2025 10:39:37 PAGE 1   
 
 
 C51 COMPILER V9.60.7.0, COMPILATION OF MODULE LIGHT_HANDLE
 OBJECT MODULE PLACED IN .\Release\Objects\light_handle.obj
-COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\..\User\light_handle.c OPTIMIZE(8,SPEED) BROWSE INTVECTOR(0X000C) INC
-                    -DIR(..\..\Libraries\Include;..\..\User;..\..\Hardware) INTERVAL(3) DEBUG OBJECTEXTEND PRINT(.\Release\Listings\light_han
-                    -dle.lst) OBJECT(.\Release\Objects\light_handle.obj)
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\..\User\light_handle.c LARGE OPTIMIZE(8,SPEED) BROWSE INTVECTOR(0X000
+                    -C) INCDIR(..\..\Libraries\Include;..\..\User;..\..\Hardware) INTERVAL(3) DEBUG OBJECTEXTEND PRINT(.\Release\Listings\lig
+                    -ht_handle.lst) OBJECT(.\Release\Objects\light_handle.obj)
 
 line level    source
 
@@ -50,29 +50,39 @@ line level    source
   39   2              if (light_adjust_time_cnt >= (1200 * (phase + 1)))
   40   2              {
   41   3                  phase++;
-  42   3                  expect_light_pwm_duty_val -= (255 * 10 / 100);
-  43   3                  // SET_LIGHT_PWM_DUTY(cur_light_pwm_duty_val);
-  44   3              }
-  45   2          }
-  46   1          else // 2 == cur_discharge_rate || 3 == cur_discharge_rate
-  47   1          {
-  48   2              /*
-  49   2                  一开始每40s降低一次占空比
-  50   2                  从47%开始，每240s降低一次占空比
-  51   2                  从42%开始，每420s降低一次占空比
-  52   2              */
-  53   2          }
-C51 COMPILER V9.60.7.0   LIGHT_HANDLE                                                      07/01/2025 17:03:26 PAGE 2   
+  42   3      
+  43   3                  if (expect_light_pwm_duty_val >= (255 * 480 / 1000))
+  44   3                  {
+  45   4                      expect_light_pwm_duty_val -= (255 * 10 / 100);
+  46   4                  }
+  47   3                  else
+  48   3                  {
+  49   4                      // expect_light_pwm_duty_val = ()
+  50   4                  }
+  51   3      
+  52   3                  
+  53   3                  // SET_LIGHT_PWM_DUTY(cur_light_pwm_duty_val);
+C51 COMPILER V9.60.7.0   LIGHT_HANDLE                                                      07/09/2025 10:39:37 PAGE 2   
 
-  54   1      }
+  54   3              }
+  55   2          }
+  56   1          else // 2 == cur_discharge_rate || 3 == cur_discharge_rate
+  57   1          {
+  58   2              /*
+  59   2                  一开始每40s降低一次占空比
+  60   2                  从47%开始，每240s降低一次占空比
+  61   2                  从42%开始，每420s降低一次占空比
+  62   2              */
+  63   2          }
+  64   1      }
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =     86    ----
+   CODE SIZE        =    121    ----
    CONSTANT SIZE    =   ----    ----
-   XDATA SIZE       =   ----    ----
+   XDATA SIZE       =      1       1
    PDATA SIZE       =   ----    ----
-   DATA SIZE        =      1       1
+   DATA SIZE        =   ----    ----
    IDATA SIZE       =   ----    ----
    BIT SIZE         =   ----    ----
 END OF MODULE INFORMATION.

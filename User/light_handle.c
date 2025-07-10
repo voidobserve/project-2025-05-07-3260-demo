@@ -46,7 +46,7 @@ void light_handle(void)
             }
             else
             {
-                expect_light_pwm_duty_val = ()
+                // expect_light_pwm_duty_val = ()
             }
 
             

@@ -1,11 +1,11 @@
-C51 COMPILER V9.60.7.0   MAIN                                                              07/01/2025 17:13:45 PAGE 1   
+C51 COMPILER V9.60.7.0   MAIN                                                              07/10/2025 16:54:27 PAGE 1   
 
 
 C51 COMPILER V9.60.7.0, COMPILATION OF MODULE MAIN
 OBJECT MODULE PLACED IN .\Release\Objects\main.obj
-COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\..\User\main.c OPTIMIZE(8,SPEED) BROWSE INTVECTOR(0X000C) INCDIR(..\.
-                    -.\Libraries\Include;..\..\User;..\..\Hardware) INTERVAL(3) DEBUG OBJECTEXTEND PRINT(.\Release\Listings\main.lst) OBJECT(
-                    -.\Release\Objects\main.obj)
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\..\User\main.c LARGE OPTIMIZE(8,SPEED) BROWSE INTVECTOR(0X000C) INCDI
+                    -R(..\..\Libraries\Include;..\..\User;..\..\Hardware) INTERVAL(3) DEBUG OBJECTEXTEND PRINT(.\Release\Listings\main.lst) O
+                    -BJECT(.\Release\Objects\main.obj)
 
 line level    source
 
@@ -39,183 +39,320 @@ line level    source
   28          volatile u8 expect_light_pwm_duty_val = 0; // ÆÚÍûµ÷½Úµ½µÄ¡¢µÆ¹â¶ÔÓ¦µÄÕ¼¿Õ±ÈÖµ
   29          
   30          volatile u16 bat_adc_val;
-  31          
-  32          volatile u8 flag_is_light_adjust_time_come = 0; // µ÷½ÚµÆ¹âµÄÊ±¼äµ½À´£¬Ä¿Ç°Îª1s
-  33          
-  34          volatile u16 light_adjust_time_cnt = 0;
-  35          
-  36          //
-  37          void led_pin_config(void)
-  38          {
-  39   1          P1_MD0 &= ~GPIO_P11_MODE_SEL(0x03);
-  40   1          P1_MD0 |= GPIO_P11_MODE_SEL(0x01);
-  41   1          FOUT_S11 = GPIO_FOUT_AF_FUNC;
-  42   1          P11 = 0; // Èç¹û²»¸ø³õÊ¼Öµ£¬ÉÏµçÖ®ºó£¬Ö¸Ê¾µÆ»áÉÁÒ»ÏÂ
-  43   1      
-  44   1          P1_MD0 &= ~GPIO_P12_MODE_SEL(0x03);
-  45   1          P1_MD0 |= GPIO_P12_MODE_SEL(0x01);
-  46   1          FOUT_S12 = GPIO_FOUT_AF_FUNC;
-  47   1          P12 = 0;
-  48   1      
-  49   1          P1_MD0 &= ~GPIO_P13_MODE_SEL(0x03);
-  50   1          P1_MD0 |= GPIO_P13_MODE_SEL(0x01);
-  51   1          FOUT_S13 = GPIO_FOUT_AF_FUNC;
-  52   1          P13 = 0;
-  53   1      
-C51 COMPILER V9.60.7.0   MAIN                                                              07/01/2025 17:13:45 PAGE 2   
+  31          volatile u16 charging_adc_val; // ¼ì²âµ½³äµçµçÑ¹µÄadÖµ
+  32          
+  33          volatile u8 flag_is_light_adjust_time_come = 0; // µ÷½ÚµÆ¹âµÄÊ±¼äµ½À´£¬Ä¿Ç°Îª1s
+  34          
+  35          volatile u16 light_adjust_time_cnt = 0;
+  36          
+  37          //
+  38          void led_pin_config(void)
+  39          {
+  40   1          P1_MD0 &= ~GPIO_P11_MODE_SEL(0x03);
+  41   1          P1_MD0 |= GPIO_P11_MODE_SEL(0x01);
+  42   1          FOUT_S11 = GPIO_FOUT_AF_FUNC;
+  43   1          P11 = 0; // Èç¹û²»¸ø³õÊ¼Öµ£¬ÉÏµçÖ®ºó£¬Ö¸Ê¾µÆ»áÉÁÒ»ÏÂ
+  44   1      
+  45   1          P1_MD0 &= ~GPIO_P12_MODE_SEL(0x03);
+  46   1          P1_MD0 |= GPIO_P12_MODE_SEL(0x01);
+  47   1          FOUT_S12 = GPIO_FOUT_AF_FUNC;
+  48   1          P12 = 0;
+  49   1      
+  50   1          P1_MD0 &= ~GPIO_P13_MODE_SEL(0x03);
+  51   1          P1_MD0 |= GPIO_P13_MODE_SEL(0x01);
+  52   1          FOUT_S13 = GPIO_FOUT_AF_FUNC;
+  53   1          P13 = 0;
+C51 COMPILER V9.60.7.0   MAIN                                                              07/10/2025 16:54:27 PAGE 2   
 
-  54   1          P1_MD1 &= ~GPIO_P14_MODE_SEL(0x03);
-  55   1          P1_MD1 |= GPIO_P14_MODE_SEL(0x01);
-  56   1          FOUT_S14 = GPIO_FOUT_AF_FUNC;
-  57   1          P14 = 0;
-  58   1      
-  59   1          P1_MD1 &= ~GPIO_P15_MODE_SEL(0x03);
-  60   1          P1_MD1 |= GPIO_P15_MODE_SEL(0x01);
-  61   1          FOUT_S15 = GPIO_FOUT_AF_FUNC;
-  62   1          P15 = 0;
-  63   1      }
-  64          
-  65          /**
-  66           * @brief  Main program.
-  67           * @param  None
-  68           * @retval None
-  69           */
-  70          void main(void)
-  71          {
-  72   1          // ¿´ÃÅ¹·Ä¬ÈÏ´ò¿ª, ¸´Î»Ê±¼ä2s
-  73   1          WDT_KEY = WDT_KEY_VAL(0xDD); //  ¹Ø±Õ¿´ÃÅ¹· (ÈçÐèÅäÖÃ¿´ÃÅ¹·Çë²é¿´¡°WDT\WDT_Reset¡±Ê¾Àý)
-  74   1      
-  75   1          system_init();
-  76   1      
-  77   1          // ¹Ø±ÕHCKºÍHDAµÄµ÷ÊÔ¹¦ÄÜ
-  78   1          WDT_KEY = 0x55;  // ½â³ýÐ´±£»¤
-  79   1          IO_MAP &= ~0x01; // Çå³ýÕâ¸ö¼Ä´æÆ÷µÄÖµ£¬ÊµÏÖ¹Ø±ÕHCKºÍHDAÒý½ÅµÄµ÷ÊÔ¹¦ÄÜ£¨½â³ýÓ³Éä£©
-  80   1          WDT_KEY = 0xBB;  // Ð´Ò»¸öÎÞÐ§µÄÊý¾Ý£¬´¥·¢Ð´±£»¤
-  81   1      
-  82   1          uart0_config();
-  83   1          timer0_config();
-  84   1          timer1_pwm_config();
-  85   1          timer1_pwm_disable();
-  86   1          timer2_pwm_config(); // ¿ØÖÆµÆ¹âµÄpwm
-  87   1          timer2_pwm_disable();
-  88   1      
-  89   1          // timer1_set_pwm_high_feq();
-  90   1          // TODO: 7361²»ÓÃ¼ÓÕâ¸öÒý½ÅÅäÖÃ:
-  91   1          led_pin_config();
-  92   1      
-  93   1          // ºìÍâ½ÓÊÕÒý½Å£º
-  94   1          P2_MD0 &= ~(GPIO_P23_MODE_SEL(0x03)); // ÊäÈëÄ£Ê½
-  95   1          P2_PU |= GPIO_P23_PULL_UP(0x01);      // ÉÏÀ­
-  96   1      
-  97   1          adc_config();
-  98   1      
-  99   1          printf("sys reset\n");
+  54   1      
+  55   1          P1_MD1 &= ~GPIO_P14_MODE_SEL(0x03);
+  56   1          P1_MD1 |= GPIO_P14_MODE_SEL(0x01);
+  57   1          FOUT_S14 = GPIO_FOUT_AF_FUNC;
+  58   1          P14 = 0;
+  59   1      
+  60   1          P1_MD1 &= ~GPIO_P15_MODE_SEL(0x03);
+  61   1          P1_MD1 |= GPIO_P15_MODE_SEL(0x01);
+  62   1          FOUT_S15 = GPIO_FOUT_AF_FUNC;
+  63   1          P15 = 0;
+  64   1      }
+  65          
+  66          // // ¾ø¶ÔÖµº¯Êý
+  67          // float my_fabs(float x) {
+  68          //     return (x < 0) ? -x : x;
+  69          // }
+  70          
+  71          // Ì©ÀÕÕ¹¿ª½üËÆ ln(x)£¬ÊÕÁ²·¶Î§£ºx > 0.1
+  72          float my_ln(float x)
+  73          {
+  74   1          u8 i;
+  75   1          float t = (x - 1) / (x + 1);
+  76   1          float sum = 0.0f;
+  77   1          float term = t;
+  78   1      
+  79   1          for (i = 0; i < 50; i++)
+  80   1          {
+  81   2              sum += term / (2 * i + 1);
+  82   2              term *= t * t;
+  83   2          }
+  84   1      
+  85   1          return 2 * sum;
+  86   1      }
+  87          
+  88          // Ì©ÀÕÕ¹¿ª½üËÆ exp(x)
+  89          float my_exp(float x)
+  90          {
+  91   1          u8 i;
+  92   1          float sum = 1.0f;
+  93   1          float term = 1.0f;
+  94   1      
+  95   1          for (i = 1; i < 20; i++)
+  96   1          {
+  97   2              term *= x / i;
+  98   2              sum += term;
+  99   2          }
  100   1      
- 101   1          // adc_sel_pin(ADC_PIN_DETECT_CHARGE); // ²âÊÔÍ¨¹ý£¬¿ÉÒÔÕý³£¼ì²â¶ÔÓ¦µÄµçÑ¹Öµ
- 102   1          // adc_sel_pin(ADC_PIN_DETECT_BATTERY); // ²âÊÔÍ¨¹ý£¬¿ÉÒÔÕý³£¼ì²â¶ÔÓ¦µÄµçÑ¹Öµ
- 103   1      
- 104   1          // PWM_CTL_FOR_CHARGING_SET_HIGH_FEQ();
- 105   1          // ÓÃÏÂÃæµÄÕ¼¿Õ±È³äµç£¬µçÁ÷»á·Ç³£´ó£º
- 106   1          // TMR1_PWMH = ((TIMER1_HIGH_FEQ_PEROID_VAL * 10 / 100) >> 8) & 0xFF; // 10%
- 107   1          // TMR1_PWML = (TIMER1_HIGH_FEQ_PEROID_VAL * 10 / 100) & 0xFF;
- 108   1      
- 109   1          // ÓÃÕâÒ»À¸³äµç£¨³äµçµçÑ¹5.5~32V£©£¬µçÔ´Ò»²àÏÔÊ¾²»³öµçÁ÷
- 110   1          // PWM_CTL_FOR_CHARGING_SET_HIGH_FEQ();
- 111   1          // TMR1_PWMH = ((TIMER1_HIGH_FEQ_PEROID_VAL * 1 / 100) >> 8) & 0xFF; // 1%£¬Êµ¼Ê²âÊÔÓÐÊ±ÊÇ0.88%£¬ÓÐÊ±Ê
-             -Ç1.3%
- 112   1          // TMR1_PWML = (TIMER1_HIGH_FEQ_PEROID_VAL * 1 / 100) & 0xFF;
- 113   1          // TMR1_PWMH = 0 & 0xFF;
- 114   1          // TMR1_PWML = 1 & 0xFF;
-C51 COMPILER V9.60.7.0   MAIN                                                              07/01/2025 17:13:45 PAGE 3   
-
+ 101   1          return sum;
+ 102   1      }
+ 103          
+ 104          // ÃÝº¯Êý£ºx^y = e^(y * ln(x))
+ 105          float my_pow(float base, float exponent)
+ 106          {
+ 107   1          if (base <= 0.0f)
+ 108   1          {
+ 109   2              return 0.0f; // ²»Ö§³Ö¸ºµ×Êý»ò0µÄ¸º´ÎÃÝ
+ 110   2          }
+ 111   1          if (exponent == 0.0f)
+ 112   1              return 1.0f;
+ 113   1          if (base == 1.0f)
+ 114   1              return 1.0f;
  115   1      
- 116   1          // ³äµçµçÑ¹µ½ 7-8VÊ±£¬µçÁ÷¾Í»áµ½1A£¬µçÑ¹Ô½¸ß£¬µçÁ÷Ô½´ó
- 117   1          // TMR1_PWMH = ((TIMER1_HIGH_FEQ_PEROID_VAL * 5 / 100) >> 8) & 0xFF; // 5%
- 118   1          // TMR1_PWML = (TIMER1_HIGH_FEQ_PEROID_VAL * 5 / 100) & 0xFF;
- 119   1      
- 120   1          // ³äµçµçÑ¹µ½11.3VÊ±£¬µçÁ÷»áµ½1A£¬µçÑ¹Ô½¸ß£¬µçÁ÷Ô½´ó
- 121   1          // TMR1_PWMH = ((TIMER1_HIGH_FEQ_PEROID_VAL * 2 / 100) >> 8) & 0xFF; // 2%
- 122   1          // TMR1_PWML = (TIMER1_HIGH_FEQ_PEROID_VAL * 2 / 100) & 0xFF;
- 123   1      
- 124   1          // 5V£¬µçÁ÷»áµ½10A
- 125   1          // TMR1_PWMH = ((TIMER1_HIGH_FEQ_PEROID_VAL * 80 / 100) >> 8) & 0xFF; //
- 126   1          // TMR1_PWML = (TIMER1_HIGH_FEQ_PEROID_VAL * 80 / 100) & 0xFF;
- 127   1      
- 128   1          // ÔÚ5V¸½½ü£¬µçÁ÷5A×óÓÒ
- 129   1          // TMR1_PWMH = ((TIMER1_HIGH_FEQ_PEROID_VAL * 60 / 100) >> 8) & 0xFF; //
- 130   1          // TMR1_PWML = (TIMER1_HIGH_FEQ_PEROID_VAL * 60 / 100) & 0xFF;
- 131   1      
- 132   1          // {
- 133   1          //     u32 tmp = (u32)TIMER1_HIGH_FEQ_PEROID_VAL * 90 / 100;
- 134   1      
- 135   1          //     TMR1_PWMH = (tmp >> 8) & 0xFF;
- 136   1          //     TMR1_PWML = tmp & 0xFF;
- 137   1          // }
- 138   1      
- 139   1          // LED_1_ON();
- 140   1          // LED_2_ON();
- 141   1          // LED_3_ON();
- 142   1          // LED_4_ON();
- 143   1          // LED_5_ON();
- 144   1      
- 145   1          // TODO:
- 146   1          // ÉÏµçºó£¬ÐèÒªÏÈµãÁÁºìÉ«Ö¸Ê¾µÆ£¬ÔÙ±äÎªµç³ØµçÁ¿Ö¸Ê¾Ä£Ê½
- 147   1          LED_1_ON();
- 148   1          delay_ms(1000);
- 149   1      
- 150   1          // cur_led_mode = CUR_LED_MODE_INITIAL_DISCHARGE_GEAR;
- 151   1          cur_led_mode = CUR_LED_MODE_BAT_INDICATOR; // µç³ØµçÁ¿Ö¸Ê¾Ä£Ê½
- 152   1          cur_initial_discharge_gear = 5;
- 153   1          cur_discharge_rate = 3;
- 154   1      
- 155   1          while (1)
- 156   1          {
- 157   2              adc_sel_pin(ADC_PIN_DETECT_BATTERY);
- 158   2              bat_adc_val = adc_getval(); // ²É¼¯µç³ØµçÑ¹¶ÔÓ¦µÄadÖµ
- 159   2      
- 160   2              ir_handle();
- 161   2              // charge_handle();
- 162   2              led_handle_update_percent_of_bat();
- 163   2      
- 164   2      #if 1 // »ºÂýµ÷½ÚÇý¶¯µÆ¹âµÄpwmÕ¼¿Õ±È
- 165   2      
- 166   2              {
- 167   3                  // static u8 cnt =0;
- 168   3      
- 169   3                  // ÔÝ¶¨Ã¿100usµ÷½ÚÒ»´Î
- 170   3      
- 171   3                  if (cur_light_pwm_duty_val > expect_light_pwm_duty_val)
- 172   3                  {
- 173   4                      cur_light_pwm_duty_val--;
- 174   4                  }
- 175   3                  else if (cur_light_pwm_duty_val < expect_light_pwm_duty_val)
- 176   3                  {
-C51 COMPILER V9.60.7.0   MAIN                                                              07/01/2025 17:13:45 PAGE 4   
+C51 COMPILER V9.60.7.0   MAIN                                                              07/10/2025 16:54:27 PAGE 3   
 
- 177   4                      cur_light_pwm_duty_val++;
- 178   4                  }
- 179   3      
- 180   3                  SET_LIGHT_PWM_DUTY(cur_light_pwm_duty_val);
- 181   3                  // timer2_set_pwm_duty(cur_light_pwm_duty_val);
- 182   3              }
- 183   2      
- 184   2      #endif // »ºÂýµ÷½ÚÇý¶¯µÆ¹âµÄpwmÕ¼¿Õ±È
- 185   2          }
- 186   1      }
- 187          
- 188          /**
- 189           * @}
- 190           */
- 191          
- 192          /*************************** (C) COPYRIGHT 2022 HUGE-IC ***** END OF FILE *****/
+ 116   1          return my_exp(exponent * my_ln(base));
+ 117   1      }
+ 118          
+ 119          // ·µ»ØÖµ£ºÕ¼¿Õ±È£¬µ¥Î»£º°Ù·ÖÖ®Ò»£¨ÀýÈç 75 ±íÊ¾ 75%£©
+ 120          u8 calculate_duty(u32 voltage_mV)
+ 121          {
+ 122   1          // const float A = 538.0f;
+ 123   1          // const float n = 1.178f;
+ 124   1      
+ 125   1          const float A = 680.0F;
+ 126   1          const float n = 1.32F;
+ 127   1      
+ 128   1          // const float A = 376.26f;
+ 129   1          // const float A = 395.2f;
+ 130   1          // const float A = 348.32f;
+ 131   1          // const float A = 288.0F; 
+ 132   1           
+ 133   1          // const float n = 1.0f;
+ 134   1          float result;
+ 135   1      
+ 136   1          if (voltage_mV < 100)
+ 137   1              return 0; // ·ÀÖ¹³ýÁã»ò¹ý´óÊä³ö
+ 138   1      
+ 139   1          voltage_mV /= 1000;
+ 140   1      
+ 141   1          result = A / my_pow(voltage_mV, n);
+ 142   1      
+ 143   1          if (result < 0.0f)
+ 144   1              result = 0.0f;
+ 145   1          if (result > 100.0f)
+ 146   1              result = 100.0f;
+ 147   1      
+ 148   1          return (u8)(result + 0.5f); // ËÄÉáÎåÈë
+ 149   1      }
+ 150          
+ 151          /**
+ 152           * @brief  Main program.
+ 153           * @param  None
+ 154           * @retval None
+ 155           */
+ 156          void main(void)
+ 157          {
+ 158   1          // ¿´ÃÅ¹·Ä¬ÈÏ´ò¿ª, ¸´Î»Ê±¼ä2s
+ 159   1          WDT_KEY = WDT_KEY_VAL(0xDD); //  ¹Ø±Õ¿´ÃÅ¹· (ÈçÐèÅäÖÃ¿´ÃÅ¹·Çë²é¿´¡°WDT\WDT_Reset¡±Ê¾Àý)
+ 160   1      
+ 161   1          system_init();
+ 162   1      
+ 163   1          // ¹Ø±ÕHCKºÍHDAµÄµ÷ÊÔ¹¦ÄÜ
+ 164   1          WDT_KEY = 0x55;  // ½â³ýÐ´±£»¤
+ 165   1          IO_MAP &= ~0x01; // Çå³ýÕâ¸ö¼Ä´æÆ÷µÄÖµ£¬ÊµÏÖ¹Ø±ÕHCKºÍHDAÒý½ÅµÄµ÷ÊÔ¹¦ÄÜ£¨½â³ýÓ³Éä£©
+ 166   1          WDT_KEY = 0xBB;  // Ð´Ò»¸öÎÞÐ§µÄÊý¾Ý£¬´¥·¢Ð´±£»¤
+ 167   1      
+ 168   1          uart0_config();
+ 169   1          timer0_config();
+ 170   1          timer1_pwm_config(); // ¿ØÖÆ³äµçµÄPWM
+ 171   1          timer1_pwm_disable();
+ 172   1          timer2_pwm_config(); // ¿ØÖÆµÆ¹âµÄpwm
+ 173   1          timer2_pwm_disable();
+ 174   1      
+ 175   1          // timer1_set_pwm_high_feq();
+ 176   1          // TODO: 7361²»ÓÃ¼ÓÕâ¸öÒý½ÅÅäÖÃ:
+ 177   1          led_pin_config();
+C51 COMPILER V9.60.7.0   MAIN                                                              07/10/2025 16:54:27 PAGE 4   
+
+ 178   1      
+ 179   1          // ºìÍâ½ÓÊÕÒý½Å£º
+ 180   1          P2_MD0 &= ~(GPIO_P23_MODE_SEL(0x03)); // ÊäÈëÄ£Ê½
+ 181   1          P2_PU |= GPIO_P23_PULL_UP(0x01);      // ÉÏÀ­
+ 182   1      
+ 183   1          adc_config();
+ 184   1      
+ 185   1          printf("sys reset\n");
+ 186   1      
+ 187   1      // LED_1_ON();
+ 188   1      // LED_2_ON();
+ 189   1      // LED_3_ON();
+ 190   1      // LED_4_ON();
+ 191   1      // LED_5_ON();
+ 192   1      
+ 193   1      // TODO:
+ 194   1      // ÉÏµçºó£¬ÐèÒªÏÈµãÁÁºìÉ«Ö¸Ê¾µÆ£¬ÔÙ±äÎªµç³ØµçÁ¿Ö¸Ê¾Ä£Ê½
+ 195   1      // LED_1_ON();
+ 196   1      // delay_ms(1000);
+ 197   1      
+ 198   1      // cur_led_mode = CUR_LED_MODE_INITIAL_DISCHARGE_GEAR;
+ 199   1      #if 0
+                  cur_led_mode = CUR_LED_MODE_BAT_INDICATOR; // µç³ØµçÁ¿Ö¸Ê¾Ä£Ê½
+                  cur_initial_discharge_gear = 5;
+                  cur_discharge_rate = 3;
+              #endif
+ 204   1      
+ 205   1          timer1_set_pwm_high_feq();
+ 206   1          // TMR1_PWMH = ((TIMER1_HIGH_FEQ_PEROID_VAL * 9 / 100) >> 8) & 0xFF; //
+ 207   1          // TMR1_PWML = (TIMER1_HIGH_FEQ_PEROID_VAL * 9 / 100) & 0xFF;
+ 208   1      
+ 209   1          // TMR1_PWMH = ((TIMER1_HIGH_FEQ_PEROID_VAL * 75 / 100) >> 8) & 0xFF; //
+ 210   1          // TMR1_PWML = (TIMER1_HIGH_FEQ_PEROID_VAL * 75 / 100) & 0xFF;
+ 211   1      
+ 212   1          // {
+ 213   1          //     u8 tmp = 0;
+ 214   1          //     tmp = calculate_duty(5300);
+ 215   1      
+ 216   1          //     printf("tmp %bu\n", tmp);
+ 217   1      
+ 218   1          //     tmp = calculate_duty(11000);
+ 219   1          //     printf("tmp %bu\n", tmp);
+ 220   1      
+ 221   1          //     tmp = calculate_duty(32000);
+ 222   1          //     printf("tmp %bu\n", tmp);
+ 223   1          // }
+ 224   1      
+ 225   1          // {
+ 226   1          //     // u32 charging_voltage_mV = 0;
+ 227   1          //     // u16 pwm_duty = 0;
+ 228   1          //     // charging_voltage_mV = charging_adc_val * 2 * 11 * 1000 / 4096;
+ 229   1          //     // pwm_duty = calculate_duty(charging_voltage_mV);
+ 230   1          //     // pwm_duty = (u32)TIMER1_HIGH_FEQ_PEROID_VAL * pwm_duty  / 100; // ×îÖÕµÄÕ¼¿Õ±ÈÖµ
+ 231   1          //     // TMR1_PWMH = (pwm_duty >> 8) & 0xFF;
+ 232   1          //     // TMR1_PWML = pwm_duty & 0xFF;
+ 233   1      
+ 234   1          //     u32 charging_voltage_mV = 0;
+ 235   1          //     u16 pwm_duty = 0;
+ 236   1          //     u8 i;
+ 237   1      
+ 238   1          //     for (i = 1; i <= 32; i++)
+ 239   1          //     {
+C51 COMPILER V9.60.7.0   MAIN                                                              07/10/2025 16:54:27 PAGE 5   
+
+ 240   1          //         pwm_duty = calculate_duty((u32)i * 1000);
+ 241   1          //         printf("pwm_duty :%bu %%\n", (u8)pwm_duty);
+ 242   1          //         pwm_duty = (u32)TIMER1_HIGH_FEQ_PEROID_VAL * pwm_duty / 100; // ×îÖÕµÄÕ¼¿Õ±ÈÖµ
+ 243   1          //         printf("reg val %u \n", (u16)pwm_duty);
+ 244   1          //     }
+ 245   1          // }
+ 246   1      
+ 247   1          while (1)
+ 248   1          {
+ 249   2              // adc_sel_pin(ADC_PIN_DETECT_BATTERY);
+ 250   2              // bat_adc_val = adc_getval(); // ²É¼¯µç³ØµçÑ¹¶ÔÓ¦µÄadÖµ
+ 251   2              adc_sel_pin(ADC_PIN_DETECT_CHARGE);
+ 252   2              charging_adc_val = adc_getval();
+ 253   2      
+ 254   2              {
+ 255   3                  u32 charging_voltage_mV = 0;
+ 256   3                  u16 pwm_duty = 0;
+ 257   3      
+ 258   3                  // charging_adc_val = 1117; // ²âÊÔÓÃ
+ 259   3                  charging_voltage_mV = (u32)charging_adc_val * 2 * 11 * 1000 / 4096;
+ 260   3                  // charging_voltage_mV = 6000; // ²âÊÔÓÃ
+ 261   3                  pwm_duty = calculate_duty(charging_voltage_mV);
+ 262   3                  pwm_duty = (u32)TIMER1_HIGH_FEQ_PEROID_VAL * pwm_duty / 100; // ×îÖÕµÄÕ¼¿Õ±ÈÖµ
+ 263   3      
+ 264   3                  // printf("pwm_duty :%u\n", pwm_duty);
+ 265   3                  TMR1_PWMH = (pwm_duty >> 8) & 0xFF;
+ 266   3                  TMR1_PWML = pwm_duty & 0xFF;
+ 267   3              }
+ 268   2      
+ 269   2      #if 0
+                      {
+                          u32 tmp = 0;
+              
+                          // tmp = (u32)124286 - (u32)charging_adc_val * 7857 * 2 * 11 / 4096;
+                          tmp = (u32)88101 - (u32)charging_adc_val * 2471 * 2 * 11 / 4096;
+              
+                          // tmp = (((u32)TMR1_PRH << 8) | (u32)TMR1_PRL) * (u32)tmp / 1000; // ×îÖÕµÄÕ¼¿Õ±ÈÖµ£¨ÓÃÕâ¸ö¼Æ
+             -Ëã£¬µÃ³öµÄÖµÊÇ0£©
+                          tmp = (u32)TIMER1_HIGH_FEQ_PEROID_VAL * tmp / 1000 / 100; // ×îÖÕµÄÕ¼¿Õ±ÈÖµ
+              
+                          /*
+                              ÓÉÓÚ¹«Ê½ÏÞÖÆ£¬¿ÉÄÜ³äµçµçÑ¹´óÓÚ15V¾Í»áµ¼ÖÂÕ¼¿Õ±È±äÎª0£¬ÏÖÔÚ²»ÈÃËüµ½0%
+                          */
+                          if (0 == (u16)tmp)
+                          // if (0 == tmp)
+                          {
+                              tmp = 0;
+                          }
+              
+                          TMR1_PWMH = (tmp >> 8) & 0xFF;
+                          TMR1_PWML = tmp & 0xFF;
+                      }
+              #endif
+ 292   2      
+ 293   2              // ir_handle();
+ 294   2              // charge_handle();
+ 295   2              // led_handle_update_percent_of_bat();
+ 296   2      
+ 297   2      #if 0 // »ºÂýµ÷½ÚÇý¶¯µÆ¹âµÄpwmÕ¼¿Õ±È
+              
+                      {
+                          // static u8 cnt =0;
+C51 COMPILER V9.60.7.0   MAIN                                                              07/10/2025 16:54:27 PAGE 6   
+
+              
+                          // ÔÝ¶¨Ã¿100usµ÷½ÚÒ»´Î
+              
+                          if (cur_light_pwm_duty_val > expect_light_pwm_duty_val)
+                          {
+                              cur_light_pwm_duty_val--;
+                          }
+                          else if (cur_light_pwm_duty_val < expect_light_pwm_duty_val)
+                          {
+                              cur_light_pwm_duty_val++;
+                          }
+              
+                          SET_LIGHT_PWM_DUTY(cur_light_pwm_duty_val);
+                          // timer2_set_pwm_duty(cur_light_pwm_duty_val);
+                      }
+              
+              #endif // »ºÂýµ÷½ÚÇý¶¯µÆ¹âµÄpwmÕ¼¿Õ±È
+ 318   2          }
+ 319   1      }
+ 320          
+ 321          /**
+ 322           * @}
+ 323           */
+ 324          
+ 325          /*************************** (C) COPYRIGHT 2022 HUGE-IC ***** END OF FILE *****/
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =    199    ----
+   CODE SIZE        =   1145    ----
    CONSTANT SIZE    =     11    ----
-   XDATA SIZE       =   ----    ----
+   XDATA SIZE       =     11      60
    PDATA SIZE       =   ----    ----
-   DATA SIZE        =      9    ----
+   DATA SIZE        =   ----    ----
    IDATA SIZE       =   ----    ----
    BIT SIZE         =   ----    ----
 END OF MODULE INFORMATION.

@@ -14,14 +14,14 @@ void charge_handle(void)
     */
     static volatile u8 flag_is_enable_charging = 0;
 
-    volatile u16 charging_adc_val;
-    volatile u16 bat_adc_val;
+    // volatile u16 charging_adc_val;
+    // volatile u16 bat_adc_val;
     u32 tmp;
 
-    adc_sel_pin(ADC_PIN_DETECT_CHARGE);
-    charging_adc_val = adc_getval(); // 采集充电输入对应的ad值
-    adc_sel_pin(ADC_PIN_DETECT_BATTERY);
-    bat_adc_val = adc_getval(); // 采集电池电压对应的ad值
+    // adc_sel_pin(ADC_PIN_DETECT_CHARGE);
+    // charging_adc_val = adc_getval(); // 采集充电输入对应的ad值
+    // adc_sel_pin(ADC_PIN_DETECT_BATTERY);
+    // bat_adc_val = adc_getval(); // 采集电池电压对应的ad值
 
 #if 0
     {
@@ -139,19 +139,20 @@ void charge_handle(void)
                        1000y = 124286 - adc_val * 7857 * 2 * 11 / 4096
                        这个公式运算不会超出 2^32 范围
                    */
-                tmp = (u32)124286 - (u32)charging_adc_val * 7857 * 2 * 11 / 4096;
+                // tmp = (u32)124286 - (u32)charging_adc_val * 7857 * 2 * 11 / 4096;
+                tmp = (u32)88101 - (u32)charging_adc_val * 2471 * 2 * 11 / 4096;
                 // 得到的 tmp 是1000倍的占空比值，需要除以1000， 再乘以 定时器重载值/100,得到定时器对应的占空比值
-                // T1DATA = (u32)T1LOAD * (u32)tmp / 1000 / 100; // 最终的占空比值
-                {
-                    static u16 cnt = 0;
-                    cnt++;
-                    if (cnt >= 100)
-                    {
-                        cnt = 0;
-                        printf("cur pwm percent : %lu %%\n", (u32)tmp / 1000);
-                        // printf("cal val  : %lu \n", (u32)charging_adc_val * 7857 * 2 * 11 / 4096);
-                    }
-                }
+                // // T1DATA = (u32)T1LOAD * (u32)tmp / 1000 / 100; // 最终的占空比值
+                // {
+                //     static u16 cnt = 0;
+                //     cnt++;
+                //     if (cnt >= 100)
+                //     {
+                //         cnt = 0;
+                //         printf("cur pwm percent : %lu %%\n", (u32)tmp / 1000);
+                //         // printf("cal val  : %lu \n", (u32)charging_adc_val * 7857 * 2 * 11 / 4096);
+                //     }
+                // }
 
                 // tmp = (((u32)TMR1_PRH << 8) | (u32)TMR1_PRL) * (u32)tmp / 1000; // 最终的占空比值（用这个计算，得出的值是0）
                 tmp = (u32)TIMER1_HIGH_FEQ_PEROID_VAL * tmp / 1000 / 100; // 最终的占空比值
@@ -162,7 +163,7 @@ void charge_handle(void)
                 if (0 == (u16)tmp)
                 // if (0 == tmp)
                 {
-                    tmp = 1;
+                    tmp = 0;
                 }
 
 #if 0
