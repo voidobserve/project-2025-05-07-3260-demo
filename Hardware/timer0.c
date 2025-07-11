@@ -284,8 +284,8 @@ void TIMR0_IRQHandler(void) interrupt TMR0_IRQn
                 } // if (blink_cnt >= 200)
 #endif // 控制LED指示灯的闪烁效果
 
-#if 1           // 退出特殊的led指示模式的时间计数
-                // if (cur_led_mode != CUR_LED_MODE_BAT_INDICATOR) // 不处于电池电量指示模式，开始累计时间
+#if 1 // 退出特殊的led指示模式的时间计数
+      // if (cur_led_mode != CUR_LED_MODE_BAT_INDICATOR) // 不处于电池电量指示模式，开始累计时间
                 {
                     special_led_mode_times_cnt++;
                     if (special_led_mode_times_cnt >= 5000)
@@ -296,9 +296,18 @@ void TIMR0_IRQHandler(void) interrupt TMR0_IRQn
                 }
 #endif // 退出特殊的led指示模式的时间计数
 
+                {
+                    static u8 cnt = 0;
+                    cnt++;
+                    if (cnt >= 200)
+                    {
+                        cnt = 0;
+                        flag_is_charging_adjust_time_come = 1;
+                    }
+                }
+
             } // if (cnt >= 10) // 10 * 100us == 1ms
         }
- 
 
 #if 1 // 放电时间控制
 

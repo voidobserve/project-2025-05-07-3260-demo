@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.7.0   MAIN                                                              07/10/2025 16:54:27 PAGE 1   
+C51 COMPILER V9.60.7.0   MAIN                                                              07/11/2025 17:45:29 PAGE 1   
 
 
 C51 COMPILER V9.60.7.0, COMPILATION OF MODULE MAIN
@@ -40,252 +40,312 @@ line level    source
   29          
   30          volatile u16 bat_adc_val;
   31          volatile u16 charging_adc_val; // 检测到充电电压的ad值
-  32          
-  33          volatile u8 flag_is_light_adjust_time_come = 0; // 调节灯光的时间到来，目前为1s
-  34          
-  35          volatile u16 light_adjust_time_cnt = 0;
-  36          
-  37          //
-  38          void led_pin_config(void)
-  39          {
-  40   1          P1_MD0 &= ~GPIO_P11_MODE_SEL(0x03);
-  41   1          P1_MD0 |= GPIO_P11_MODE_SEL(0x01);
-  42   1          FOUT_S11 = GPIO_FOUT_AF_FUNC;
-  43   1          P11 = 0; // 如果不给初始值，上电之后，指示灯会闪一下
-  44   1      
-  45   1          P1_MD0 &= ~GPIO_P12_MODE_SEL(0x03);
-  46   1          P1_MD0 |= GPIO_P12_MODE_SEL(0x01);
-  47   1          FOUT_S12 = GPIO_FOUT_AF_FUNC;
-  48   1          P12 = 0;
-  49   1      
-  50   1          P1_MD0 &= ~GPIO_P13_MODE_SEL(0x03);
-  51   1          P1_MD0 |= GPIO_P13_MODE_SEL(0x01);
-  52   1          FOUT_S13 = GPIO_FOUT_AF_FUNC;
-  53   1          P13 = 0;
-C51 COMPILER V9.60.7.0   MAIN                                                              07/10/2025 16:54:27 PAGE 2   
+  32          volatile u16 current_adc_val;  // 检测到充电电流对应的电压值
+  33          
+  34          volatile u8 flag_is_light_adjust_time_come = 0; // 调节灯光的时间到来，目前为1s
+  35          
+  36          volatile u16 light_adjust_time_cnt = 0;
+  37          
+  38          volatile u8 flag_is_charging_adjust_time_come = 0; // 调节充电的时间到来
+  39          
+  40          //
+  41          void led_pin_config(void)
+  42          {
+  43   1          P1_MD0 &= ~GPIO_P11_MODE_SEL(0x03);
+  44   1          P1_MD0 |= GPIO_P11_MODE_SEL(0x01);
+  45   1          FOUT_S11 = GPIO_FOUT_AF_FUNC;
+  46   1          P11 = 0; // 如果不给初始值，上电之后，指示灯会闪一下
+  47   1      
+  48   1          P1_MD0 &= ~GPIO_P12_MODE_SEL(0x03);
+  49   1          P1_MD0 |= GPIO_P12_MODE_SEL(0x01);
+  50   1          FOUT_S12 = GPIO_FOUT_AF_FUNC;
+  51   1          P12 = 0;
+  52   1      
+  53   1          P1_MD0 &= ~GPIO_P13_MODE_SEL(0x03);
+C51 COMPILER V9.60.7.0   MAIN                                                              07/11/2025 17:45:29 PAGE 2   
 
-  54   1      
-  55   1          P1_MD1 &= ~GPIO_P14_MODE_SEL(0x03);
-  56   1          P1_MD1 |= GPIO_P14_MODE_SEL(0x01);
-  57   1          FOUT_S14 = GPIO_FOUT_AF_FUNC;
-  58   1          P14 = 0;
-  59   1      
-  60   1          P1_MD1 &= ~GPIO_P15_MODE_SEL(0x03);
-  61   1          P1_MD1 |= GPIO_P15_MODE_SEL(0x01);
-  62   1          FOUT_S15 = GPIO_FOUT_AF_FUNC;
-  63   1          P15 = 0;
-  64   1      }
-  65          
-  66          // // 绝对值函数
-  67          // float my_fabs(float x) {
-  68          //     return (x < 0) ? -x : x;
-  69          // }
-  70          
-  71          // 泰勒展开近似 ln(x)，收敛范围：x > 0.1
-  72          float my_ln(float x)
-  73          {
-  74   1          u8 i;
-  75   1          float t = (x - 1) / (x + 1);
-  76   1          float sum = 0.0f;
-  77   1          float term = t;
-  78   1      
-  79   1          for (i = 0; i < 50; i++)
-  80   1          {
-  81   2              sum += term / (2 * i + 1);
-  82   2              term *= t * t;
-  83   2          }
-  84   1      
-  85   1          return 2 * sum;
-  86   1      }
-  87          
-  88          // 泰勒展开近似 exp(x)
-  89          float my_exp(float x)
-  90          {
-  91   1          u8 i;
-  92   1          float sum = 1.0f;
-  93   1          float term = 1.0f;
-  94   1      
-  95   1          for (i = 1; i < 20; i++)
-  96   1          {
-  97   2              term *= x / i;
-  98   2              sum += term;
-  99   2          }
- 100   1      
- 101   1          return sum;
- 102   1      }
- 103          
- 104          // 幂函数：x^y = e^(y * ln(x))
- 105          float my_pow(float base, float exponent)
- 106          {
- 107   1          if (base <= 0.0f)
- 108   1          {
- 109   2              return 0.0f; // 不支持负底数或0的负次幂
- 110   2          }
- 111   1          if (exponent == 0.0f)
- 112   1              return 1.0f;
- 113   1          if (base == 1.0f)
- 114   1              return 1.0f;
- 115   1      
-C51 COMPILER V9.60.7.0   MAIN                                                              07/10/2025 16:54:27 PAGE 3   
+  54   1          P1_MD0 |= GPIO_P13_MODE_SEL(0x01);
+  55   1          FOUT_S13 = GPIO_FOUT_AF_FUNC;
+  56   1          P13 = 0;
+  57   1      
+  58   1          P1_MD1 &= ~GPIO_P14_MODE_SEL(0x03);
+  59   1          P1_MD1 |= GPIO_P14_MODE_SEL(0x01);
+  60   1          FOUT_S14 = GPIO_FOUT_AF_FUNC;
+  61   1          P14 = 0;
+  62   1      
+  63   1          P1_MD1 &= ~GPIO_P15_MODE_SEL(0x03);
+  64   1          P1_MD1 |= GPIO_P15_MODE_SEL(0x01);
+  65   1          FOUT_S15 = GPIO_FOUT_AF_FUNC;
+  66   1          P15 = 0;
+  67   1      }
+  68          
+  69          // // 绝对值函数
+  70          // float my_fabs(float x) {
+  71          //     return (x < 0) ? -x : x;
+  72          // }
+  73          
+  74          // 泰勒展开近似 ln(x)，收敛范围：x > 0.1
+  75          float my_ln(float x)
+  76          {
+  77   1          u8 i;
+  78   1          float t = (x - 1) / (x + 1);
+  79   1          float sum = 0.0f;
+  80   1          float term = t;
+  81   1      
+  82   1          for (i = 0; i < 50; i++)
+  83   1          {
+  84   2              sum += term / (2 * i + 1);
+  85   2              term *= t * t;
+  86   2          }
+  87   1      
+  88   1          return 2 * sum;
+  89   1      }
+  90          
+  91          // 泰勒展开近似 exp(x)
+  92          float my_exp(float x)
+  93          {
+  94   1          u8 i;
+  95   1          float sum = 1.0f;
+  96   1          float term = 1.0f;
+  97   1      
+  98   1          for (i = 1; i < 20; i++)
+  99   1          {
+ 100   2              term *= x / i;
+ 101   2              sum += term;
+ 102   2          }
+ 103   1      
+ 104   1          return sum;
+ 105   1      }
+ 106          
+ 107          // 幂函数：x^y = e^(y * ln(x))
+ 108          float my_pow(float base, float exponent)
+ 109          {
+ 110   1          if (base <= 0.0f)
+ 111   1          {
+ 112   2              return 0.0f; // 不支持负底数或0的负次幂
+ 113   2          }
+ 114   1          if (exponent == 0.0f)
+ 115   1              return 1.0f;
+C51 COMPILER V9.60.7.0   MAIN                                                              07/11/2025 17:45:29 PAGE 3   
 
- 116   1          return my_exp(exponent * my_ln(base));
- 117   1      }
- 118          
- 119          // 返回值：占空比，单位：百分之一（例如 75 表示 75%）
- 120          u8 calculate_duty(u32 voltage_mV)
- 121          {
- 122   1          // const float A = 538.0f;
- 123   1          // const float n = 1.178f;
- 124   1      
- 125   1          const float A = 680.0F;
- 126   1          const float n = 1.32F;
- 127   1      
- 128   1          // const float A = 376.26f;
- 129   1          // const float A = 395.2f;
- 130   1          // const float A = 348.32f;
- 131   1          // const float A = 288.0F; 
- 132   1           
- 133   1          // const float n = 1.0f;
- 134   1          float result;
- 135   1      
- 136   1          if (voltage_mV < 100)
- 137   1              return 0; // 防止除零或过大输出
- 138   1      
- 139   1          voltage_mV /= 1000;
+ 116   1          if (base == 1.0f)
+ 117   1              return 1.0f;
+ 118   1      
+ 119   1          return my_exp(exponent * my_ln(base));
+ 120   1      }
+ 121          
+ 122          // 返回值：占空比，单位：百分之一（例如 75 表示 75%）
+ 123          u8 calculate_duty(u32 voltage_mV)
+ 124          {
+ 125   1          // y = 538 / (x ^ 1.178)
+ 126   1          // const float A = 538.0f;
+ 127   1          // const float n = 1.178f;
+ 128   1      
+ 129   1          // y = 680 / (x ^ 1.32)
+ 130   1          const float A = 680.0F;
+ 131   1          const float n = 1.32F;
+ 132   1      
+ 133   1          // y = k / x
+ 134   1          // const float A = 376.26f;
+ 135   1          // const float A = 395.2f;
+ 136   1          // const float A = 348.32f;
+ 137   1          // const float A = 288.0F;
+ 138   1          // const float n = 1.0f;
+ 139   1          float result;
  140   1      
- 141   1          result = A / my_pow(voltage_mV, n);
- 142   1      
- 143   1          if (result < 0.0f)
- 144   1              result = 0.0f;
- 145   1          if (result > 100.0f)
- 146   1              result = 100.0f;
+ 141   1          if (voltage_mV < 100)
+ 142   1              return 0; // 防止除零或过大输出
+ 143   1      
+ 144   1          voltage_mV /= 1000;
+ 145   1      
+ 146   1          result = A / my_pow(voltage_mV, n);
  147   1      
- 148   1          return (u8)(result + 0.5f); // 四舍五入
- 149   1      }
- 150          
- 151          /**
- 152           * @brief  Main program.
- 153           * @param  None
- 154           * @retval None
- 155           */
- 156          void main(void)
- 157          {
- 158   1          // 看门狗默认打开, 复位时间2s
- 159   1          WDT_KEY = WDT_KEY_VAL(0xDD); //  关闭看门狗 (如需配置看门狗请查看“WDT\WDT_Reset”示例)
- 160   1      
- 161   1          system_init();
- 162   1      
- 163   1          // 关闭HCK和HDA的调试功能
- 164   1          WDT_KEY = 0x55;  // 解除写保护
- 165   1          IO_MAP &= ~0x01; // 清除这个寄存器的值，实现关闭HCK和HDA引脚的调试功能（解除映射）
- 166   1          WDT_KEY = 0xBB;  // 写一个无效的数据，触发写保护
+ 148   1          if (result < 0.0f)
+ 149   1              result = 0.0f;
+ 150   1          if (result > 100.0f)
+ 151   1              result = 100.0f;
+ 152   1      
+ 153   1          return (u8)(result + 0.5f); // 四舍五入
+ 154   1      }
+ 155          
+ 156          /**
+ 157           * @brief  Main program.
+ 158           * @param  None
+ 159           * @retval None
+ 160           */
+ 161          void main(void)
+ 162          {
+ 163   1          // 看门狗默认打开, 复位时间2s
+ 164   1          WDT_KEY = WDT_KEY_VAL(0xDD); //  关闭看门狗 (如需配置看门狗请查看“WDT\WDT_Reset”示例)
+ 165   1      
+ 166   1          system_init();
  167   1      
- 168   1          uart0_config();
- 169   1          timer0_config();
- 170   1          timer1_pwm_config(); // 控制充电的PWM
- 171   1          timer1_pwm_disable();
- 172   1          timer2_pwm_config(); // 控制灯光的pwm
- 173   1          timer2_pwm_disable();
- 174   1      
- 175   1          // timer1_set_pwm_high_feq();
- 176   1          // TODO: 7361不用加这个引脚配置:
- 177   1          led_pin_config();
-C51 COMPILER V9.60.7.0   MAIN                                                              07/10/2025 16:54:27 PAGE 4   
+ 168   1          // 关闭HCK和HDA的调试功能
+ 169   1          WDT_KEY = 0x55;  // 解除写保护
+ 170   1          IO_MAP &= ~0x01; // 清除这个寄存器的值，实现关闭HCK和HDA引脚的调试功能（解除映射）
+ 171   1          WDT_KEY = 0xBB;  // 写一个无效的数据，触发写保护
+ 172   1      
+ 173   1          uart0_config();
+ 174   1          timer0_config();
+ 175   1          timer1_pwm_config(); // 控制充电的PWM
+ 176   1          timer1_pwm_disable();
+ 177   1          timer2_pwm_config(); // 控制灯光的pwm
+C51 COMPILER V9.60.7.0   MAIN                                                              07/11/2025 17:45:29 PAGE 4   
 
- 178   1      
- 179   1          // 红外接收引脚：
- 180   1          P2_MD0 &= ~(GPIO_P23_MODE_SEL(0x03)); // 输入模式
- 181   1          P2_PU |= GPIO_P23_PULL_UP(0x01);      // 上拉
- 182   1      
- 183   1          adc_config();
- 184   1      
- 185   1          printf("sys reset\n");
- 186   1      
- 187   1      // LED_1_ON();
- 188   1      // LED_2_ON();
- 189   1      // LED_3_ON();
- 190   1      // LED_4_ON();
- 191   1      // LED_5_ON();
- 192   1      
- 193   1      // TODO:
- 194   1      // 上电后，需要先点亮红色指示灯，再变为电池电量指示模式
- 195   1      // LED_1_ON();
- 196   1      // delay_ms(1000);
- 197   1      
- 198   1      // cur_led_mode = CUR_LED_MODE_INITIAL_DISCHARGE_GEAR;
- 199   1      #if 0
+ 178   1          timer2_pwm_disable();
+ 179   1      
+ 180   1          // timer1_set_pwm_high_feq();
+ 181   1          // TODO: 7361不用加这个引脚配置:
+ 182   1          led_pin_config();
+ 183   1      
+ 184   1          // 红外接收引脚：
+ 185   1          P2_MD0 &= ~(GPIO_P23_MODE_SEL(0x03)); // 输入模式
+ 186   1          P2_PU |= GPIO_P23_PULL_UP(0x01);      // 上拉
+ 187   1      
+ 188   1          adc_config();
+ 189   1      
+ 190   1          printf("sys reset\n"); 
+ 191   1      
+ 192   1      // TODO:
+ 193   1      // 上电后，需要先点亮红色指示灯，再变为电池电量指示模式
+ 194   1      // LED_1_ON();
+ 195   1      // delay_ms(1000);
+ 196   1      
+ 197   1      // cur_led_mode = CUR_LED_MODE_INITIAL_DISCHARGE_GEAR;
+ 198   1      #if 0
                   cur_led_mode = CUR_LED_MODE_BAT_INDICATOR; // 电池电量指示模式
                   cur_initial_discharge_gear = 5;
                   cur_discharge_rate = 3;
               #endif
- 204   1      
- 205   1          timer1_set_pwm_high_feq();
- 206   1          // TMR1_PWMH = ((TIMER1_HIGH_FEQ_PEROID_VAL * 9 / 100) >> 8) & 0xFF; //
- 207   1          // TMR1_PWML = (TIMER1_HIGH_FEQ_PEROID_VAL * 9 / 100) & 0xFF;
- 208   1      
- 209   1          // TMR1_PWMH = ((TIMER1_HIGH_FEQ_PEROID_VAL * 75 / 100) >> 8) & 0xFF; //
- 210   1          // TMR1_PWML = (TIMER1_HIGH_FEQ_PEROID_VAL * 75 / 100) & 0xFF;
- 211   1      
- 212   1          // {
- 213   1          //     u8 tmp = 0;
- 214   1          //     tmp = calculate_duty(5300);
- 215   1      
- 216   1          //     printf("tmp %bu\n", tmp);
- 217   1      
- 218   1          //     tmp = calculate_duty(11000);
- 219   1          //     printf("tmp %bu\n", tmp);
- 220   1      
- 221   1          //     tmp = calculate_duty(32000);
- 222   1          //     printf("tmp %bu\n", tmp);
- 223   1          // }
- 224   1      
- 225   1          // {
- 226   1          //     // u32 charging_voltage_mV = 0;
- 227   1          //     // u16 pwm_duty = 0;
- 228   1          //     // charging_voltage_mV = charging_adc_val * 2 * 11 * 1000 / 4096;
- 229   1          //     // pwm_duty = calculate_duty(charging_voltage_mV);
- 230   1          //     // pwm_duty = (u32)TIMER1_HIGH_FEQ_PEROID_VAL * pwm_duty  / 100; // 最终的占空比值
- 231   1          //     // TMR1_PWMH = (pwm_duty >> 8) & 0xFF;
- 232   1          //     // TMR1_PWML = pwm_duty & 0xFF;
- 233   1      
- 234   1          //     u32 charging_voltage_mV = 0;
- 235   1          //     u16 pwm_duty = 0;
- 236   1          //     u8 i;
- 237   1      
- 238   1          //     for (i = 1; i <= 32; i++)
- 239   1          //     {
-C51 COMPILER V9.60.7.0   MAIN                                                              07/10/2025 16:54:27 PAGE 5   
+ 203   1      
+ 204   1          timer1_set_pwm_high_feq();  
+ 205   1      
+ 206   1          while (1)
+ 207   1          {
+ 208   2              adc_sel_pin(ADC_PIN_DETECT_BATTERY);
+ 209   2              bat_adc_val = adc_getval(); // 采集电池电压对应的ad值
+ 210   2              // adc_sel_pin(ADC_PIN_DETECT_CHARGE);
+ 211   2              // adc_sel_pin_charge(CUR_ADC_REF_3_0_VOL);
+ 212   2              // charging_adc_val = adc_getval();
+ 213   2              adc_sel_pin(ADC_PIN_DETECT_CURRENT);
+ 214   2              current_adc_val = adc_getval();
+ 215   2      
+ 216   2              // printf("current_adc_val %u\n", current_adc_val);
+ 217   2      
+ 218   2      
+ 219   2      #if 1
+ 220   2      
+ 221   2              if (flag_is_charging_adjust_time_come)
+ 222   2              {
+ 223   3                  u16 current = 0; // 充电电流，单位：mA
+ 224   3                  // u16 voltage_of_charging = 0; // 充电电压，单位：mV
+ 225   3                  u16 voltage_of_bat = 0; // 电池电压
+ 226   3                  u32 power = 0;          // 功率，单位：mW 毫瓦
+ 227   3                  static u8 pwm_duty = 0; //
+ 228   3                  u16 pwm_reg = 0;
+ 229   3      
+ 230   3                  flag_is_charging_adjust_time_come = 0;
+ 231   3      
+ 232   3                  // 测试用
+ 233   3                  // charging_adc_val = 682;
+ 234   3                  // current_adc_val = 0;
+ 235   3                  /*
+ 236   3                      检测电流引脚检测到的电压 == ad值 / 4096 * 参考电压
+ 237   3                      current_adc_val * 3 / 4096
+ 238   3      
+ 239   3                      检测电流的引脚检测到的充电电流 == 检测电流引脚检测到的电压 / 110(运放放大倍数) / 0.005R，
+C51 COMPILER V9.60.7.0   MAIN                                                              07/11/2025 17:45:29 PAGE 5   
 
- 240   1          //         pwm_duty = calculate_duty((u32)i * 1000);
- 241   1          //         printf("pwm_duty :%bu %%\n", (u8)pwm_duty);
- 242   1          //         pwm_duty = (u32)TIMER1_HIGH_FEQ_PEROID_VAL * pwm_duty / 100; // 最终的占空比值
- 243   1          //         printf("reg val %u \n", (u16)pwm_duty);
- 244   1          //     }
- 245   1          // }
- 246   1      
- 247   1          while (1)
- 248   1          {
- 249   2              // adc_sel_pin(ADC_PIN_DETECT_BATTERY);
- 250   2              // bat_adc_val = adc_getval(); // 采集电池电压对应的ad值
- 251   2              adc_sel_pin(ADC_PIN_DETECT_CHARGE);
- 252   2              charging_adc_val = adc_getval();
- 253   2      
- 254   2              {
- 255   3                  u32 charging_voltage_mV = 0;
- 256   3                  u16 pwm_duty = 0;
- 257   3      
- 258   3                  // charging_adc_val = 1117; // 测试用
- 259   3                  charging_voltage_mV = (u32)charging_adc_val * 2 * 11 * 1000 / 4096;
- 260   3                  // charging_voltage_mV = 6000; // 测试用
- 261   3                  pwm_duty = calculate_duty(charging_voltage_mV);
- 262   3                  pwm_duty = (u32)TIMER1_HIGH_FEQ_PEROID_VAL * pwm_duty / 100; // 最终的占空比值
- 263   3      
- 264   3                  // printf("pwm_duty :%u\n", pwm_duty);
- 265   3                  TMR1_PWMH = (pwm_duty >> 8) & 0xFF;
- 266   3                  TMR1_PWML = pwm_duty & 0xFF;
- 267   3              }
- 268   2      
- 269   2      #if 0
+ 240   3                      逐步换成单片机可以计算的形式：
+ 241   3                      current_adc_val * 3 / 4096 / 110 / 0.005
+ 242   3                      current_adc_val * 3 / 4096 / 110 * 1000 / 5
+ 243   3                      current_adc_val * 3 * 1000 / 5 / 4096 / 110
+ 244   3                      得到的是以A为单位的电流，需要再转换成以mA为单位：
+ 245   3                      current_adc_val * 3 * 1000 * 1000 / 5 / 4096 / 110，计算会溢出，需要再化简
+ 246   3                      (u32)current_adc_val * 3 * 1000 * (1000 / 5) / 4096 / 110
+ 247   3                  */
+ 248   3                  // current = (u32)current_adc_val * 3 * 1000 * (1000 / 5) / 4096 / 150; //
+ 249   3                  // current = (u32)current_adc_val * 3 * 1000 * (1000 / 5) / 4096 / 110; // 测试的功率有42W
+ 250   3                  // current = (u32)current_adc_val * 3 * 1000 * (1000 / 5) / 4096 / 90; // 还是有40W功率
+ 251   3                  current = (u32)current_adc_val * 3 * 1000 * (1000 / 5) / 4096 / 76; //
+ 252   3                  // current = (u32)current_adc_val * 3 * 1000 * (1000 / 5) / 4096 / 66; //
+ 253   3      
+ 254   3                  /*
+ 255   3                      计算充电电压
+ 256   3                  */
+ 257   3                  // voltage_of_charging = (u32)charging_adc_val * 3 * 1000 * 11 / 4096;
+ 258   3                  // 计算电池电压
+ 259   3                  voltage_of_bat = (u32)bat_adc_val * 2 * 1000 * 2 / 4096; 
+ 260   3      
+ 261   3                  // 如果检测到电流的ad值已经爆表
+ 262   3                  if (current_adc_val >= 4095)
+ 263   3                  // if (current >= 5400) // 如果电流值已经爆表，超过单片机能检测的值：5454.54
+ 264   3                  {
+ 265   4                      // printf("current overflow\n");
+ 266   4                      if (pwm_duty > 0)
+ 267   4                      {
+ 268   5                          pwm_duty--;
+ 269   5                      }
+ 270   4                  }
+ 271   3                  // // else if (charging_adc_val > 3723) // 充电电压超过30V，关闭PWM输出
+ 272   3                  // else if (bat_adc_val > 3686) // 电池电压超过3.6V，关闭PWM输出
+ 273   3                  // {
+ 274   3                  //     // printf("voltage of charging overflow\n");
+ 275   3                  //     pwm_duty = 0;
+ 276   3                  // }
+ 277   3                  else
+ 278   3                  {
+ 279   4                      // power = voltage_of_charging * current / 1000; // 1000mV * 1000mA == 1000000 (1 Watt)
+ 280   4                      power = voltage_of_bat * current / 1000; // 1000mV * 1000mA == 1000000 (1 Watt)
+ 281   4      
+ 282   4                      // printf("power %lu \n", power);
+ 283   4                      // if (power < 30000) // 30 * 1000 mW
+ 284   4                      if (power < 25000) // xx * 1000 mW
+ 285   4                      // if (power < 20000) // xx * 1000 mW
+ 286   4                      {
+ 287   5                          if (pwm_duty < 100)
+ 288   5                          {
+ 289   6                              pwm_duty++;
+ 290   6                          }
+ 291   5                      }
+ 292   4                      // else if (power > 30000)
+ 293   4                      else if (power > 25000)
+ 294   4                      // else if (power > 20000)
+ 295   4                      {
+ 296   5                          if (pwm_duty > 0)
+ 297   5                          {
+ 298   6                              pwm_duty--;
+ 299   6                          }
+ 300   5                      }
+ 301   4                  }
+C51 COMPILER V9.60.7.0   MAIN                                                              07/11/2025 17:45:29 PAGE 6   
+
+ 302   3      
+ 303   3                  // printf("pwm_duty : %bu %%\n", pwm_duty);
+ 304   3                  pwm_reg = (u32)TIMER1_HIGH_FEQ_PEROID_VAL * pwm_duty / 100; // 最终的占空比值
+ 305   3      
+ 306   3                  //     // printf("pwm_duty :%u\n", pwm_duty);
+ 307   3                  TMR1_PWMH = (pwm_reg >> 8) & 0xFF;
+ 308   3                  TMR1_PWML = pwm_reg & 0xFF;
+ 309   3              }
+ 310   2      #endif
+ 311   2      
+ 312   2              // {
+ 313   2              //     u32 charging_voltage_mV = 0;
+ 314   2              //     u16 pwm_duty = 0;
+ 315   2      
+ 316   2              //     // charging_adc_val = 1117; // 测试用
+ 317   2              //     charging_voltage_mV = (u32)charging_adc_val * 2 * 11 * 1000 / 4096;
+ 318   2              //     // charging_voltage_mV = 6000; // 测试用
+ 319   2              //     pwm_duty = calculate_duty(charging_voltage_mV);
+ 320   2              //     pwm_duty = (u32)TIMER1_HIGH_FEQ_PEROID_VAL * pwm_duty / 100; // 最终的占空比值
+ 321   2      
+ 322   2              //     // printf("pwm_duty :%u\n", pwm_duty);
+ 323   2              //     TMR1_PWMH = (pwm_duty >> 8) & 0xFF;
+ 324   2              //     TMR1_PWML = pwm_duty & 0xFF;
+ 325   2              // }
+ 326   2      
+ 327   2      #if 0
                       {
                           u32 tmp = 0;
               
@@ -309,21 +369,21 @@ line level    source
                           TMR1_PWML = tmp & 0xFF;
                       }
               #endif
- 292   2      
- 293   2              // ir_handle();
- 294   2              // charge_handle();
- 295   2              // led_handle_update_percent_of_bat();
- 296   2      
- 297   2      #if 0 // 缓慢调节驱动灯光的pwm占空比
+ 350   2      
+ 351   2              // ir_handle();
+ 352   2              // charge_handle();
+ 353   2              // led_handle_update_percent_of_bat();
+ 354   2      
+ 355   2      #if 0 // 缓慢调节驱动灯光的pwm占空比
               
                       {
                           // static u8 cnt =0;
-C51 COMPILER V9.60.7.0   MAIN                                                              07/10/2025 16:54:27 PAGE 6   
-
               
                           // 暂定每100us调节一次
               
                           if (cur_light_pwm_duty_val > expect_light_pwm_duty_val)
+C51 COMPILER V9.60.7.0   MAIN                                                              07/11/2025 17:45:29 PAGE 7   
+
                           {
                               cur_light_pwm_duty_val--;
                           }
@@ -337,20 +397,20 @@ line level    source
                       }
               
               #endif // 缓慢调节驱动灯光的pwm占空比
- 318   2          }
- 319   1      }
- 320          
- 321          /**
- 322           * @}
- 323           */
- 324          
- 325          /*************************** (C) COPYRIGHT 2022 HUGE-IC ***** END OF FILE *****/
+ 376   2          }
+ 377   1      }
+ 378          
+ 379          /**
+ 380           * @}
+ 381           */
+ 382          
+ 383          /*************************** (C) COPYRIGHT 2022 HUGE-IC ***** END OF FILE *****/
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =   1145    ----
+   CODE SIZE        =   1340    ----
    CONSTANT SIZE    =     11    ----
-   XDATA SIZE       =     11      60
+   XDATA SIZE       =     15      64
    PDATA SIZE       =   ----    ----
    DATA SIZE        =   ----    ----
    IDATA SIZE       =   ----    ----

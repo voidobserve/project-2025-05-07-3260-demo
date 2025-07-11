@@ -17,15 +17,22 @@
 #include "ir_handle.h"
 #include "light_handle.h"
 
-extern volatile u16 bat_adc_val; 
-extern volatile u16 charging_adc_val; // 检测到充电电压的ad值 
+extern volatile u16 bat_adc_val;
+extern volatile u16 charging_adc_val; // 检测到充电电压的ad值
 
-extern volatile u8 cur_light_pwm_duty_val;    // 当前灯光对应的占空比值 
-extern volatile u8 expect_light_pwm_duty_val; // 期望调节到的、灯光对应的占空比值 
+extern volatile u8 cur_light_pwm_duty_val;    // 当前灯光对应的占空比值
+extern volatile u8 expect_light_pwm_duty_val; // 期望调节到的、灯光对应的占空比值
 
 extern volatile u8 flag_is_light_adjust_time_come; // 调节灯光的时间到来，目前为1s
 
 extern volatile u16 light_adjust_time_cnt;
+extern volatile u8 flag_is_charging_adjust_time_come; // 调节充电的时间到来
+
+enum
+{
+    CUR_ADC_REF_2_0_VOL = 0x00, // 当前adc使用2.0V参考电压
+    CUR_ADC_REF_3_0_VOL,        // 当前adc使用3.0V参考电压
+};
 
 #define LED_1_PIN P11
 #define LED_2_PIN P12
@@ -54,7 +61,6 @@ typedef union
 } bit_flag;
 extern volatile bit_flag flag1;
 extern volatile bit_flag flag2;
-
 
 #define flag_is_led_1_enable flag2.bits.bit0 // led  是否使能，0--不使能，led 熄灭，1--使能，led 点亮
 #define flag_is_led_2_enable flag2.bits.bit1 // led  是否使能，0--不使能，led 熄灭，1--使能，led 点亮

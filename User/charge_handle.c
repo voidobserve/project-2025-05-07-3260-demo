@@ -2,6 +2,7 @@
 
 volatile u8 cur_charge_status = CUR_CHARGE_STATUS_NONE;
 
+#if 0
 // 充电控制
 void charge_handle(void)
 {
@@ -186,4 +187,29 @@ void charge_handle(void)
         }
     }
 #endif
+}
+
+#endif
+
+
+
+
+
+
+// 充电控制
+void charge_handle(void)
+{
+    static u8 cur_adc_ref = CUR_ADC_REF_2_0_VOL; // 0 -- 2.0V参考，1 -- 3.0V参考
+    // 使用2V参考电压，如果检测到充电电压大于4.90V，改为3.0V参考
+    // 使用3.0V参考时，如果检测到充电电压小于4.0V，改为2.0V参考电压
+
+    if (CUR_ADC_REF_2_0_VOL == cur_adc_ref)
+    {
+        adc_sel_pin_charge(CUR_ADC_REF_2_0_VOL);
+        charging_adc_val = adc_getval();
+
+        // if (charging_adc_val )
+    }
+    // adc_sel_pin(ADC_PIN_DETECT_CHARGE);
+    // charging_adc_val = adc_getval(); // 采集充电输入对应的ad值
 }

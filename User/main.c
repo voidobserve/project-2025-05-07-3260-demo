@@ -29,10 +29,13 @@ volatile u8 expect_light_pwm_duty_val = 0; // 期望调节到的、灯光对应的占空比值
 
 volatile u16 bat_adc_val;
 volatile u16 charging_adc_val; // 检测到充电电压的ad值
+volatile u16 current_adc_val;  // 检测到充电电流对应的电压值
 
 volatile u8 flag_is_light_adjust_time_come = 0; // 调节灯光的时间到来，目前为1s
 
 volatile u16 light_adjust_time_cnt = 0;
+
+volatile u8 flag_is_charging_adjust_time_come = 0; // 调节充电的时间到来
 
 //
 void led_pin_config(void)
@@ -127,11 +130,11 @@ u8 calculate_duty(u32 voltage_mV)
     const float A = 680.0F;
     const float n = 1.32F;
 
-    // y = k / x 
+    // y = k / x
     // const float A = 376.26f;
     // const float A = 395.2f;
     // const float A = 348.32f;
-    // const float A = 288.0F; 
+    // const float A = 288.0F;
     // const float n = 1.0f;
     float result;
 
@@ -184,13 +187,7 @@ void main(void)
 
     adc_config();
 
-    printf("sys reset\n");
-
-// LED_1_ON();
-// LED_2_ON();
-// LED_3_ON();
-// LED_4_ON();
-// LED_5_ON();
+    printf("sys reset\n"); 
 
 // TODO:
 // 上电后，需要先点亮红色指示灯，再变为电池电量指示模式
@@ -204,69 +201,122 @@ void main(void)
     cur_discharge_rate = 3;
 #endif
 
-    timer1_set_pwm_high_feq();
-    // TMR1_PWMH = ((TIMER1_HIGH_FEQ_PEROID_VAL * 9 / 100) >> 8) & 0xFF; //
-    // TMR1_PWML = (TIMER1_HIGH_FEQ_PEROID_VAL * 9 / 100) & 0xFF;
-
-    // TMR1_PWMH = ((TIMER1_HIGH_FEQ_PEROID_VAL * 75 / 100) >> 8) & 0xFF; //
-    // TMR1_PWML = (TIMER1_HIGH_FEQ_PEROID_VAL * 75 / 100) & 0xFF;
-
-    // {
-    //     u8 tmp = 0;
-    //     tmp = calculate_duty(5300);
-
-    //     printf("tmp %bu\n", tmp);
-
-    //     tmp = calculate_duty(11000);
-    //     printf("tmp %bu\n", tmp);
-
-    //     tmp = calculate_duty(32000);
-    //     printf("tmp %bu\n", tmp);
-    // }
-
-    // {
-    //     // u32 charging_voltage_mV = 0;
-    //     // u16 pwm_duty = 0;
-    //     // charging_voltage_mV = charging_adc_val * 2 * 11 * 1000 / 4096;
-    //     // pwm_duty = calculate_duty(charging_voltage_mV);
-    //     // pwm_duty = (u32)TIMER1_HIGH_FEQ_PEROID_VAL * pwm_duty  / 100; // 最终的占空比值
-    //     // TMR1_PWMH = (pwm_duty >> 8) & 0xFF;
-    //     // TMR1_PWML = pwm_duty & 0xFF;
-
-    //     u32 charging_voltage_mV = 0;
-    //     u16 pwm_duty = 0;
-    //     u8 i;
-
-    //     for (i = 1; i <= 32; i++)
-    //     {
-    //         pwm_duty = calculate_duty((u32)i * 1000);
-    //         printf("pwm_duty :%bu %%\n", (u8)pwm_duty);
-    //         pwm_duty = (u32)TIMER1_HIGH_FEQ_PEROID_VAL * pwm_duty / 100; // 最终的占空比值
-    //         printf("reg val %u \n", (u16)pwm_duty);
-    //     }
-    // }
+    timer1_set_pwm_high_feq();  
 
     while (1)
     {
-        // adc_sel_pin(ADC_PIN_DETECT_BATTERY);
-        // bat_adc_val = adc_getval(); // 采集电池电压对应的ad值
-        adc_sel_pin(ADC_PIN_DETECT_CHARGE);
-        charging_adc_val = adc_getval();
+        adc_sel_pin(ADC_PIN_DETECT_BATTERY);
+        bat_adc_val = adc_getval(); // 采集电池电压对应的ad值
+        // adc_sel_pin(ADC_PIN_DETECT_CHARGE);
+        // adc_sel_pin_charge(CUR_ADC_REF_3_0_VOL);
+        // charging_adc_val = adc_getval();
+        adc_sel_pin(ADC_PIN_DETECT_CURRENT);
+        current_adc_val = adc_getval();
 
+        // printf("current_adc_val %u\n", current_adc_val);
+
+
+#if 1
+
+        if (flag_is_charging_adjust_time_come) // 一定要加入缓慢调节，不能迅速调节，否则会等不到电压稳定
         {
-            u32 charging_voltage_mV = 0;
-            u16 pwm_duty = 0;
+            u16 current = 0; // 充电电流，单位：mA
+            // u16 voltage_of_charging = 0; // 充电电压，单位：mV
+            u16 voltage_of_bat = 0; // 电池电压
+            u32 power = 0;          // 功率，单位：mW 毫瓦
+            static u8 pwm_duty = 0; //
+            u16 pwm_reg = 0;
 
-            // charging_adc_val = 1117; // 测试用
-            charging_voltage_mV = (u32)charging_adc_val * 2 * 11 * 1000 / 4096;
-            // charging_voltage_mV = 6000; // 测试用
-            pwm_duty = calculate_duty(charging_voltage_mV);
-            pwm_duty = (u32)TIMER1_HIGH_FEQ_PEROID_VAL * pwm_duty / 100; // 最终的占空比值
+            flag_is_charging_adjust_time_come = 0;
+ 
+            /*
+                检测电流引脚检测到的电压 == ad值 / 4096 * 参考电压
+                current_adc_val * 3 / 4096
 
-            // printf("pwm_duty :%u\n", pwm_duty);
-            TMR1_PWMH = (pwm_duty >> 8) & 0xFF;
-            TMR1_PWML = pwm_duty & 0xFF;
+                检测电流的引脚检测到的充电电流 == 检测电流引脚检测到的电压 / 110(运放放大倍数) / 0.005R，
+                逐步换成单片机可以计算的形式：
+                current_adc_val * 3 / 4096 / 110 / 0.005
+                current_adc_val * 3 / 4096 / 110 * 1000 / 5
+                current_adc_val * 3 * 1000 / 5 / 4096 / 110
+                得到的是以A为单位的电流，需要再转换成以mA为单位：
+                current_adc_val * 3 * 1000 * 1000 / 5 / 4096 / 110，计算会溢出，需要再化简
+                (u32)current_adc_val * 3 * 1000 * (1000 / 5) / 4096 / 110
+                current =  (u32)current_adc_val * 3 * 1000 * (1000 / 5) / 4096 / 110;
+            */ 
+            current = (u32)current_adc_val * 3 * 1000 * (1000 / 5) / 4096 / 76; // 
+
+            /*
+                计算充电电压
+            */
+            // voltage_of_charging = (u32)charging_adc_val * 3 * 1000 * 11 / 4096;
+            // 计算电池电压
+            voltage_of_bat = (u32)bat_adc_val * 2 * 1000 * 2 / 4096; 
+
+            // 如果检测到电流的ad值已经爆表
+            if (current_adc_val >= 4095)
+            // if (current >= 5400) // 如果电流值已经爆表，超过单片机能检测的值：5454.54
+            {
+                // printf("current overflow\n");
+                if (pwm_duty > 0)
+                {
+                    pwm_duty--;
+                }
+            }
+            // // else if (charging_adc_val > 3723) // 充电电压超过30V，关闭PWM输出
+            // else if (bat_adc_val > 3686) // 电池电压超过3.6V，关闭PWM输出
+            // {
+            //     // printf("voltage of charging overflow\n");
+            //     pwm_duty = 0;
+            // }
+            else
+            {
+                // power = voltage_of_charging * current / 1000; // 1000mV * 1000mA == 1000000 (1 Watt)
+                power = voltage_of_bat * current / 1000; // 1000mV * 1000mA == 1000000 (1 Watt)
+
+                // printf("power %lu \n", power);
+                // if (power < 30000) // 30 * 1000 mW
+                if (power < 25000) // xx * 1000 mW
+                // if (power < 20000) // xx * 1000 mW
+                {
+                    if (pwm_duty < 100)
+                    {
+                        pwm_duty++;
+                    }
+                }
+                // else if (power > 30000)
+                else if (power > 25000)
+                // else if (power > 20000)
+                {
+                    if (pwm_duty > 0)
+                    {
+                        pwm_duty--;
+                    }
+                }
+            }
+
+            // printf("pwm_duty : %bu %%\n", pwm_duty);
+            pwm_reg = (u32)TIMER1_HIGH_FEQ_PEROID_VAL * pwm_duty / 100; // 最终的占空比值
+
+            //     // printf("pwm_duty :%u\n", pwm_duty);
+            TMR1_PWMH = (pwm_reg >> 8) & 0xFF;
+            TMR1_PWML = pwm_reg & 0xFF;
         }
+#endif
+
+        // {
+        //     u32 charging_voltage_mV = 0;
+        //     u16 pwm_duty = 0;
+
+        //     // charging_adc_val = 1117; // 测试用
+        //     charging_voltage_mV = (u32)charging_adc_val * 2 * 11 * 1000 / 4096;
+        //     // charging_voltage_mV = 6000; // 测试用
+        //     pwm_duty = calculate_duty(charging_voltage_mV);
+        //     pwm_duty = (u32)TIMER1_HIGH_FEQ_PEROID_VAL * pwm_duty / 100; // 最终的占空比值
+
+        //     // printf("pwm_duty :%u\n", pwm_duty);
+        //     TMR1_PWMH = (pwm_duty >> 8) & 0xFF;
+        //     TMR1_PWML = pwm_duty & 0xFF;
+        // }
 
 #if 0
         {

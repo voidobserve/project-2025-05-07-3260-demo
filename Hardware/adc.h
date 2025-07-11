@@ -9,6 +9,7 @@ enum
     ADC_PIN_NONE = 0x00,
     ADC_PIN_DETECT_CHARGE,  // 检测充电分压后的电压（1/11分压） P12 AN7
     ADC_PIN_DETECT_BATTERY, // 检测电池分压后的电压（1/2分压）  P05 AN4
+    ADC_PIN_DETECT_CURRENT, // 检测充电电流的引脚 P31(HCK) AN25
 };
 
 /*
@@ -72,5 +73,7 @@ extern volatile u16 adc_val;
 void adc_config(void);
 void adc_sel_pin(u8 adc_pin);
 u16 adc_getval(void);
+
+void adc_sel_pin_charge(u8 adc_ref); // adc通道 切换为 ADC_PIN_DETECT_CHARGE ，根据传参选择对应的参考电压
 
 #endif
