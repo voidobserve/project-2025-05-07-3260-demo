@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.7.0   CHARGE_HANDLE                                                     07/11/2025 17:45:29 PAGE 1   
+C51 COMPILER V9.60.7.0   CHARGE_HANDLE                                                     07/14/2025 17:10:29 PAGE 1   
 
 
 C51 COMPILER V9.60.7.0, COMPILATION OF MODULE CHARGE_HANDLE
@@ -11,242 +11,347 @@ line level    source
 
    1          #include "charge_handle.h"
    2          
-   3          volatile u8 cur_charge_status = CUR_CHARGE_STATUS_NONE;
+   3          // volatile u8 cur_charge_status = CUR_CHARGE_STATUS_NONE;
    4          
-   5          #if 0
-              // 充电控制
-              void charge_handle(void)
-              {
-                  // static volatile u8 cur_charge_status = CUR_CHARGE_STATUS_NONE; // 测试用
-              
-                  /*
-                      标志位，是否使能充电，用于控制充满电后，等到充电电压小于一定值之�
-             -�，再使能充电
-                      0 -- 不使能充电
-                      1 -- 使能充电
-                  */
-                  static volatile u8 flag_is_enable_charging = 0;
-              
-                  // volatile u16 charging_adc_val;
-                  // volatile u16 bat_adc_val;
-                  u32 tmp;
-              
-                  // adc_sel_pin(ADC_PIN_DETECT_CHARGE);
-                  // charging_adc_val = adc_getval(); // 采集充电输入对应的ad值
-                  // adc_sel_pin(ADC_PIN_DETECT_BATTERY);
-                  // bat_adc_val = adc_getval(); // 采集电池电压对应的ad值
-              
-              #if 0
-                  {
-                      static u16 cnt = 0;
-                      cnt++;
-                      if (cnt >= 100)
-                      {
-                          cnt = 0;
-                          printf("cur_charging_adc_val : %u\n", charging_adc_val);
-                          // printf("cur_bat_adc_val : %u\n", bat_adc_val);
-              
-                          // printf("detect vol of charge: %u mV\n", (u16)((u32)charging_adc_val * 2 * 11000 / 4096));
-                          // printf("detect vol of bat: %u mV\n", (u16)((u32)bat_adc_val * 2 * 2 * 1000 / 4096));
-                      }
-                  }
-              #endif
-              
-              #if 1
-                  // 如果当前未在充电
-                  if (CUR_CHARGE_STATUS_NONE == cur_charge_status)
-                  {
-                      /* 如果电池之前充满电，要等到充电电压小于一定值，再使能充电 */
-                      if (charging_adc_val <= ADC_VAL_DISABLE_IN_CHARGE_END)
-                      {
-                          flag_is_enable_charging = 1; // 使能充电
-                      }
-              
-C51 COMPILER V9.60.7.0   CHARGE_HANDLE                                                     07/11/2025 17:45:29 PAGE 2   
+   5          // 充电控制
+   6          void charge_handle(void)
+   7          {
+   8   1      
+   9   1          if (flag_is_charging_adjust_time_come) // 一定要加入缓慢调节，不能迅速调节，否则会
+             -等不到电压稳定
+  10   1          {
+  11   2              u16 current = 0; // 充电电流，单位：mA
+  12   2              // u16 voltage_of_charging = 0; // 充电电压，单位：mV
+  13   2              u16 voltage_of_bat = 0; // 电池电压
+  14   2              u32 power = 0;          // 功率，单位：mW 毫瓦
+  15   2              static u8 pwm_duty = 0; //
+  16   2              u16 pwm_reg = 0;        // 存放要写入到寄存器中的占空比值
+  17   2      
+  18   2              u16 expected_power = 0; // 期望功率
+  19   2      
+  20   2              flag_is_charging_adjust_time_come = 0; // 清除标志位
+  21   2      
+  22   2              // 如果当前没有在充电
+  23   2              if (CUR_CHARGE_PHASE_NONE == cur_charge_phase)
+  24   2              {
+  25   3                  adc_sel_ref_voltage(ADC_REF_2_0_VOL); // 2V参考电压
+  26   3                  adc_sel_pin(ADC_PIN_DETECT_CHARGE);
+  27   3                  charging_adc_val = adc_getval();
+  28   3      
+  29   3                  // 如果充电输入电压大于4.9V，使能充电
+  30   3                  if (charging_adc_val >= (u16)((u32)4900 * 4096 / 11 / 2 / 1000))
+  31   3                  {
+  32   4                      cur_charge_phase = CUR_CHARGE_PHASE_TRICKLE_CHARGE; // 刚进入充电，默认是电池�
+             -�量低对应的涓流充电
+  33   4                  }
+  34   3      
+  35   3                  adc_sel_pin(ADC_PIN_DETECT_BATTERY);
+  36   3                  bat_adc_val = adc_getval();
+  37   3                  if (bat_adc_val >= (u16)((u32)(3600 - 50) * 4096 / 2 / 2 / 1000))
+  38   3                  {
+  39   4                      // 检测到电池电压大于3.6 - 0.05V
+  40   4                      // 不使能充电
+  41   4                      cur_charge_phase = CUR_CHARGE_PHASE_NONE;
+  42   4                  }
+  43   3      
+  44   3                  // 如果充电电压未满足使能充电的条件，会进入下面的语句块
+  45   3                  if (CUR_CHARGE_PHASE_NONE == cur_charge_phase)
+  46   3                  {
+  47   4                      return;
+  48   4                  }
+  49   3              }
+  50   2              else
+  51   2              {
+C51 COMPILER V9.60.7.0   CHARGE_HANDLE                                                     07/14/2025 17:10:29 PAGE 2   
 
-                      if (charging_adc_val >= ADC_VAL_ENABLE_IN_CHARGE_END)
-                      {
-                          // 如果在未充电时，检测到充电输入电压而使能充电
-              
-                          if (flag_is_enable_charging) // 如果使能了充电
-                          {
-                              flag_is_enable_charging = 0; // 标志位清零
-                              cur_charge_status = CUR_CHARGE_STATUS_IN_CHARGING;
-                              // printf("in charging\n");
-                          }
-                      }
-                  }
-                  else // 如果当前正在充电
-                  {
-                      static u8 cur_charging_pwm_status = CUR_CHARGING_PWM_STATUS_NONE;
-              
-                      if (charging_adc_val <= ADC_VAL_DISABLE_IN_CHARGE_END || /* 如果充电电压过小 */
-                          // charging_adc_val >= 2420 || /* 充电输入电压大于 13V ，断开充电 ，公式还有
-             -缺陷 */
-                          // charging_adc_val >= 2973 || /* 充电输入电压大于 15V ，断开充电 ，公式还有
-             -缺陷 */
-                          bat_adc_val >= ADC_VAL_BAT_IS_FULL) /* 如果电池已经满电 */
-                      {
-                          // 充电输入的电压小于一定值，断开充电
-                          // 电池 已经满电， 断开充电
-                          // timer0_pwm_disable();
-                          PWM_CTL_FOR_CHARGING_DISABLE();
-                          cur_charge_status = CUR_CHARGE_STATUS_NONE;
-                          cur_charging_pwm_status = CUR_CHARGING_PWM_STATUS_NONE;
-              
-                          printf("disable charge\n");
-                          return;
-                      }
-              
-                      // 进行涓流充电：
-                      if (bat_adc_val <= ADC_VAL_BAT_IS_LOW ||       /* 如果电池电压小于一定值 */
-                          bat_adc_val >= ADC_VAL_BAT_IS_NEAR_FULL || /* 如果电池电压大于一定值 */
-                          charging_adc_val < 930)                    /* 充电电压小于5V */
-                      {
-                          if (CUR_CHARGING_PWM_STATUS_LOW_FEQ != cur_charging_pwm_status)
-                          {
-                              // timer0_pwm_set_low_feq(); // 函数内部设定了固定频率和固定占空比
-                              // PWM_CTL_FOR_CHARGING_SET_LOW_FEQ();
-                              tmp = (u32)TIMER1_HIGH_FEQ_PEROID_VAL * 1 / 100; // 1% 占空比
-                              TMR1_PWMH = (tmp >> 8) & 0xFF;
-                              TMR1_PWML = tmp & 0xFF;
-                              cur_charging_pwm_status = CUR_CHARGING_PWM_STATUS_LOW_FEQ;
-              
-                              printf("low feq charge\n");
-                          }
-                      }
-                      else // 如果电池电压不是在涓流充电的范围
-                      {
-                          // u32 tmp;
-                          // 如果电池电压不在涓流充电的区间，则正常充电
-                          // 注意这里不能随意改变 PWM占空比，最好设置PWM占空比为0
-                          if (CUR_CHARGING_PWM_STATUS_HIGH_FRQ != cur_charging_pwm_status)
-                          {
-                              // timer0_pwm_set_high_feq();
-                              PWM_CTL_FOR_CHARGING_SET_HIGH_FEQ();
-                              cur_charging_pwm_status = CUR_CHARGING_PWM_STATUS_HIGH_FRQ;
-                          }
-C51 COMPILER V9.60.7.0   CHARGE_HANDLE                                                     07/11/2025 17:45:29 PAGE 3   
+  52   3                  // 如果当前在充电
+  53   3                  adc_sel_ref_voltage(ADC_REF_3_0_VOL); // 3V参考电压
+  54   3                  adc_sel_pin(ADC_PIN_DETECT_CHARGE);
+  55   3                  charging_adc_val = adc_getval();
+  56   3      
+  57   3                  // 如果充电电压过大，PWM百分比设置为0，等到电压变小才打开
+  58   3                  // if (charging_adc_val >= (u16)((u32)30000 * 4096 / 11 / 3 / 1000)) // 充电电压超过30V
+  59   3                  if (charging_adc_val >= (u16)((u32)28000 * 4096 / 11 / 3 / 1000)) // 充电电压超过 xx V
+  60   3                  {
+  61   4                      pwm_reg = 0;
+  62   4                      TMR1_PWMH = (pwm_reg >> 8) & 0xFF;
+  63   4                      TMR1_PWML = pwm_reg & 0xFF;
+  64   4                      return;
+  65   4                  }
+  66   3      
+  67   3                  // 如果充电输入电压小于4V，断开充电
+  68   3                  if (charging_adc_val <= (u16)((u32)4000 * 4096 / 11 / 3 / 1000))
+  69   3                  {
+  70   4                      pwm_reg = 0;
+  71   4                      TMR1_PWMH = (pwm_reg >> 8) & 0xFF;
+  72   4                      TMR1_PWML = pwm_reg & 0xFF;
+  73   4                      timer1_pwm_disable();
+  74   4      
+  75   4                      cur_charge_phase = CUR_CHARGE_PHASE_NONE;
+  76   4                      cur_charging_pwm_status = CUR_CHARGING_PWM_STATUS_NONE;
+  77   4                      return;
+  78   4                  }
+  79   3      
+  80   3                  // 如果已经充满电，直接退出
+  81   3                  if (CUR_CHARGE_PHASE_FULLY_CHARGE == cur_charge_phase)
+  82   3                  {
+  83   4                      return;
+  84   4                  }
+  85   3      
+  86   3                  // 可能是对应的MOS管未使能，导致充电电流小，不是涓流充电：
+  87   3                  // if (charging_adc_val <= (u16)((u32)4900 * 4096 / 11 / 3 / 1000)) // 小于4.9V，进行涓�
+             -��充电
+  88   3                  // {
+  89   3                  //     pwm_reg = (u32)TIMER1_LOW_FEQ_PEROID_VAL * 13 / 100; // 最终的占空比值
+  90   3                  //     TMR1_PWMH = (pwm_reg >> 8) & 0xFF;
+  91   3                  //     TMR1_PWML = pwm_reg & 0xFF;
+  92   3                  //     timer1_set_pwm_low_feq();
+  93   3                  //     cur_charging_pwm_status = CUR_CHARGING_PWM_STATUS_LOW_FEQ;
+  94   3                  //     return;
+  95   3                  // }
+  96   3              }
+  97   2      
+  98   2              // 进入到这里，说明正在充电，且充电电压在 4V~30V之间，不包括4V和30V
+  99   2      
+ 100   2              // 检测电池电压，使用内部2.0V参考电压
+ 101   2              adc_sel_ref_voltage(ADC_REF_2_0_VOL);
+ 102   2              adc_sel_pin(ADC_PIN_DETECT_BATTERY);
+ 103   2              bat_adc_val = adc_getval();
+ 104   2      
+ 105   2              // 刚进入充电，会进入下面这个语句块：
+ 106   2              if (CUR_CHARGE_PHASE_TRICKLE_CHARGE == cur_charge_phase)
+ 107   2              {
+ 108   3                  // 如果电池电压小于2.7V，进行涓流充电
+ 109   3                  if (bat_adc_val <= (u16)((u32)2700 * 4096 / 2 / 2 / 1000))
+ 110   3                  {
+ 111   4                      if (CUR_CHARGING_PWM_STATUS_LOW_FEQ != cur_charging_pwm_status)
+ 112   4                      {
+C51 COMPILER V9.60.7.0   CHARGE_HANDLE                                                     07/14/2025 17:10:29 PAGE 3   
 
-              
-                          // 根据充电电压调整pwm占空比
-              
-                          // 正常充电时，才调节控制充电的PWM占空比
-                          if (CUR_CHARGING_PWM_STATUS_HIGH_FRQ == cur_charging_pwm_status)
-                          {
-                              /*
-                                     测得样机充电控制的功能：
-                                     5V输入，pwm 105Khz，90%，（可能要使用 105Khz，85%）；12V输入，pwm 
-             -105Khz，30%
-                                     用（5V，85%）和（12V，30%）这两个点来计算，
-                                     已知两点坐标(5,85),(12,30)，求对应的方程，
-                                     对应直线的方程： y  =  -7.857x  + 124.286
-                                     y 对应占空比，单位：%；x 对应充电输入电压，单位：V
-                                     在公式上去掉小数点：
-                                     1000y = -7857x + 124286
-              
-                                     单片机adc使用内部2.0V参考电压，
-                                     将公式转换成 占空比 和 ad值 的关系:
-                                     外部充电输入的电压 1/11 分压后，到单片机检测脚
-                                     外部输入电压 / 11 / 单片机adc参考电压 * 4096 == 单片机采集到的a
-             -d值
-                                     外部输入电压 == 单片机采集到的ad值 / 4096 * 单片机adc参考电压 
-             -* 11
-                                     换算成单片机可以计算的形式：
-                                     外部输入电压 == 单片机采集到的ad值 * 单片机adc参考电压 * 11 / 
-             -4096
-                                     x = adc_val * 2 * 11 / 4096
-              
-                                     得到的公式：
-                                     1000y = 124286 - 7857 (adc_val * 2 * 11 / 4096)
-                                     1000y = 124286 - adc_val * 7857 * 2 * 11 / 4096
-                                     这个公式运算不会超出 2^32 范围
-                                 */
-                              // tmp = (u32)124286 - (u32)charging_adc_val * 7857 * 2 * 11 / 4096;
-                              tmp = (u32)88101 - (u32)charging_adc_val * 2471 * 2 * 11 / 4096;
-                              // 得到的 tmp 是1000倍的占空比值，需要除以1000， 再乘以 定时器重载
-             -值/100,得到定时器对应的占空比值
-                              // // T1DATA = (u32)T1LOAD * (u32)tmp / 1000 / 100; // 最终的占空比值
-                              // {
-                              //     static u16 cnt = 0;
-                              //     cnt++;
-                              //     if (cnt >= 100)
-                              //     {
-                              //         cnt = 0;
-                              //         printf("cur pwm percent : %lu %%\n", (u32)tmp / 1000);
-                              //         // printf("cal val  : %lu \n", (u32)charging_adc_val * 7857 * 2 * 11 / 4096);
-                              //     }
-                              // }
-              
-                              // tmp = (((u32)TMR1_PRH << 8) | (u32)TMR1_PRL) * (u32)tmp / 1000; // 最终的占空比�
-             -�（用这个计算，得出的值是0）
-                              tmp = (u32)TIMER1_HIGH_FEQ_PEROID_VAL * tmp / 1000 / 100; // 最终的占空比值
-              
-                              /*
-                                  由于公式限制，可能充电电压大于15V就会导致占空比变为0，现在�
-             -��让它到0%
-                              */
-                              if (0 == (u16)tmp)
-                              // if (0 == tmp)
-                              {
-                                  tmp = 0;
-C51 COMPILER V9.60.7.0   CHARGE_HANDLE                                                     07/11/2025 17:45:29 PAGE 4   
+ 113   5                          pwm_reg = (u32)TIMER1_LOW_FEQ_PEROID_VAL * 13 / 100; // 最终的占空比值
+ 114   5                          TMR1_PWMH = (pwm_reg >> 8) & 0xFF;
+ 115   5                          TMR1_PWML = pwm_reg & 0xFF;
+ 116   5                          timer1_set_pwm_low_feq();
+ 117   5                          cur_charging_pwm_status = CUR_CHARGING_PWM_STATUS_LOW_FEQ;
+ 118   5                      }
+ 119   4      
+ 120   4                      return;
+ 121   4                  }
+ 122   3      
+ 123   3                  // 如果电池电压不小于2.7V，进行正常充电
+ 124   3                  cur_charge_phase = CUR_CHARGE_PHASE_NORMAL_CHARGE;
+ 125   3              }
+ 126   2      
+ 127   2              // TODO:
+ 128   2              // 电池电压大于 xx V，从正常充电变为涓流充电
+ 129   2              if ((bat_adc_val >= (u16)((u32)3700 * 4096 / 2 / 2 / 1000)) &&
+ 130   2                  (CUR_CHARGE_PHASE_TRICKLE_CHARGE_WHEN_APPROACH_FULLY_CHARGE != cur_charge_phase))
+ 131   2              {
+ 132   3                  pwm_reg = (u32)TIMER1_LOW_FEQ_PEROID_VAL * 13 / 100; // 最终的占空比值
+ 133   3                  TMR1_PWMH = (pwm_reg >> 8) & 0xFF;
+ 134   3                  TMR1_PWML = pwm_reg & 0xFF;
+ 135   3                  timer1_set_pwm_low_feq();
+ 136   3                  cur_charging_pwm_status = CUR_CHARGING_PWM_STATUS_LOW_FEQ;
+ 137   3                  cur_charge_phase = CUR_CHARGE_PHASE_TRICKLE_CHARGE_WHEN_APPROACH_FULLY_CHARGE;
+ 138   3              }
+ 139   2      
+ 140   2              // 如果充电阶段已经到了电池接近满电的阶段
+ 141   2              if (CUR_CHARGE_PHASE_TRICKLE_CHARGE_WHEN_APPROACH_FULLY_CHARGE == cur_charge_phase)
+ 142   2              {
+ 143   3                  static u8 fully_charge_cnt = 0;
+ 144   3      
+ 145   3                  // adc_sel_ref_voltage(ADC_REF_2_0_VOL);
+ 146   3      
+ 147   3                  if (flag_is_tim_turn_off_pwm)
+ 148   3                  {
+ 149   4                      // 如果在涓流充电的 断开充电期间
+ 150   4                      bat_adc_val = adc_getval();
+ 151   4                      if (bat_adc_val >= (u16)((u32)3600 * 4096 / 2 / 2 / 1000))
+ 152   4                      {
+ 153   5                          // 检测到电池电压大于3.6V
+ 154   5                          fully_charge_cnt++;
+ 155   5                      }
+ 156   4      
+ 157   4                      if (fully_charge_cnt >= 10)
+ 158   4                      {
+ 159   5                          fully_charge_cnt = 0;
+ 160   5      
+ 161   5                          pwm_reg = 0;
+ 162   5                          TMR1_PWMH = (pwm_reg >> 8) & 0xFF;
+ 163   5                          TMR1_PWML = pwm_reg & 0xFF;
+ 164   5                          timer1_pwm_disable();
+ 165   5      
+ 166   5                          cur_charge_phase = CUR_CHARGE_PHASE_FULLY_CHARGE; // 表示已经充满电，接下来
+             -需要等充电电压低于4.0V
+ 167   5                          cur_charging_pwm_status = CUR_CHARGING_PWM_STATUS_NONE;
+ 168   5                      }
+ 169   4                  }
+ 170   3                  else
+ 171   3                  {
+ 172   4                      fully_charge_cnt = 0;
+ 173   4                  }
+C51 COMPILER V9.60.7.0   CHARGE_HANDLE                                                     07/14/2025 17:10:29 PAGE 4   
 
-                              }
-              
-              #if 0
-                              {
-                                  static u16 cnt = 0;
-                                  cnt++;
-                                  if (cnt >= 100)
-                                  {
-                                      cnt = 0;
-                                      // printf("reg val : %u \n", (u16)tmp);
-                                      // printf("reg val : %u \n", (u16)(((u32)TMR1_PRH << 8) | (u32)TMR1_PRL));
-                                      // printf("reg val : %u \n", (u16)((u32)TIMER1_HIGH_FEQ_PEROID_VAL * tmp / 1000 / 
-             -100));
-                                  }
-                              }
-              #endif
-              
-                              TMR1_PWMH = (tmp >> 8) & 0xFF;
-                              TMR1_PWML = tmp & 0xFF;
-                          }
-                      }
-                  }
-              #endif
-              }
-              
-              #endif
- 193          
- 194          
- 195          
- 196          
- 197          
- 198          
- 199          // 充电控制
- 200          void charge_handle(void)
- 201          {
- 202   1          static u8 cur_adc_ref = CUR_ADC_REF_2_0_VOL; // 0 -- 2.0V参考，1 -- 3.0V参考
- 203   1          // 使用2V参考电压，如果检测到充电电压大于4.90V，改为3.0V参考
- 204   1          // 使用3.0V参考时，如果检测到充电电压小于4.0V，改为2.0V参考电压
- 205   1      
- 206   1          if (CUR_ADC_REF_2_0_VOL == cur_adc_ref)
- 207   1          {
- 208   2              adc_sel_pin_charge(CUR_ADC_REF_2_0_VOL);
- 209   2              charging_adc_val = adc_getval();
- 210   2      
- 211   2              // if (charging_adc_val )
- 212   2          }
- 213   1          // adc_sel_pin(ADC_PIN_DETECT_CHARGE);
- 214   1          // charging_adc_val = adc_getval(); // 采集充电输入对应的ad值
- 215   1      }
+ 174   3      
+ 175   3                  // TODO：
+ 176   3                  if (bat_adc_val >= (u16)((u32)3700 * 4096 / 2 / 2 / 1000))
+ 177   3                  {
+ 178   4                      // 如果之前检测到电池电压大于 xx V，并且还在涓流充电，立即停止�
+             -��电
+ 179   4                      pwm_reg = 0;
+ 180   4                      TMR1_PWMH = (pwm_reg >> 8) & 0xFF;
+ 181   4                      TMR1_PWML = pwm_reg & 0xFF;
+ 182   4                      timer1_pwm_disable();
+ 183   4      
+ 184   4                      cur_charge_phase = CUR_CHARGE_PHASE_FULLY_CHARGE; // 表示已经充满电，接下来需�
+             -��等充电电压低于4.0V
+ 185   4                      cur_charging_pwm_status = CUR_CHARGING_PWM_STATUS_NONE;
+ 186   4                      fully_charge_cnt = 0;
+ 187   4                  }
+ 188   3      
+ 189   3                  return;
+ 190   3              }
+ 191   2      
+ 192   2              // ===================================================================
+ 193   2              // 以下都是正常充电对应的控制程序，cur_charge_phase == CUR_CHARGE_PHASE_NORMAL_CHA
+             -RGE
+ 194   2              // ===================================================================
+ 195   2      
+ 196   2              // 不是正常充电，提前返回
+ 197   2              if (CUR_CHARGE_PHASE_NORMAL_CHARGE != cur_charge_phase)
+ 198   2              {
+ 199   3                  return;
+ 200   3              }
+ 201   2      
+ 202   2              // 如果PWM未切换到高频
+ 203   2              if (CUR_CHARGING_PWM_STATUS_HIGH_FRQ != cur_charging_pwm_status)
+ 204   2              {
+ 205   3                  pwm_reg = 0;
+ 206   3                  TMR1_PWMH = (pwm_reg >> 8) & 0xFF;
+ 207   3                  TMR1_PWML = pwm_reg & 0xFF;
+ 208   3                  timer1_set_pwm_high_feq();
+ 209   3                  cur_charging_pwm_status = CUR_CHARGING_PWM_STATUS_HIGH_FRQ;
+ 210   3              }
+ 211   2      
+ 212   2              // 如果有一次电池电压超过3.5V
+ 213   2              // if (bat_adc_val >= (u16)((u32)3500 * 4096 / 2 / 2 / 1000))
+ 214   2              if (bat_adc_val >= (u16)((u32)3400 * 4096 / 2 / 2 / 1000))
+ 215   2              {
+ 216   3                  // expected_power = 24000; // 实际测试20W不到，接近20W
+ 217   3                  // expected_power = 20000; //
+ 218   3                  // expected_power = 10000; // 电流很大
+ 219   3                  expected_power = 5000; // 
+ 220   3                  // expected_power = 1000; // 电流太小，PWM占空比也小
+ 221   3              }
+ 222   2              else // 如果电池电压不超过3.5V
+ 223   2              {
+ 224   3                  // if (expected_power != 24000)
+ 225   3                  {
+ 226   4                      // expected_power = 27000; // 实际测试约30W
+ 227   4                      expected_power = 26500; 
+ 228   4                  }
+ 229   3              }
+ 230   2      
+ 231   2              adc_sel_ref_voltage(ADC_REF_3_0_VOL);
+ 232   2              adc_sel_pin(ADC_PIN_DETECT_CURRENT);
+C51 COMPILER V9.60.7.0   CHARGE_HANDLE                                                     07/14/2025 17:10:29 PAGE 5   
+
+ 233   2              current_adc_val = adc_getval();
+ 234   2      
+ 235   2              /*
+ 236   2                  检测电流引脚检测到的电压 == ad值 / 4096 * 参考电压
+ 237   2                  current_adc_val * 3 / 4096
+ 238   2      
+ 239   2                  检测电流的引脚检测到的充电电流 == 检测电流引脚检测到的电压 / 110(�
+             -�放放大倍数) / 0.005R，
+ 240   2                  逐步换成单片机可以计算的形式：
+ 241   2                  current_adc_val * 3 / 4096 / 110 / 0.005
+ 242   2                  current_adc_val * 3 / 4096 / 110 * 1000 / 5
+ 243   2                  current_adc_val * 3 * 1000 / 5 / 4096 / 110
+ 244   2                  得到的是以A为单位的电流，需要再转换成以mA为单位：
+ 245   2                  current_adc_val * 3 * 1000 * 1000 / 5 / 4096 / 110，计算会溢出，需要再化简
+ 246   2                  (u32)current_adc_val * 3 * 1000 * (1000 / 5) / 4096 / 110
+ 247   2                  current =  (u32)current_adc_val * 3 * 1000 * (1000 / 5) / 4096 / 110;
+ 248   2              */
+ 249   2              current = (u32)current_adc_val * 3 * 1000 * (1000 / 5) / 4096 / 76; // 
+ 250   2      
+ 251   2              /*
+ 252   2                  计算充电电压
+ 253   2              */
+ 254   2              // voltage_of_charging = (u32)charging_adc_val * 3 * 1000 * 11 / 4096;
+ 255   2              /*
+ 256   2                  计算电池电压
+ 257   2                  电池电压（mV） == 采集到的ad值 / 4096 * 参考电压 * 分压系数 * 1000（mV）
+ 258   2              */
+ 259   2              voltage_of_bat = (u32)bat_adc_val * 2 * 1000 * 2 / 4096;
+ 260   2      
+ 261   2              // 如果检测到电流的ad值已经爆表
+ 262   2              if (current_adc_val >= 4095)
+ 263   2              // if (current >= 5400) // 如果电流值已经爆表，超过单片机能检测的值：5454.54
+ 264   2              {
+ 265   3                  // printf("current overflow\n");
+ 266   3                  if (pwm_duty > 0)
+ 267   3                  {
+ 268   4                      pwm_duty--;
+ 269   4                  }
+ 270   3              }
+ 271   2              else //
+ 272   2              {
+ 273   3                  // power = voltage_of_charging * current / 1000; // 1000mV * 1000mA == 1000000 (1 Watt)
+ 274   3                  power = (u32)voltage_of_bat * current / 1000; // 1000mV * 1000mA == 1000000 (1 Watt)
+ 275   3      
+ 276   3                  // 假设充电有20%的损耗，充电输出30W，流入电池24W
+ 277   3                  // printf("power %lu \n", power);
+ 278   3                  // if (power < 30000) // 30 * 1000 mW（实际测得这里要比30W还大，未考虑上压降
+             -）
+ 279   3                  // if (power < 27000) // xx * 1000 mW（实际测试约24.6W）
+ 280   3                  // if (power < 24000) // xx * 1000 mW（实际测试不到20W，接近20W）
+ 281   3                  // if (power < 20000) // xx * 1000 mW
+ 282   3                  // if (power == 0) // 这种情况未考虑
+ 283   3                  // {
+ 284   3      
+ 285   3                  // }
+ 286   3                  // else if (power < expected_power)
+ 287   3                  
+ 288   3                  if (power < expected_power)
+ 289   3                  {
+ 290   4                      if (pwm_duty < 100)
+ 291   4                      {
+ 292   5                          pwm_duty++;
+C51 COMPILER V9.60.7.0   CHARGE_HANDLE                                                     07/14/2025 17:10:29 PAGE 6   
+
+ 293   5                      }
+ 294   4                  }
+ 295   3                  // else if (power > 30000)
+ 296   3                  // else if (power > 27000) // （实际测试约24.6W）
+ 297   3                  // else if (power > 24000) // （实际测试不到20W，接近20W）
+ 298   3                  // else if (power > 20000)
+ 299   3                  else if (power > expected_power)
+ 300   3                  {
+ 301   4                      if (pwm_duty > 0)
+ 302   4                      {
+ 303   5                          pwm_duty--;
+ 304   5                      }
+ 305   4                  }
+ 306   3                  else // power == 目标值，不做调节
+ 307   3                  {
+ 308   4                  }
+ 309   3              }
+ 310   2      
+ 311   2              // printf("pwm_duty : %bu %%\n", pwm_duty);
+ 312   2              pwm_reg = (u32)TIMER1_HIGH_FEQ_PEROID_VAL * pwm_duty / 100; // 最终的占空比值
+ 313   2      
+ 314   2              //     // printf("pwm_duty :%u\n", pwm_duty);
+ 315   2              TMR1_PWMH = (pwm_reg >> 8) & 0xFF;
+ 316   2              TMR1_PWML = pwm_reg & 0xFF;
+ 317   2          }
+ 318   1      }
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =     22    ----
+   CODE SIZE        =    942    ----
    CONSTANT SIZE    =   ----    ----
-   XDATA SIZE       =      2    ----
+   XDATA SIZE       =      2      12
    PDATA SIZE       =   ----    ----
    DATA SIZE        =   ----    ----
    IDATA SIZE       =   ----    ----

@@ -19,6 +19,7 @@
 
 extern volatile u16 bat_adc_val;
 extern volatile u16 charging_adc_val; // 检测到充电电压的ad值
+extern volatile u16 current_adc_val;  // 检测到充电电流对应的电压值
 
 extern volatile u8 cur_light_pwm_duty_val;    // 当前灯光对应的占空比值
 extern volatile u8 expect_light_pwm_duty_val; // 期望调节到的、灯光对应的占空比值
@@ -28,10 +29,15 @@ extern volatile u8 flag_is_light_adjust_time_come; // 调节灯光的时间到�
 extern volatile u16 light_adjust_time_cnt;
 extern volatile u8 flag_is_charging_adjust_time_come; // 调节充电的时间到来
 
+extern volatile u8 cur_charging_pwm_status;
+extern volatile u8 cur_charge_phase; // 记录当前充电阶段
+
+extern volatile u8 flag_is_tim_turn_off_pwm ; // 标志位，在涓流充电期间，定时器是否关闭了PWM输出
+
 enum
 {
-    CUR_ADC_REF_2_0_VOL = 0x00, // 当前adc使用2.0V参考电压
-    CUR_ADC_REF_3_0_VOL,        // 当前adc使用3.0V参考电压
+    ADC_REF_2_0_VOL = 0x00, // adc使用2.0V参考电压
+    ADC_REF_3_0_VOL,        // adc使用3.0V参考电压
 };
 
 #define LED_1_PIN P11

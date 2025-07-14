@@ -5,14 +5,26 @@
 #include "user_config.h"
 
 // 定义当前充电的状态
+// enum
+// {
+//     CUR_CHARGE_STATUS_NONE = 0x00, // 未在充电
+//     CUR_CHARGE_STATUS_IN_CHARGING, // 正在充电
+
+
+//     // CUR_CHARGE_STATUS_PRE_CHARGING, // 准备进入充电
+//     // CUR_CHARGE_STATUS_TRICKLE_CHARGE_WHEN_BAT_IS_LOW,       // 电池电量低，进行涓流充电
+//     // CUR_CHARGE_STATUS_CHARGE_NORMALLY,                      // 电池正常充电
+//     // CUR_CHARGE_STATUS_TRICKLE_CHARGE_WHEN_BAT_IS_NEAR_FULL, // 电池快满电，进行涓流充电
+// };
+
+// 定义当前充电阶段
 enum
 {
-    CUR_CHARGE_STATUS_NONE = 0x00, // 未在充电
-    CUR_CHARGE_STATUS_IN_CHARGING, // 正在充电
-    // CUR_CHARGE_STATUS_PRE_CHARGING, // 准备进入充电
-    // CUR_CHARGE_STATUS_TRICKLE_CHARGE_WHEN_BAT_IS_LOW,       // 电池电量低，进行涓流充电
-    // CUR_CHARGE_STATUS_CHARGE_NORMALLY,                      // 电池正常充电
-    // CUR_CHARGE_STATUS_TRICKLE_CHARGE_WHEN_BAT_IS_NEAR_FULL, // 电池快满电，进行涓流充电
+    CUR_CHARGE_PHASE_NONE,
+    CUR_CHARGE_PHASE_TRICKLE_CHARGE, // 电池电量低，涓流充电
+    CUR_CHARGE_PHASE_NORMAL_CHARGE, // 电池电量正常，恒功率充电
+    CUR_CHARGE_PHASE_TRICKLE_CHARGE_WHEN_APPROACH_FULLY_CHARGE, // 接近满电，进行涓流充电
+    CUR_CHARGE_PHASE_FULLY_CHARGE, // 满电，此时需要等充电端断电
 };
 
 // 定义当前控制充电的PWM状态

@@ -71,9 +71,10 @@ enum
 extern volatile u16 adc_val;
 
 void adc_config(void);
+void adc_sel_ref_voltage(u8 adc_ref_voltage);
 void adc_sel_pin(u8 adc_pin);
 u16 adc_getval(void);
 
-void adc_sel_pin_charge(u8 adc_ref); // adc通道 切换为 ADC_PIN_DETECT_CHARGE ，根据传参选择对应的参考电压
+// void adc_sel_pin_charge(u8 adc_ref); // adc通道 切换为 ADC_PIN_DETECT_CHARGE ，根据传参选择对应的参考电压
 
 #endif

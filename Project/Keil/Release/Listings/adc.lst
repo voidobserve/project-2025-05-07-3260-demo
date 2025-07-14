@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.7.0   ADC                                                               07/11/2025 17:45:28 PAGE 1   
+C51 COMPILER V9.60.7.0   ADC                                                               07/14/2025 14:05:19 PAGE 1   
 
 
 C51 COMPILER V9.60.7.0, COMPILATION OF MODULE ADC
@@ -37,139 +37,113 @@ line level    source
   26   1          ADC_CHS0 |= (0x01 << 6);       // 使能 通道 0DLY 功能
   27   1      }
   28          
-  29          void adc_sel_pin(u8 adc_pin)
-  30          {
-  31   1          ADC_CFG0 &= ~((0x01 << 6) | (0x01 << 3)); // 关闭adc，不使能通道0转换
-  32   1          ADC_CHS0 &= ~((0x01 << 7) |               /* 数据格式左对齐 */
-  33   1                        (0x01 << 5) |               // 选择内部通道
-  34   1                        (0x01 << 4) |
-  35   1                        (0x01 << 3) |
-  36   1                        (0x01 << 2) |
-  37   1                        (0x01 << 1) |
-  38   1                        (0x01 << 0)); // 选择外部通路，清空选择的adc0通路
-  39   1      
-  40   1          ADC_ACON1 &= ~((0x01 << 5) | /* 关闭ADC外部参考选择信号 */
-  41   1                         (0x07 << 0)); /* 清空ADC内部参考电压的选择配置 */
-  42   1      
-  43   1          if (ADC_PIN_DETECT_CHARGE == adc_pin)
-  44   1          {
-  45   2      #if 0
-              
-                      ADC_ACON1 &= ~((0x01 << 5) | /* 关闭ADC外部参考选择信号 */
-                                     (0x07 << 0)); /* 清空ADC内部参考电压的选择配置 */
-                      ADC_ACON1 |= (0x01 << 6) |   /* 使能adc内部参考 */
-                                   (0x03 << 3) |   /* 关闭测试信号 */
-                                   (0x03 << 0);    /* 选择 内部 3.0V 作为参考电压 */
-              
-              #endif
-C51 COMPILER V9.60.7.0   ADC                                                               07/11/2025 17:45:28 PAGE 2   
+  29          /**
+  30           * @brief 切换adc的参考电压
+  31           *
+  32           * @param adc_ref_voltage  
+  33           *              ADC_REF_2_0_VOL = 0x00, // adc使用2.0V参考电压
+  34                          ADC_REF_3_0_VOL,        // adc使用3.0V参考电压
+  35           */
+  36          void adc_sel_ref_voltage(u8 adc_ref_voltage)
+  37          {
+  38   1          ADC_ACON1 &= ~((0x01 << 5) | /* 关闭ADC外部参考选择信号 */
+  39   1                         (0x07 << 0)); /* 清空ADC内部参考电压的选择配置 */
+  40   1      
+  41   1          if (ADC_REF_2_0_VOL == adc_ref_voltage)
+  42   1          {
+  43   2              ADC_ACON1 |= (0x01 << 6) | /* 使能adc内部参考 */
+  44   2                           (0x03 << 3) | /* 关闭测试信号 */
+  45   2                           (0x01 << 0);  /* 选择 内部 2.0V 作为参考电压 */
+  46   2          }
+  47   1          else if (ADC_REF_3_0_VOL == adc_ref_voltage)
+  48   1          {
+  49   2              ADC_ACON1 |= (0x01 << 6) | /* 使能adc内部参考 */
+  50   2                           (0x03 << 3) | /* 关闭测试信号 */
+  51   2                           (0x03 << 0);  /* 选择 内部 3.0V 作为参考电压 */
+  52   2          }
+  53   1      
+C51 COMPILER V9.60.7.0   ADC                                                               07/14/2025 14:05:19 PAGE 2   
 
-  54   2      
-  55   2              ADC_CHS0 |= (0x0E << 0); // P16 对应的模拟通道
-  56   2          }
-  57   1          else if (ADC_PIN_DETECT_BATTERY == adc_pin)
-  58   1          {
-  59   2              ADC_ACON1 |= (0x01 << 6) | /* 使能adc内部参考 */
-  60   2                           (0x03 << 3) | /* 关闭测试信号 */
-  61   2                           (0x01 << 0);  /* 选择 内部 2.0V 作为参考电压 */
-  62   2      
-  63   2              ADC_CHS0 |= (0x12 << 0); // P22 对应的模拟通道
-  64   2          }
-  65   1          else if (ADC_PIN_DETECT_CURRENT == adc_pin)
-  66   1          {
-  67   2              ADC_ACON1 |= (0x01 << 6) | /* 使能adc内部参考 */
-  68   2                           (0x03 << 3) | /* 关闭测试信号 */
-  69   2                           (0x03 << 0);  /* 选择 内部 3.0V 作为参考电压 */
-  70   2      
-  71   2              ADC_CHS0 |= (0x19 << 0); // P31 对应的模拟通道
-  72   2          }
-  73   1      
-  74   1          ADC_CFG0 |= ADC_CHAN0_EN(0x1) | // 使能通道0转换
-  75   1                      ADC_EN(0x1);        // 使能A/D转换
-  76   1          delay_ms(1);                    // 等待adc稳定
-  77   1      }
-  78          
-  79          /**
-  80           * @brief adc通道 切换为 ADC_PIN_DETECT_CHARGE ，根据传参选择对应的参考电压
-  81           *
-  82           * @param adc_ref
-  83           *          CUR_ADC_REF_2_0_VOL -- adc使用2.0V参考电压
-  84           *          CUR_ADC_REF_3_0_VOL -- adc使用3.0V参考电压
-  85           */
-  86          void adc_sel_pin_charge(u8 adc_ref)
-  87          {
-  88   1          ADC_CFG0 &= ~((0x01 << 6) | (0x01 << 3)); // 关闭adc，不使能通道0转换
-  89   1          ADC_CHS0 &= ~((0x01 << 7) |               /* 数据格式左对齐 */
-  90   1                        (0x01 << 5) |               // 选择内部通道
-  91   1                        (0x01 << 4) |
-  92   1                        (0x01 << 3) |
-  93   1                        (0x01 << 2) |
-  94   1                        (0x01 << 1) |
-  95   1                        (0x01 << 0)); // 选择外部通路，清空选择的adc0通路
-  96   1      
-  97   1          ADC_ACON1 &= ~((0x01 << 5) | /* 关闭ADC外部参考选择信号 */
-  98   1                         (0x07 << 0)); /* 清空ADC内部参考电压的选择配置 */
-  99   1      
- 100   1          if (CUR_ADC_REF_3_0_VOL == adc_ref)
- 101   1          {
- 102   2              ADC_ACON1 |= (0x01 << 6) | /* 使能adc内部参考 */
- 103   2                           (0x03 << 3) | /* 关闭测试信号 */
- 104   2                           (0x03 << 0);  /* 选择 内部 3.0V 作为参考电压 */
- 105   2          }
- 106   1          else if (CUR_ADC_REF_2_0_VOL == adc_ref)
- 107   1          {
- 108   2              ADC_ACON1 |= (0x01 << 6) | /* 使能adc内部参考 */
- 109   2                           (0x03 << 3) | /* 关闭测试信号 */
- 110   2                           (0x01 << 0);  /* 选择 内部 2.0V 作为参考电压 */
- 111   2          }
- 112   1      
- 113   1          ADC_CHS0 |= (0x0E << 0); // P16 对应的模拟通道
- 114   1      
- 115   1          ADC_CFG0 |= ADC_CHAN0_EN(0x1) | // 使能通道0转换
-C51 COMPILER V9.60.7.0   ADC                                                               07/11/2025 17:45:28 PAGE 3   
+  54   1          ADC_CFG0 |= ADC_CHAN0_EN(0x1) | // 使能通道0转换
+  55   1                      ADC_EN(0x1);        // 使能A/D转换
+  56   1          delay_ms(1);                    // 等待adc稳定
+  57   1      }
+  58          
+  59          /**
+  60           * @brief 切换检测ad的引脚（函数内部只切换引脚，不切换参考电压）
+  61           *
+  62           * @param adc_pin
+  63           * @return * void
+  64           */
+  65          void adc_sel_pin(u8 adc_pin)
+  66          {
+  67   1          // ADC_CFG0 &= ~((0x01 << 6) | (0x01 << 3)); // 关闭adc，不使能通道0转换
+  68   1          ADC_CHS0 &= ~((0x01 << 7) | /* 数据格式左对齐 */
+  69   1                        (0x01 << 5) | // 选择内部通道
+  70   1                        (0x01 << 4) |
+  71   1                        (0x01 << 3) |
+  72   1                        (0x01 << 2) |
+  73   1                        (0x01 << 1) |
+  74   1                        (0x01 << 0)); // 选择外部通路，清空选择的adc0通路
+  75   1      
+  76   1          if (ADC_PIN_DETECT_CHARGE == adc_pin)
+  77   1          { 
+  78   2              ADC_CHS0 |= (0x0E << 0); // P16 对应的模拟通道
+  79   2          }
+  80   1          else if (ADC_PIN_DETECT_BATTERY == adc_pin)
+  81   1          { 
+  82   2              ADC_CHS0 |= (0x12 << 0); // P22 对应的模拟通道
+  83   2          }
+  84   1          else if (ADC_PIN_DETECT_CURRENT == adc_pin)
+  85   1          { 
+  86   2              ADC_CHS0 |= (0x19 << 0); // P31 对应的模拟通道
+  87   2          }
+  88   1      
+  89   1          ADC_CFG0 |= ADC_CHAN0_EN(0x1) | // 使能通道0转换
+  90   1                      ADC_EN(0x1);        // 使能A/D转换
+  91   1          delay_ms(1);                    // 等待adc稳定
+  92   1      }
+  93          
+  94          // adc采集+滤波
+  95          u16 adc_getval(void)
+  96          {
+  97   1          u8 i = 0; // adc采集次数的计数
+  98   1          volatile u16 g_temp_value = 0;
+  99   1          volatile u32 g_tmpbuff = 0;
+ 100   1          volatile u16 g_adcmax = 0;
+ 101   1          volatile u16 g_adcmin = 0xFFFF;
+ 102   1      
+ 103   1          // 采集20次，去掉前两次采样，再去掉一个最大值和一个最小值，再取平均值
+ 104   1          for (i = 0; i < 20; i++)
+ 105   1          {
+ 106   2              ADC_CFG0 |= ADC_CHAN0_TRG(0x1); // 触发ADC0转换
+ 107   2              while (!(ADC_STA & ADC_CHAN0_DONE(0x1)))
+ 108   2                  ;                                                 // 等待转换完成
+ 109   2              g_temp_value = (ADC_DATAH0 << 4) | (ADC_DATAL0 >> 4); // 读取 channel0 的值
+ 110   2              ADC_STA = ADC_CHAN0_DONE(0x1);                        // 清除ADC0转换完成标志位
+ 111   2      
+ 112   2              if (i < 2)
+ 113   2                  continue; // 丢弃前两次采样的
+ 114   2              if (g_temp_value > g_adcmax)
+ 115   2                  g_adcmax = g_temp_value; // 最大
+C51 COMPILER V9.60.7.0   ADC                                                               07/14/2025 14:05:19 PAGE 3   
 
- 116   1                      ADC_EN(0x1);        // 使能A/D转换
- 117   1          delay_ms(1);                    // 等待adc稳定
- 118   1      }
- 119          
- 120          // adc采集+滤波
- 121          u16 adc_getval(void)
- 122          {
- 123   1          u8 i = 0; // adc采集次数的计数
- 124   1          volatile u16 g_temp_value = 0;
- 125   1          volatile u32 g_tmpbuff = 0;
- 126   1          volatile u16 g_adcmax = 0;
- 127   1          volatile u16 g_adcmin = 0xFFFF;
- 128   1      
- 129   1          // 采集20次，去掉前两次采样，再去掉一个最大值和一个最小值，再取平均值
- 130   1          for (i = 0; i < 20; i++)
- 131   1          {
- 132   2              ADC_CFG0 |= ADC_CHAN0_TRG(0x1); // 触发ADC0转换
- 133   2              while (!(ADC_STA & ADC_CHAN0_DONE(0x1)))
- 134   2                  ;                                                 // 等待转换完成
- 135   2              g_temp_value = (ADC_DATAH0 << 4) | (ADC_DATAL0 >> 4); // 读取 channel0 的值
- 136   2              ADC_STA = ADC_CHAN0_DONE(0x1);                        // 清除ADC0转换完成标志位
- 137   2      
- 138   2              if (i < 2)
- 139   2                  continue; // 丢弃前两次采样的
- 140   2              if (g_temp_value > g_adcmax)
- 141   2                  g_adcmax = g_temp_value; // 最大
- 142   2              if (g_temp_value < g_adcmin)
- 143   2                  g_adcmin = g_temp_value; // 最小
- 144   2      
- 145   2              g_tmpbuff += g_temp_value;
- 146   2          }
- 147   1      
- 148   1          g_tmpbuff -= g_adcmax;           // 去掉一个最大
- 149   1          g_tmpbuff -= g_adcmin;           // 去掉一个最小
- 150   1          g_temp_value = (g_tmpbuff >> 4); // 除以16，取平均值
- 151   1      
- 152   1          return g_temp_value;
- 153   1      }
+ 116   2              if (g_temp_value < g_adcmin)
+ 117   2                  g_adcmin = g_temp_value; // 最小
+ 118   2      
+ 119   2              g_tmpbuff += g_temp_value;
+ 120   2          }
+ 121   1      
+ 122   1          g_tmpbuff -= g_adcmax;           // 去掉一个最大
+ 123   1          g_tmpbuff -= g_adcmin;           // 去掉一个最小
+ 124   1          g_temp_value = (g_tmpbuff >> 4); // 除以16，取平均值
+ 125   1      
+ 126   1          return g_temp_value;
+ 127   1      }
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =    525    ----
+   CODE SIZE        =    486    ----
    CONSTANT SIZE    =   ----    ----
    XDATA SIZE       =      2      11
    PDATA SIZE       =   ----    ----

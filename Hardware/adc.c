@@ -26,49 +26,29 @@ void adc_config(void)
     ADC_CHS0 |= (0x01 << 6);       // 使能 通道 0DLY 功能
 }
 
-void adc_sel_pin(u8 adc_pin)
+/**
+ * @brief 切换adc的参考电压
+ *
+ * @param adc_ref_voltage  
+ *              ADC_REF_2_0_VOL = 0x00, // adc使用2.0V参考电压
+                ADC_REF_3_0_VOL,        // adc使用3.0V参考电压
+ */
+void adc_sel_ref_voltage(u8 adc_ref_voltage)
 {
-    ADC_CFG0 &= ~((0x01 << 6) | (0x01 << 3)); // 关闭adc，不使能通道0转换
-    ADC_CHS0 &= ~((0x01 << 7) |               /* 数据格式左对齐 */
-                  (0x01 << 5) |               // 选择内部通道
-                  (0x01 << 4) |
-                  (0x01 << 3) |
-                  (0x01 << 2) |
-                  (0x01 << 1) |
-                  (0x01 << 0)); // 选择外部通路，清空选择的adc0通路
-
     ADC_ACON1 &= ~((0x01 << 5) | /* 关闭ADC外部参考选择信号 */
                    (0x07 << 0)); /* 清空ADC内部参考电压的选择配置 */
 
-    if (ADC_PIN_DETECT_CHARGE == adc_pin)
-    {
-#if 0
-
-        ADC_ACON1 &= ~((0x01 << 5) | /* 关闭ADC外部参考选择信号 */
-                       (0x07 << 0)); /* 清空ADC内部参考电压的选择配置 */
-        ADC_ACON1 |= (0x01 << 6) |   /* 使能adc内部参考 */
-                     (0x03 << 3) |   /* 关闭测试信号 */
-                     (0x03 << 0);    /* 选择 内部 3.0V 作为参考电压 */
-
-#endif
-
-        ADC_CHS0 |= (0x0E << 0); // P16 对应的模拟通道
-    }
-    else if (ADC_PIN_DETECT_BATTERY == adc_pin)
+    if (ADC_REF_2_0_VOL == adc_ref_voltage)
     {
         ADC_ACON1 |= (0x01 << 6) | /* 使能adc内部参考 */
                      (0x03 << 3) | /* 关闭测试信号 */
                      (0x01 << 0);  /* 选择 内部 2.0V 作为参考电压 */
-
-        ADC_CHS0 |= (0x12 << 0); // P22 对应的模拟通道
     }
-    else if (ADC_PIN_DETECT_CURRENT == adc_pin)
+    else if (ADC_REF_3_0_VOL == adc_ref_voltage)
     {
         ADC_ACON1 |= (0x01 << 6) | /* 使能adc内部参考 */
                      (0x03 << 3) | /* 关闭测试信号 */
                      (0x03 << 0);  /* 选择 内部 3.0V 作为参考电压 */
-
-        ADC_CHS0 |= (0x19 << 0); // P31 对应的模拟通道
     }
 
     ADC_CFG0 |= ADC_CHAN0_EN(0x1) | // 使能通道0转换
@@ -77,40 +57,34 @@ void adc_sel_pin(u8 adc_pin)
 }
 
 /**
- * @brief adc通道 切换为 ADC_PIN_DETECT_CHARGE ，根据传参选择对应的参考电压
+ * @brief 切换检测ad的引脚（函数内部只切换引脚，不切换参考电压）
  *
- * @param adc_ref
- *          CUR_ADC_REF_2_0_VOL -- adc使用2.0V参考电压
- *          CUR_ADC_REF_3_0_VOL -- adc使用3.0V参考电压
+ * @param adc_pin
+ * @return * void
  */
-void adc_sel_pin_charge(u8 adc_ref)
+void adc_sel_pin(u8 adc_pin)
 {
-    ADC_CFG0 &= ~((0x01 << 6) | (0x01 << 3)); // 关闭adc，不使能通道0转换
-    ADC_CHS0 &= ~((0x01 << 7) |               /* 数据格式左对齐 */
-                  (0x01 << 5) |               // 选择内部通道
+    // ADC_CFG0 &= ~((0x01 << 6) | (0x01 << 3)); // 关闭adc，不使能通道0转换
+    ADC_CHS0 &= ~((0x01 << 7) | /* 数据格式左对齐 */
+                  (0x01 << 5) | // 选择内部通道
                   (0x01 << 4) |
                   (0x01 << 3) |
                   (0x01 << 2) |
                   (0x01 << 1) |
                   (0x01 << 0)); // 选择外部通路，清空选择的adc0通路
 
-    ADC_ACON1 &= ~((0x01 << 5) | /* 关闭ADC外部参考选择信号 */
-                   (0x07 << 0)); /* 清空ADC内部参考电压的选择配置 */
-
-    if (CUR_ADC_REF_3_0_VOL == adc_ref)
-    {
-        ADC_ACON1 |= (0x01 << 6) | /* 使能adc内部参考 */
-                     (0x03 << 3) | /* 关闭测试信号 */
-                     (0x03 << 0);  /* 选择 内部 3.0V 作为参考电压 */
+    if (ADC_PIN_DETECT_CHARGE == adc_pin)
+    { 
+        ADC_CHS0 |= (0x0E << 0); // P16 对应的模拟通道
     }
-    else if (CUR_ADC_REF_2_0_VOL == adc_ref)
-    {
-        ADC_ACON1 |= (0x01 << 6) | /* 使能adc内部参考 */
-                     (0x03 << 3) | /* 关闭测试信号 */
-                     (0x01 << 0);  /* 选择 内部 2.0V 作为参考电压 */
+    else if (ADC_PIN_DETECT_BATTERY == adc_pin)
+    { 
+        ADC_CHS0 |= (0x12 << 0); // P22 对应的模拟通道
     }
-
-    ADC_CHS0 |= (0x0E << 0); // P16 对应的模拟通道
+    else if (ADC_PIN_DETECT_CURRENT == adc_pin)
+    { 
+        ADC_CHS0 |= (0x19 << 0); // P31 对应的模拟通道
+    }
 
     ADC_CFG0 |= ADC_CHAN0_EN(0x1) | // 使能通道0转换
                 ADC_EN(0x1);        // 使能A/D转换

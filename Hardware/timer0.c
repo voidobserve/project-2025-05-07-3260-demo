@@ -298,13 +298,48 @@ void TIMR0_IRQHandler(void) interrupt TMR0_IRQn
 
                 {
                     static u8 cnt = 0;
+                    // static u16 cnt = 0;
                     cnt++;
                     if (cnt >= 200)
+                    // if (cnt >= 1000) // 延长时间并不会影响电池快满电后，调节PWM的大小，还是会过冲，电流过大
                     {
                         cnt = 0;
-                        flag_is_charging_adjust_time_come = 1;
+                        flag_is_charging_adjust_time_come = 1; // 调节充电电流/功率
                     }
                 }
+
+#if 1 // 在涓流充电时，负责每段时间断开一会PWM输出
+                {
+                    static u16 cnt = 0;
+
+                    if (CUR_CHARGING_PWM_STATUS_LOW_FEQ == cur_charging_pwm_status)
+                    {
+                        // 如果在涓流充电
+                        cnt++;
+
+                        if (cnt < 22000) // 22 s
+                        {
+                            timer1_pwm_enable();
+                            flag_is_tim_turn_off_pwm = 0;
+                        }
+                        else if (cnt <= (22000 + 60)) // 22s + 60ms
+                        {
+                            // 累计涓流充电22s后，关闭控制充电的PWM，之后可以在这期间检测电池是否满电
+                            timer1_pwm_disable();
+                            flag_is_tim_turn_off_pwm = 1;
+                            // cnt = 0;
+                        }
+                        else
+                        {
+                            cnt = 0;
+                        }
+                    }
+                    else
+                    {
+                        cnt = 0;
+                    }
+                }
+#endif // 在涓流充电时，负责每段时间断开一会PWM输出
 
             } // if (cnt >= 10) // 10 * 100us == 1ms
         }
