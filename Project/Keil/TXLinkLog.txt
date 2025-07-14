@@ -1,55 +1,55 @@
-[07-14 17:11:13]Log start
-[07-14 17:11:13]Serial init start!
-[07-14 17:11:13]Serial close ok!
-[07-14 17:11:13]Serial init start!
-[07-14 17:11:13]Download driver ok!
-[07-14 17:11:13]uart_txm8c1200_set_driver:0x0
-[07-14 17:11:13]user uart set driver ok!
-[07-14 17:11:13]TXLink ready ok!
-[07-14 17:11:13]TXLink init ok!
-[07-14 17:11:13]Serial close ok!
-[07-14 17:11:13]load_debug_init_api chip id:3260
-[07-14 17:11:13]sys_info_init! 
-[07-14 17:11:13]AG_Init: 0x30a
-[07-14 17:11:13]AG_Init: 0x30b
-[07-14 17:11:13]AG_Init: 0x30f
-[07-14 17:11:13]AG_Init: 0x310
-[07-14 17:11:13]AG_Init: 0x311
-[07-14 17:11:13]AG_Init: 0x312
-[07-14 17:11:13]AG_Init: 0x100
-[07-14 17:11:13]InitMem: 0x0
-[07-14 17:11:13]Serial init start!
-[07-14 17:11:13]chip_init_api
-[07-14 17:11:13]TXLink chip init ok!
-[07-14 17:11:13]AG_Init: 0x201
-[07-14 17:11:13]AG_Init: 0x202
-[07-14 17:11:13]AG_Init: 0x203
-[07-14 17:11:13]AG_Init: 0x204
-[07-14 17:11:13]AG_Init: 0x205
-[07-14 17:11:13]AG_Init: 0x206
-[07-14 17:11:13]AG_Init: 0x207
-[07-14 17:11:13]AG_Init: 0x313
-[07-14 17:11:13]Serial init start!
-[07-14 17:11:13]uart_txm8c1200_check_dev_id:
-[07-14 17:11:13]uart_txm8c1200_check_crc_bin check failed 2:
-[07-14 17:11:13]uart_txm8c1200_check_dev_id ok:
-[07-14 17:11:13]EraseFlash: 0x0
-[07-14 17:11:13]TXLink chip erase ok!
-[07-14 17:11:13]AG_Init: 0x314
-[07-14 17:11:13]FlashLoad: 0x0
-[07-14 17:11:13]InitProgress: Loading...
-[07-14 17:11:13]WriteToFlash: 0xff000000
-[07-14 17:11:14]WriteToFlash: 0xff000800
-[07-14 17:11:14]WriteToFlash: 0xff001000
-[07-14 17:11:15]InitProgress: Verifying...
-[07-14 17:11:15]VerifyFlash nAdr: 0xff000000
-[07-14 17:11:15]VerifyFlash nAdr: 0xff000800
-[07-14 17:11:15]VerifyFlash nAdr: 0xff001000
-[07-14 17:11:15]chip_reset_api
-[07-14 17:11:15]Serial close ok!
-[07-14 17:11:15]AG_Init: 0x40c
-[07-14 17:11:15]CloseAllDlg: 0x0
-[07-14 17:11:15]StopTarget: 0x0
-[07-14 17:11:15]FreeCache: 0x0
-[07-14 17:11:15]StopTarget: 0x0
-[07-14 17:11:15]FreeCache: 0x0
+[07-14 17:50:14]Log start
+[07-14 17:50:14]Serial init start!
+[07-14 17:50:14]Serial close ok!
+[07-14 17:50:14]Serial init start!
+[07-14 17:50:14]Download driver ok!
+[07-14 17:50:14]uart_txm8c1200_set_driver:0x0
+[07-14 17:50:14]user uart set driver ok!
+[07-14 17:50:14]TXLink ready ok!
+[07-14 17:50:14]TXLink init ok!
+[07-14 17:50:14]Serial close ok!
+[07-14 17:50:14]load_debug_init_api chip id:3260
+[07-14 17:50:14]sys_info_init! 
+[07-14 17:50:14]AG_Init: 0x30a
+[07-14 17:50:14]AG_Init: 0x30b
+[07-14 17:50:14]AG_Init: 0x30f
+[07-14 17:50:14]AG_Init: 0x310
+[07-14 17:50:14]AG_Init: 0x311
+[07-14 17:50:14]AG_Init: 0x312
+[07-14 17:50:14]AG_Init: 0x100
+[07-14 17:50:14]InitMem: 0x0
+[07-14 17:50:14]Serial init start!
+[07-14 17:50:14]chip_init_api
+[07-14 17:50:14]TXLink chip init ok!
+[07-14 17:50:14]AG_Init: 0x201
+[07-14 17:50:14]AG_Init: 0x202
+[07-14 17:50:14]AG_Init: 0x203
+[07-14 17:50:14]AG_Init: 0x204
+[07-14 17:50:14]AG_Init: 0x205
+[07-14 17:50:14]AG_Init: 0x206
+[07-14 17:50:14]AG_Init: 0x207
+[07-14 17:50:14]AG_Init: 0x313
+[07-14 17:50:14]Serial init start!
+[07-14 17:50:14]uart_txm8c1200_check_dev_id:
+[07-14 17:50:14]uart_txm8c1200_check_crc_bin check failed 2:
+[07-14 17:50:14]uart_txm8c1200_check_dev_id ok:
+[07-14 17:50:14]EraseFlash: 0x0
+[07-14 17:50:14]TXLink chip erase ok!
+[07-14 17:50:14]AG_Init: 0x314
+[07-14 17:50:14]FlashLoad: 0x0
+[07-14 17:50:14]InitProgress: Loading...
+[07-14 17:50:14]WriteToFlash: 0xff000000
+[07-14 17:50:15]WriteToFlash: 0xff000800
+[07-14 17:50:15]WriteToFlash: 0xff001000
+[07-14 17:50:16]InitProgress: Verifying...
+[07-14 17:50:16]VerifyFlash nAdr: 0xff000000
+[07-14 17:50:16]VerifyFlash nAdr: 0xff000800
+[07-14 17:50:16]VerifyFlash nAdr: 0xff001000
+[07-14 17:50:16]chip_reset_api
+[07-14 17:50:16]Serial close ok!
+[07-14 17:50:16]AG_Init: 0x40c
+[07-14 17:50:16]CloseAllDlg: 0x0
+[07-14 17:50:16]StopTarget: 0x0
+[07-14 17:50:16]FreeCache: 0x0
+[07-14 17:50:16]StopTarget: 0x0
+[07-14 17:50:16]FreeCache: 0x0
