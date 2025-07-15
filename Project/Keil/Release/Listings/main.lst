@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.7.0   MAIN                                                              07/14/2025 15:07:52 PAGE 1   
+C51 COMPILER V9.60.7.0   MAIN                                                              07/15/2025 15:50:44 PAGE 1   
 
 
 C51 COMPILER V9.60.7.0, COMPILATION OF MODULE MAIN
@@ -38,138 +38,147 @@ line level    source
   27          volatile u8 cur_light_pwm_duty_val = 0;    // 当前灯光对应的占空比值
   28          volatile u8 expect_light_pwm_duty_val = 0; // 期望调节到的、灯光对应的占空比值
   29          
-  30          volatile u16 bat_adc_val;
-  31          volatile u16 charging_adc_val; // 检测到充电电压的ad值
-  32          volatile u16 current_adc_val;  // 检测到充电电流对应的电压值
+  30          
+  31          
+  32          volatile u8 flag_is_light_adjust_time_come = 0; // 调节灯光的时间到来，目前为1s
   33          
-  34          volatile u8 flag_is_light_adjust_time_come = 0; // 调节灯光的时间到来，目前为1s
+  34          
   35          
-  36          volatile u16 light_adjust_time_cnt = 0;
-  37          
-  38          volatile u8 flag_is_charging_adjust_time_come = 0; // 调节充电的时间到来
-  39          
-  40          volatile u8 cur_charging_pwm_status = CUR_CHARGING_PWM_STATUS_NONE;
+  36          volatile u16 bat_adc_val; // 电池电压检测脚采集到的ad值
+  37          volatile u16 charging_adc_val; // 充电电压检测脚采集的ad值
+  38          volatile u16 current_adc_val;  // 充电电流检测脚采集的ad值
+  39          volatile u8 flag_is_charging_adjust_time_come = 0; // 调节充电的时间到来
+  40          volatile u8 cur_charging_pwm_status = CUR_CHARGING_PWM_STATUS_NONE; // 控制充电的PWM状态
   41          volatile u8 cur_charge_phase = CUR_CHARGE_PHASE_NONE; // 记录当前充电阶段
   42          
   43          
-  44          volatile u8 flag_is_tim_turn_off_pwm = 0; // 标志位，在涓流充电期间，定时器是否关闭了PWM输出
-  45          
-  46          
+  44          volatile u32 light_adjust_time_cnt = 0; // 调节灯光的时间计数，暂定为每1s加一
+  45          volatile u8 light_ctl_phase_in_rate_1 = 1; // 在放电速率M1时，使用到的变量，在计算公式里面用作系数，每次唤
+             -醒时需要初始化为1
+  46          // volatile u8 flag_is_tim_turn_off_pwm = 0; // 标志位，在涓流充电期间，定时器是否关闭了PWM输出
   47          
-  48          //
-  49          void led_pin_config(void)
-  50          {
-  51   1          P1_MD0 &= ~GPIO_P11_MODE_SEL(0x03);
-  52   1          P1_MD0 |= GPIO_P11_MODE_SEL(0x01);
-  53   1          FOUT_S11 = GPIO_FOUT_AF_FUNC;
-C51 COMPILER V9.60.7.0   MAIN                                                              07/14/2025 15:07:52 PAGE 2   
+  48          
+  49          
+  50          //
+  51          void led_pin_config(void)
+  52          {
+C51 COMPILER V9.60.7.0   MAIN                                                              07/15/2025 15:50:44 PAGE 2   
 
-  54   1          P11 = 0; // 如果不给初始值，上电之后，指示灯会闪一下
-  55   1      
-  56   1          P1_MD0 &= ~GPIO_P12_MODE_SEL(0x03);
-  57   1          P1_MD0 |= GPIO_P12_MODE_SEL(0x01);
-  58   1          FOUT_S12 = GPIO_FOUT_AF_FUNC;
-  59   1          P12 = 0;
-  60   1      
-  61   1          P1_MD0 &= ~GPIO_P13_MODE_SEL(0x03);
-  62   1          P1_MD0 |= GPIO_P13_MODE_SEL(0x01);
-  63   1          FOUT_S13 = GPIO_FOUT_AF_FUNC;
-  64   1          P13 = 0;
-  65   1      
-  66   1          P1_MD1 &= ~GPIO_P14_MODE_SEL(0x03);
-  67   1          P1_MD1 |= GPIO_P14_MODE_SEL(0x01);
-  68   1          FOUT_S14 = GPIO_FOUT_AF_FUNC;
-  69   1          P14 = 0;
-  70   1      
-  71   1          P1_MD1 &= ~GPIO_P15_MODE_SEL(0x03);
-  72   1          P1_MD1 |= GPIO_P15_MODE_SEL(0x01);
-  73   1          FOUT_S15 = GPIO_FOUT_AF_FUNC;
-  74   1          P15 = 0;
-  75   1      }
-  76          
-  77          /**
-  78           * @brief  Main program.
-  79           * @param  None
-  80           * @retval None
-  81           */
-  82          void main(void)
-  83          {
-  84   1          // 看门狗默认打开, 复位时间2s
-  85   1          WDT_KEY = WDT_KEY_VAL(0xDD); //  关闭看门狗 (如需配置看门狗请查看“WDT\WDT_Reset”示例)
-  86   1      
-  87   1          system_init();
-  88   1      
-  89   1          // 关闭HCK和HDA的调试功能
-  90   1          WDT_KEY = 0x55;  // 解除写保护
-  91   1          IO_MAP &= ~0x01; // 清除这个寄存器的值，实现关闭HCK和HDA引脚的调试功能（解除映射）
-  92   1          WDT_KEY = 0xBB;  // 写一个无效的数据，触发写保护
-  93   1      
-  94   1          uart0_config();
-  95   1          timer0_config();
-  96   1          timer1_pwm_config(); // 控制充电的PWM
-  97   1          timer1_pwm_disable();
-  98   1          timer2_pwm_config(); // 控制灯光的pwm
-  99   1          timer2_pwm_disable();
- 100   1      
- 101   1          // timer1_set_pwm_high_feq();
- 102   1          // TODO: 7361不用加这个引脚配置:
- 103   1          led_pin_config();
- 104   1      
- 105   1          // 红外接收引脚：
- 106   1          P2_MD0 &= ~(GPIO_P23_MODE_SEL(0x03)); // 输入模式
- 107   1          P2_PU |= GPIO_P23_PULL_UP(0x01);      // 上拉
+  53   1          P1_MD0 &= ~GPIO_P11_MODE_SEL(0x03);
+  54   1          P1_MD0 |= GPIO_P11_MODE_SEL(0x01);
+  55   1          FOUT_S11 = GPIO_FOUT_AF_FUNC;
+  56   1          P11 = 0; // 如果不给初始值，上电之后，指示灯会闪一下
+  57   1      
+  58   1          P1_MD0 &= ~GPIO_P12_MODE_SEL(0x03);
+  59   1          P1_MD0 |= GPIO_P12_MODE_SEL(0x01);
+  60   1          FOUT_S12 = GPIO_FOUT_AF_FUNC;
+  61   1          P12 = 0;
+  62   1      
+  63   1          P1_MD0 &= ~GPIO_P13_MODE_SEL(0x03);
+  64   1          P1_MD0 |= GPIO_P13_MODE_SEL(0x01);
+  65   1          FOUT_S13 = GPIO_FOUT_AF_FUNC;
+  66   1          P13 = 0;
+  67   1      
+  68   1          P1_MD1 &= ~GPIO_P14_MODE_SEL(0x03);
+  69   1          P1_MD1 |= GPIO_P14_MODE_SEL(0x01);
+  70   1          FOUT_S14 = GPIO_FOUT_AF_FUNC;
+  71   1          P14 = 0;
+  72   1      
+  73   1          P1_MD1 &= ~GPIO_P15_MODE_SEL(0x03);
+  74   1          P1_MD1 |= GPIO_P15_MODE_SEL(0x01);
+  75   1          FOUT_S15 = GPIO_FOUT_AF_FUNC;
+  76   1          P15 = 0;
+  77   1      }
+  78          
+  79          // 变量、参数，初始化
+  80          void param_init(void)
+  81          {
+  82   1          light_ctl_phase_in_rate_1 = 1; 
+  83   1      }
+  84          
+  85          /**
+  86           * @brief  Main program.
+  87           * @param  None
+  88           * @retval None
+  89           */
+  90          void main(void)
+  91          {
+  92   1          // 看门狗默认打开, 复位时间2s
+  93   1          WDT_KEY = WDT_KEY_VAL(0xDD); //  关闭看门狗 (如需配置看门狗请查看“WDT\WDT_Reset”示例)
+  94   1      
+  95   1          system_init();
+  96   1      
+  97   1          // 关闭HCK和HDA的调试功能
+  98   1          WDT_KEY = 0x55;  // 解除写保护
+  99   1          IO_MAP &= ~0x01; // 清除这个寄存器的值，实现关闭HCK和HDA引脚的调试功能（解除映射）
+ 100   1          WDT_KEY = 0xBB;  // 写一个无效的数据，触发写保护
+ 101   1      
+ 102   1          uart0_config();
+ 103   1          timer0_config();
+ 104   1          timer1_pwm_config(); // 控制充电的PWM
+ 105   1          timer1_pwm_disable();
+ 106   1          timer2_pwm_config(); // 控制灯光的pwm
+ 107   1          timer2_pwm_disable();
  108   1      
- 109   1          adc_config();
- 110   1      
- 111   1          printf("sys reset\n"); // 打印至少占用1012字节空间
+ 109   1          // timer1_set_pwm_high_feq();
+ 110   1          // TODO: 7361不用加这个引脚配置:
+ 111   1          led_pin_config();
  112   1      
- 113   1          // TODO:
- 114   1          // 上电后，需要先点亮红色指示灯，再变为电池电量指示模式
- 115   1          // LED_1_ON();
-C51 COMPILER V9.60.7.0   MAIN                                                              07/14/2025 15:07:52 PAGE 3   
+ 113   1          // 红外接收引脚：
+ 114   1          P2_MD0 &= ~(GPIO_P23_MODE_SEL(0x03)); // 输入模式
+C51 COMPILER V9.60.7.0   MAIN                                                              07/15/2025 15:50:44 PAGE 3   
 
- 116   1          // delay_ms(1000);
- 117   1      
- 118   1          // cur_led_mode = CUR_LED_MODE_INITIAL_DISCHARGE_GEAR;
- 119   1      
- 120   1      #if 0
+ 115   1          P2_PU |= GPIO_P23_PULL_UP(0x01);      // 上拉
+ 116   1      
+ 117   1          adc_config();
+ 118   1      
+ 119   1          printf("sys reset\n"); // 打印至少占用1012字节空间
+ 120   1      
+ 121   1          // TODO:
+ 122   1          // 上电后，需要先点亮红色指示灯，再变为电池电量指示模式
+ 123   1          // LED_1_ON();
+ 124   1          // delay_ms(1000);
+ 125   1      
+ 126   1          // cur_led_mode = CUR_LED_MODE_INITIAL_DISCHARGE_GEAR;
+ 127   1      
+ 128   1      #if 0
                   cur_led_mode = CUR_LED_MODE_BAT_INDICATOR; // 电池电量指示模式
                   cur_initial_discharge_gear = 5;
                   cur_discharge_rate = 3;
               #endif
- 125   1      
- 126   1          // timer1_set_pwm_high_feq();
- 127   1      
- 128   1          // {
- 129   1          //     u16 pwm_reg = 0;                                     // 存放要写入到寄存器中的占空比值
- 130   1          //     pwm_reg = (u32)TIMER1_LOW_FEQ_PEROID_VAL * 13 / 100; // 最终的占空比值
- 131   1          //     TMR1_PWMH = (pwm_reg >> 8) & 0xFF;
- 132   1          //     TMR1_PWML = pwm_reg & 0xFF;
- 133   1          //     timer1_set_pwm_low_feq();
- 134   1          //     cur_charging_pwm_status = CUR_CHARGING_PWM_STATUS_LOW_FEQ;
- 135   1          //     // cur_charge_phase = CUR_CHARGE_PHASE_;
- 136   1          // }
- 137   1      
- 138   1          while (1)
- 139   1          {
- 140   2      #if 1
- 141   2              // adc_sel_pin(ADC_PIN_DETECT_BATTERY);
- 142   2              // bat_adc_val = adc_getval(); // 采集电池电压对应的ad值
- 143   2              // adc_sel_pin(ADC_PIN_DETECT_CHARGE);
- 144   2              // adc_sel_pin_charge(CUR_ADC_REF_3_0_VOL);
- 145   2              // charging_adc_val = adc_getval();
- 146   2              // adc_sel_pin(ADC_PIN_DETECT_CURRENT);
- 147   2              // current_adc_val = adc_getval(); // 采集流入电池的电流对应的ad值
- 148   2      
- 149   2              // printf("current_adc_val %u\n", current_adc_val);
- 150   2      
- 151   2              charge_handle();
- 152   2      
- 153   2              // ir_handle();
- 154   2              // charge_handle();
- 155   2              // led_handle_update_percent_of_bat();
+ 133   1      
+ 134   1          // timer1_set_pwm_high_feq();
+ 135   1      
+ 136   1          // {
+ 137   1          //     u16 pwm_reg = 0;                                     // 存放要写入到寄存器中的占空比值
+ 138   1          //     pwm_reg = (u32)TIMER1_LOW_FEQ_PEROID_VAL * 13 / 100; // 最终的占空比值
+ 139   1          //     TMR1_PWMH = (pwm_reg >> 8) & 0xFF;
+ 140   1          //     TMR1_PWML = pwm_reg & 0xFF;
+ 141   1          //     timer1_set_pwm_low_feq();
+ 142   1          //     cur_charging_pwm_status = CUR_CHARGING_PWM_STATUS_LOW_FEQ;
+ 143   1          //     // cur_charge_phase = CUR_CHARGE_PHASE_;
+ 144   1          // }
+ 145   1      
+ 146   1          while (1)
+ 147   1          {
+ 148   2      #if 1
+ 149   2              // adc_sel_pin(ADC_PIN_DETECT_BATTERY);
+ 150   2              // bat_adc_val = adc_getval(); // 采集电池电压对应的ad值
+ 151   2              // adc_sel_pin(ADC_PIN_DETECT_CHARGE);
+ 152   2              // adc_sel_pin_charge(CUR_ADC_REF_3_0_VOL);
+ 153   2              // charging_adc_val = adc_getval();
+ 154   2              // adc_sel_pin(ADC_PIN_DETECT_CURRENT);
+ 155   2              // current_adc_val = adc_getval(); // 采集流入电池的电流对应的ad值
  156   2      
- 157   2      #if 0 // 缓慢调节驱动灯光的pwm占空比（还未调试完成）
+ 157   2              // printf("current_adc_val %u\n", current_adc_val);
+ 158   2      
+ 159   2              charge_handle();
+ 160   2      
+ 161   2              // ir_handle();
+ 162   2              // charge_handle();
+ 163   2              // led_handle_update_percent_of_bat();
+ 164   2      
+ 165   2      #if 0 // 缓慢调节驱动灯光的pwm占空比（还未调试完成）
               
                       {
                           // static u8 cnt =0;
@@ -181,6 +190,8 @@ line level    source
                               cur_light_pwm_duty_val--;
                           }
                           else if (cur_light_pwm_duty_val < expect_light_pwm_duty_val)
+C51 COMPILER V9.60.7.0   MAIN                                                              07/15/2025 15:50:44 PAGE 4   
+
                           {
                               cur_light_pwm_duty_val++;
                           }
@@ -190,24 +201,22 @@ line level    source
                       }
               
               #endif // 缓慢调节驱动灯光的pwm占空比（还未调试完成）
-C51 COMPILER V9.60.7.0   MAIN                                                              07/14/2025 15:07:52 PAGE 4   
-
- 178   2      
- 179   2      #endif
- 180   2          }
- 181   1      }
- 182          
- 183          /**
- 184           * @}
- 185           */
- 186          
- 187          /*************************** (C) COPYRIGHT 2022 HUGE-IC ***** END OF FILE *****/
+ 186   2      
+ 187   2      #endif
+ 188   2          }
+ 189   1      }
+ 190          
+ 191          /**
+ 192           * @}
+ 193           */
+ 194          
+ 195          /*************************** (C) COPYRIGHT 2022 HUGE-IC ***** END OF FILE *****/
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =    140    ----
+   CODE SIZE        =    147    ----
    CONSTANT SIZE    =     11    ----
-   XDATA SIZE       =     17    ----
+   XDATA SIZE       =     19    ----
    PDATA SIZE       =   ----    ----
    DATA SIZE        =   ----    ----
    IDATA SIZE       =   ----    ----

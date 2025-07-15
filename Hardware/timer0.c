@@ -320,13 +320,13 @@ void TIMR0_IRQHandler(void) interrupt TMR0_IRQn
                         if (cnt < 22000) // 22 s
                         {
                             timer1_pwm_enable();
-                            flag_is_tim_turn_off_pwm = 0;
+                            // flag_is_tim_turn_off_pwm = 0;
                         }
                         else if (cnt <= (22000 + 60)) // 22s + 60ms
                         {
                             // 累计涓流充电22s后，关闭控制充电的PWM，之后可以在这期间检测电池是否满电
                             timer1_pwm_disable();
-                            flag_is_tim_turn_off_pwm = 1;
+                            // flag_is_tim_turn_off_pwm = 1;
                             // cnt = 0;
                         }
                         else
@@ -345,15 +345,21 @@ void TIMR0_IRQHandler(void) interrupt TMR0_IRQn
         }
 
 #if 1 // 放电时间控制
-
-        // TODO: 如果在充电，不执行该功能
+ 
+        // TODO:如果不在充电，设备没有关机，才进行放电时间累计
+        if (CUR_CHARGE_PHASE_NONE == cur_charge_phase) // 如果不在充电
         {
             static u16 cnt = 0;
             cnt++;
             if (cnt >= 10000) // 10000 * 100us，1s
             {
                 cnt = 0;
-                flag_is_light_adjust_time_come = 1;
+                // flag_is_light_adjust_time_come = 1;
+
+                if (light_adjust_time_cnt < 4294967295) // 防止计数溢出
+                {
+                    light_adjust_time_cnt++;
+                }
             }
         }
 

@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.7.0   LIGHT_HANDLE                                                      07/14/2025 14:05:20 PAGE 1   
+C51 COMPILER V9.60.7.0   LIGHT_HANDLE                                                      07/15/2025 17:02:01 PAGE 1   
 
 
 C51 COMPILER V9.60.7.0, COMPILATION OF MODULE LIGHT_HANDLE
@@ -9,78 +9,156 @@ COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\..\User\light_handle.c LARGE 
 
 line level    source
 
-   1          #include "light_handle.h"
-   2          
-   3          void light_blink(void)
-   4          {
-   5   1          u8 i;
-   6   1          for (i = 0; i < 3; i++)
-   7   1          {
-   8   2              LIGHT_ON();
-   9   2              delay_ms(161);
-  10   2              LIGHT_OFF();
+   1          // encoding UTF-8
+   2          // 灯光控制源程序
+   3          #include "light_handle.h"
+   4          
+   5          void light_blink(void)
+   6          {
+   7   1          u8 i;
+   8   1          for (i = 0; i < 3; i++)
+   9   1          {
+  10   2              LIGHT_ON();
   11   2              delay_ms(161);
-  12   2          }
-  13   1      }
-  14          
-  15          // 灯光控制
-  16          void light_handle(void)
-  17          {
-  18   1          // 如果正在充电，直接返回
-  19   1      
-  20   1          // 如果未在充电
+  12   2              LIGHT_OFF();
+  13   2              delay_ms(161);
+  14   2          }
+  15   1      }
+  16          
+  17          // 灯光控制（放电控制）
+  18          void light_handle(void)
+  19          {
+  20   1          // 如果正在充电，直接返回
   21   1      
-  22   1          if (flag_is_light_adjust_time_come)
-  23   1          {
-  24   2              flag_is_light_adjust_time_come = 0;
-  25   2              light_adjust_time_cnt++;
-  26   2          }
-  27   1      
-  28   1          if (1 == cur_discharge_rate)
-  29   1          {
-  30   2              /*
-  31   2                  速度为M1，
-  32   2                  1200s后变化一次占空比，
-  33   2                  3600s后再变化一次，
-  34   2                  7200s后再变化一次，
-  35   2                  ...
-  36   2                  每次变化约10%占空比
-  37   2              */
-  38   2              static u8 phase ;
-  39   2              if (light_adjust_time_cnt >= (1200 * (phase + 1)))
-  40   2              {
-  41   3                  phase++;
-  42   3      
-  43   3                  if (expect_light_pwm_duty_val >= (255 * 480 / 1000))
-  44   3                  {
-  45   4                      expect_light_pwm_duty_val -= (255 * 10 / 100);
-  46   4                  }
-  47   3                  else
-  48   3                  {
-  49   4                      // expect_light_pwm_duty_val = ()
-  50   4                  }
-  51   3      
-  52   3                  
-  53   3                  // SET_LIGHT_PWM_DUTY(cur_light_pwm_duty_val);
-C51 COMPILER V9.60.7.0   LIGHT_HANDLE                                                      07/14/2025 14:05:20 PAGE 2   
+  22   1          // 如果未在充电
+  23   1      
+  24   1          // if (flag_is_light_adjust_time_come)
+  25   1          // {
+  26   1          //     flag_is_light_adjust_time_come = 0;
+  27   1          //     light_adjust_time_cnt++;
+  28   1          // }
+  29   1      
+  30   1          if (1 == cur_discharge_rate) // 放电速率1档，M1
+  31   1          {
+  32   2              /*
+  33   2                  速度为M1，
+  34   2                  1200s后变化一次占空比，(1200 * 1)
+  35   2                  3600s后再变化一次，    (1200 * 3)
+  36   2                  7200s后再变化一次，    (1200 * 6)
+  37   2                  ...
+  38   2                  假设之后是：
+  39   2                  (1200 * 9)
+  40   2                  (1200 * 12)
+  41   2                  (1200 * 15)
+  42   2                  ...
+  43   2                  每次变化约10%占空比
+  44   2              */
+  45   2      
+  46   2              if (light_adjust_time_cnt >= (1200 * light_ctl_phase_in_rate_1)) // 如果到了调节时间
+  47   2              {
+  48   3                  light_adjust_time_cnt = 0;
+  49   3      
+  50   3                  if (1 == light_ctl_phase_in_rate_1)
+  51   3                  {
+  52   4                      light_ctl_phase_in_rate_1 = 3;
+  53   4                  }
+C51 COMPILER V9.60.7.0   LIGHT_HANDLE                                                      07/15/2025 17:02:01 PAGE 2   
 
-  54   3              }
-  55   2          }
-  56   1          else // 2 == cur_discharge_rate || 3 == cur_discharge_rate
-  57   1          {
-  58   2              /*
-  59   2                  一开始每40s降低一次占空比
-  60   2                  从47%开始，每240s降低一次占空比
-  61   2                  从42%开始，每420s降低一次占空比
-  62   2              */
-  63   2          }
-  64   1      }
+  54   3                  else
+  55   3                  {
+  56   4                      light_ctl_phase_in_rate_1 += 3;
+  57   4                  }
+  58   3      
+  59   3                  // 定时器对应的重装载值最大值 对应 100%占空比
+  60   3                  if (expect_light_pwm_duty_val >= ((u32)TIMER2_FEQ * 48 / 1000) + ((u32)TIMER2_FEQ * 10 / 100))
+  61   3                  {
+  62   4                      // 如果仍大于 4.8% + 10%， 减少10%占空比
+  63   4                      expect_light_pwm_duty_val -= (u32)TIMER2_FEQ * 10 / 100;
+  64   4                  }
+  65   3                  else
+  66   3                  {
+  67   4                      // 4.8%占空比
+  68   4                      expect_light_pwm_duty_val = (u32)TIMER2_FEQ * 48 / 1000;
+  69   4                  }
+  70   3              }
+  71   2          }
+  72   1          else // 2 == cur_discharge_rate || 3 == cur_discharge_rate
+  73   1          {
+  74   2              /*
+  75   2                  一开始每40s降低一次占空比
+  76   2                  从47%开始，每240s降低一次占空比
+  77   2                  从42%开始，每420s降低一次占空比
+  78   2      
+  79   2                  暂定每次降低 0.6%
+  80   2              */
+  81   2      
+  82   2              if (cur_light_pwm_duty_val > (u32)TIMER2_FEQ * 47 / 100)
+  83   2              {
+  84   3                  if (light_adjust_time_cnt >= 40)
+  85   3                  {
+  86   4                      light_adjust_time_cnt = 0;
+  87   4      
+  88   4                      if (expect_light_pwm_duty_val >= ((u32)TIMER2_FEQ * 48 / 1000) + ((u32)TIMER2_FEQ * 6 / 10
+             -00))
+  89   4                      {
+  90   5                          // 如果仍大于 4.8% + xx %， 减少 xx %占空比
+  91   5                          expect_light_pwm_duty_val -= (u32)TIMER2_FEQ * 6 / 1000;
+  92   5                      }
+  93   4                      else
+  94   4                      { 
+  95   5                          // 4.8%占空比
+  96   5                          expect_light_pwm_duty_val = (u32)TIMER2_FEQ * 48 / 1000;
+  97   5                      }
+  98   4                  }
+  99   3              }
+ 100   2              else if (cur_light_pwm_duty_val > (u32)TIMER2_FEQ * 42 / 100)
+ 101   2              {
+ 102   3                  if (light_adjust_time_cnt >= 240)
+ 103   3                  {
+ 104   4                      light_adjust_time_cnt = 0;
+ 105   4      
+ 106   4                      if (expect_light_pwm_duty_val >= ((u32)TIMER2_FEQ * 48 / 1000) + ((u32)TIMER2_FEQ * 6 / 10
+             -00))
+ 107   4                      {
+ 108   5                          // 如果仍大于 4.8% + xx %， 减少 xx %占空比
+ 109   5                          expect_light_pwm_duty_val -= (u32)TIMER2_FEQ * 6 / 1000;
+ 110   5                      }
+ 111   4                      else
+ 112   4                      { 
+ 113   5                          // 4.8%占空比
+C51 COMPILER V9.60.7.0   LIGHT_HANDLE                                                      07/15/2025 17:02:01 PAGE 3   
+
+ 114   5                          expect_light_pwm_duty_val = (u32)TIMER2_FEQ * 48 / 1000;
+ 115   5                      }
+ 116   4                  }
+ 117   3              }
+ 118   2              else
+ 119   2              {
+ 120   3                  if (light_adjust_time_cnt >= 420)
+ 121   3                  {
+ 122   4                      light_adjust_time_cnt = 0;
+ 123   4      
+ 124   4                      if (expect_light_pwm_duty_val >= ((u32)TIMER2_FEQ * 48 / 1000) + ((u32)TIMER2_FEQ * 6 / 10
+             -00))
+ 125   4                      {
+ 126   5                          // 如果仍大于 4.8% + xx %， 减少 xx %占空比
+ 127   5                          expect_light_pwm_duty_val -= (u32)TIMER2_FEQ * 6 / 1000;
+ 128   5                      }
+ 129   4                      else
+ 130   4                      { 
+ 131   5                          // 4.8%占空比
+ 132   5                          expect_light_pwm_duty_val = (u32)TIMER2_FEQ * 48 / 1000;
+ 133   5                      }
+ 134   4                  }
+ 135   3              }
+ 136   2          }
+ 137   1      }
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =    121    ----
+   CODE SIZE        =    304    ----
    CONSTANT SIZE    =   ----    ----
-   XDATA SIZE       =      1       1
+   XDATA SIZE       =   ----       1
    PDATA SIZE       =   ----    ----
    DATA SIZE        =   ----    ----
    IDATA SIZE       =   ----    ----

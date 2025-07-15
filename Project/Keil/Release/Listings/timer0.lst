@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.7.0   TIMER0                                                            07/14/2025 17:03:04 PAGE 1   
+C51 COMPILER V9.60.7.0   TIMER0                                                            07/15/2025 15:56:04 PAGE 1   
 
 
 C51 COMPILER V9.60.7.0, COMPILATION OF MODULE TIMER0
@@ -62,7 +62,7 @@ line level    source
   49   3                  // {
   50   3                  //     ir_fliter |= 1;
   51   3                  // }
-C51 COMPILER V9.60.7.0   TIMER0                                                            07/14/2025 17:03:04 PAGE 2   
+C51 COMPILER V9.60.7.0   TIMER0                                                            07/15/2025 15:56:04 PAGE 2   
 
   52   3                  // ir_fliter &= 0x07;
   53   3      
@@ -126,7 +126,7 @@ line level    source
  108   5                          else if (ir_level_cnt <= 26) // 小于2600us,说明接收到了逻辑1
  109   5                          {
  110   6                              __ir_data <<= 1;
-C51 COMPILER V9.60.7.0   TIMER0                                                            07/14/2025 17:03:04 PAGE 3   
+C51 COMPILER V9.60.7.0   TIMER0                                                            07/15/2025 15:56:04 PAGE 3   
 
  111   6                              __ir_data |= 0x01;
  112   6      
@@ -190,7 +190,7 @@ line level    source
  169   3                  cnt++;
  170   3      
  171   3                  if (cnt <= 20) // 20 * 100us
-C51 COMPILER V9.60.7.0   TIMER0                                                            07/14/2025 17:03:04 PAGE 4   
+C51 COMPILER V9.60.7.0   TIMER0                                                            07/15/2025 15:56:04 PAGE 4   
 
  172   3                  {
  173   4                      if (flag_is_led_1_enable)
@@ -254,7 +254,7 @@ line level    source
  231   5      
  232   5                          // 处于初始放电挡位指示模式，才进入
  233   5                          if (CUR_LED_MODE_INITIAL_DISCHARGE_GEAR == cur_led_mode)
-C51 COMPILER V9.60.7.0   TIMER0                                                            07/14/2025 17:03:04 PAGE 5   
+C51 COMPILER V9.60.7.0   TIMER0                                                            07/15/2025 15:56:04 PAGE 5   
 
  234   5                          {
  235   6                              if (0 == flag_blink_dir)
@@ -318,7 +318,7 @@ line level    source
  292   5                          {
  293   6                              special_led_mode_times_cnt = 0;
  294   6                              flag_is_update_led_mode_times_come = 1;
-C51 COMPILER V9.60.7.0   TIMER0                                                            07/14/2025 17:03:04 PAGE 6   
+C51 COMPILER V9.60.7.0   TIMER0                                                            07/15/2025 15:56:04 PAGE 6   
 
  295   6                          }
  296   5                      }
@@ -349,14 +349,14 @@ line level    source
  320   6                              if (cnt < 22000) // 22 s
  321   6                              {
  322   7                                  timer1_pwm_enable();
- 323   7                                  flag_is_tim_turn_off_pwm = 0;
+ 323   7                                  // flag_is_tim_turn_off_pwm = 0;
  324   7                              }
  325   6                              else if (cnt <= (22000 + 60)) // 22s + 60ms
  326   6                              {
  327   7                                  // 累计涓流充电22s后，关闭控制充电的PWM，之后可以在这期
              -间检测电池是否满电
  328   7                                  timer1_pwm_disable();
- 329   7                                  flag_is_tim_turn_off_pwm = 1;
+ 329   7                                  // flag_is_tim_turn_off_pwm = 1;
  330   7                                  // cnt = 0;
  331   7                              }
  332   6                              else
@@ -375,23 +375,29 @@ line level    source
  345   3              }
  346   2      
  347   2      #if 1 // 放电时间控制
- 348   2      
- 349   2              // TODO: 如果在充电，不执行该功能
- 350   2              {
- 351   3                  static u16 cnt = 0;
- 352   3                  cnt++;
- 353   3                  if (cnt >= 10000) // 10000 * 100us，1s
- 354   3                  {
-C51 COMPILER V9.60.7.0   TIMER0                                                            07/14/2025 17:03:04 PAGE 7   
+ 348   2       
+ 349   2              // TODO:如果不在充电，设备没有关机，才进行放电时间累计
+ 350   2              if (CUR_CHARGE_PHASE_NONE == cur_charge_phase) // 如果不在充电
+ 351   2              {
+ 352   3                  static u16 cnt = 0;
+ 353   3                  cnt++;
+ 354   3                  if (cnt >= 10000) // 10000 * 100us，1s
+C51 COMPILER V9.60.7.0   TIMER0                                                            07/15/2025 15:56:04 PAGE 7   
 
- 355   4                      cnt = 0;
- 356   4                      flag_is_light_adjust_time_come = 1;
- 357   4                  }
- 358   3              }
- 359   2      
- 360   2      #endif // 放电时间控制
- 361   2      
- 362   2      #if 0 // 缓慢调节驱动灯光的pwm占空比
+ 355   3                  {
+ 356   4                      cnt = 0;
+ 357   4                      // flag_is_light_adjust_time_come = 1;
+ 358   4      
+ 359   4                      if (light_adjust_time_cnt < 4294967295) // 防止计数溢出
+ 360   4                      {
+ 361   5                          light_adjust_time_cnt++;
+ 362   5                      }
+ 363   4                  }
+ 364   3              }
+ 365   2      
+ 366   2      #endif // 放电时间控制
+ 367   2      
+ 368   2      #if 0 // 缓慢调节驱动灯光的pwm占空比
               
                       {
                           // static u8 cnt =0;
@@ -412,15 +418,15 @@ line level    source
                       }
               
               #endif // 缓慢调节驱动灯光的pwm占空比
- 383   2          }
- 384   1      
- 385   1          // 退出中断设置IP，不可删除
- 386   1          __IRQnIPnPop(TMR0_IRQn);
- 387   1      }
+ 389   2          }
+ 390   1      
+ 391   1          // 退出中断设置IP，不可删除
+ 392   1          __IRQnIPnPop(TMR0_IRQn);
+ 393   1      }
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =    888    ----
+   CODE SIZE        =    933    ----
    CONSTANT SIZE    =   ----    ----
    XDATA SIZE       =     17    ----
    PDATA SIZE       =   ----    ----

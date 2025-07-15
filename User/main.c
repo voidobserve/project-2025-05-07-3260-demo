@@ -27,21 +27,23 @@ volatile bit_flag flag2 = {0};
 volatile u8 cur_light_pwm_duty_val = 0;    // 当前灯光对应的占空比值
 volatile u8 expect_light_pwm_duty_val = 0; // 期望调节到的、灯光对应的占空比值
 
-volatile u16 bat_adc_val;
-volatile u16 charging_adc_val; // 检测到充电电压的ad值
-volatile u16 current_adc_val;  // 检测到充电电流对应的电压值
+
 
 volatile u8 flag_is_light_adjust_time_come = 0; // 调节灯光的时间到来，目前为1s
 
-volatile u16 light_adjust_time_cnt = 0;
 
+
+volatile u16 bat_adc_val; // 电池电压检测脚采集到的ad值
+volatile u16 charging_adc_val; // 充电电压检测脚采集的ad值
+volatile u16 current_adc_val;  // 充电电流检测脚采集的ad值
 volatile u8 flag_is_charging_adjust_time_come = 0; // 调节充电的时间到来
-
-volatile u8 cur_charging_pwm_status = CUR_CHARGING_PWM_STATUS_NONE;
+volatile u8 cur_charging_pwm_status = CUR_CHARGING_PWM_STATUS_NONE; // 控制充电的PWM状态
 volatile u8 cur_charge_phase = CUR_CHARGE_PHASE_NONE; // 记录当前充电阶段
 
 
-volatile u8 flag_is_tim_turn_off_pwm = 0; // 标志位，在涓流充电期间，定时器是否关闭了PWM输出
+volatile u32 light_adjust_time_cnt = 0; // 调节灯光的时间计数，暂定为每1s加一
+volatile u8 light_ctl_phase_in_rate_1 = 1; // 在放电速率M1时，使用到的变量，在计算公式里面用作系数，每次唤醒时需要初始化为1
+// volatile u8 flag_is_tim_turn_off_pwm = 0; // 标志位，在涓流充电期间，定时器是否关闭了PWM输出
 
 
 
@@ -72,6 +74,12 @@ void led_pin_config(void)
     P1_MD1 |= GPIO_P15_MODE_SEL(0x01);
     FOUT_S15 = GPIO_FOUT_AF_FUNC;
     P15 = 0;
+}
+
+// 变量、参数，初始化
+void param_init(void)
+{
+    light_ctl_phase_in_rate_1 = 1; 
 }
 
 /**

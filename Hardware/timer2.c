@@ -1,6 +1,6 @@
 #include "timer2.h"
 
-#define TIMER2_FEQ (SYSCLK / 128 / 1000 - 1) // 周期值=系统时钟/分频/频率 - 1
+
 
 // pwm配置
 void timer2_pwm_config(void)
@@ -39,6 +39,10 @@ void timer2_set_pwm_duty(u8 pwm_duty_val)
 {
     // TMR2_PWMH = TMR_PWM_VAL_H((((u32)TIMER2_FEQ * pwm_duty / 100) >> 8) & 0xFF); // 占空比设置值
     // TMR2_PWML = TMR_PWM_VAL_L((((u32)TIMER2_FEQ * pwm_duty / 100) >> 0) & 0xFF);
-    TMR2_PWMH = TMR_PWM_VAL_H((((u32)TIMER2_FEQ * pwm_duty_val / 255) >> 8) & 0xFF); // 占空比设置值
-    TMR2_PWML = TMR_PWM_VAL_L((((u32)TIMER2_FEQ * pwm_duty_val / 255) >> 0) & 0xFF);
+
+    // TMR2_PWMH = TMR_PWM_VAL_H((((u32)TIMER2_FEQ * pwm_duty_val / 100) >> 8) & 0xFF); // 占空比设置值
+    // TMR2_PWML = TMR_PWM_VAL_L((((u32)TIMER2_FEQ * pwm_duty_val / 100) >> 0) & 0xFF);
+
+    TMR2_PWMH = TMR_PWM_VAL_H(((u32)TIMER2_FEQ * pwm_duty_val >> 8) & 0xFF); // 占空比设置值
+    TMR2_PWML = TMR_PWM_VAL_L(((u32)TIMER2_FEQ * pwm_duty_val >> 0) & 0xFF);
 }

@@ -24,15 +24,18 @@ extern volatile u16 current_adc_val;  // 检测到充电电流对应的电压值
 extern volatile u8 cur_light_pwm_duty_val;    // 当前灯光对应的占空比值
 extern volatile u8 expect_light_pwm_duty_val; // 期望调节到的、灯光对应的占空比值
 
-extern volatile u8 flag_is_light_adjust_time_come; // 调节灯光的时间到来，目前为1s
+// extern volatile u8 flag_is_light_adjust_time_come; // 调节灯光的时间到来，目前为1s
 
-extern volatile u16 light_adjust_time_cnt;
+extern volatile u32 light_adjust_time_cnt;
 extern volatile u8 flag_is_charging_adjust_time_come; // 调节充电的时间到来
 
 extern volatile u8 cur_charging_pwm_status;
 extern volatile u8 cur_charge_phase; // 记录当前充电阶段
 
-extern volatile u8 flag_is_tim_turn_off_pwm ; // 标志位，在涓流充电期间，定时器是否关闭了PWM输出
+// extern volatile u8 flag_is_tim_turn_off_pwm ; // 标志位，在涓流充电期间，定时器是否关闭了PWM输出
+
+
+extern volatile u8 light_ctl_phase_in_rate_1; // 在放电速率M1时，使用到的变量，在计算公式里面用作系数
 
 enum
 {
