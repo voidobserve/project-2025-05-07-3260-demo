@@ -33,6 +33,6 @@ void timer2_pwm_enable(void);
 // 关闭pwm，引脚输出低电平
 void timer2_pwm_disable(void);
 
-void timer2_set_pwm_duty(u8 pwm_duty_val);
+void timer2_set_pwm_duty(u16 pwm_duty_val);
 
 #endif

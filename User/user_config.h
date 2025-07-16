@@ -21,8 +21,9 @@ extern volatile u16 bat_adc_val;
 extern volatile u16 charging_adc_val; // 检测到充电电压的ad值
 extern volatile u16 current_adc_val;  // 检测到充电电流对应的电压值
 
-extern volatile u8 cur_light_pwm_duty_val;    // 当前灯光对应的占空比值
-extern volatile u8 expect_light_pwm_duty_val; // 期望调节到的、灯光对应的占空比值
+// TODO：3260使用16位寄存器，7361使用8位寄存器，要进行适配修改 
+extern volatile u16 cur_light_pwm_duty_val;    // 当前灯光对应的占空比值
+extern volatile u16 expect_light_pwm_duty_val; // 期望调节到的、灯光对应的占空比值
 
 // extern volatile u8 flag_is_light_adjust_time_come; // 调节灯光的时间到来，目前为1s
 
@@ -34,8 +35,17 @@ extern volatile u8 cur_charge_phase; // 记录当前充电阶段
 
 // extern volatile u8 flag_is_tim_turn_off_pwm ; // 标志位，在涓流充电期间，定时器是否关闭了PWM输出
 
-
 extern volatile u8 light_ctl_phase_in_rate_1; // 在放电速率M1时，使用到的变量，在计算公式里面用作系数
+
+// =================================================================
+// 指示灯控制相关变量                                               //
+// =================================================================
+extern volatile u8 cur_initial_discharge_gear; // 初始放电挡位（需要记忆）
+extern volatile u8 cur_discharge_rate;         // 初始放电速率（需要记忆）
+extern volatile u8 cur_led_mode;               // 当前的LED模式
+extern volatile u8 cur_led_gear;               // 当前led挡位
+extern volatile u8 last_led_gear;              // 上次led挡位
+extern volatile u8 cur_led_gear_in_charging; // 充电指示，对应的挡位
 
 enum
 {
@@ -147,5 +157,7 @@ extern volatile bit_flag flag2;
             flag_is_led_5_enable = 0; \
         } while (0);                  \
     }
+
+#include "my_debug.h"
 
 #endif

@@ -24,28 +24,35 @@
 volatile bit_flag flag1 = {0};
 volatile bit_flag flag2 = {0};
 
-volatile u8 cur_light_pwm_duty_val = 0;    // 当前灯光对应的占空比值
-volatile u8 expect_light_pwm_duty_val = 0; // 期望调节到的、灯光对应的占空比值
+// TODO：3260使用16位寄存器，7361使用8位寄存器，要进行适配修改 
+volatile u16 cur_light_pwm_duty_val = 0;    // 当前灯光对应的占空比值 
+volatile u16 expect_light_pwm_duty_val = 0; // 期望调节到的、灯光对应的占空比值 
 
+volatile u8 flag_is_light_adjust_time_come = 0; // 调节灯光的时间到来，目前为1s 
 
-
-volatile u8 flag_is_light_adjust_time_come = 0; // 调节灯光的时间到来，目前为1s
-
-
-
-volatile u16 bat_adc_val; // 电池电压检测脚采集到的ad值
-volatile u16 charging_adc_val; // 充电电压检测脚采集的ad值
-volatile u16 current_adc_val;  // 充电电流检测脚采集的ad值
-volatile u8 flag_is_charging_adjust_time_come = 0; // 调节充电的时间到来
+// =================================================================
+// 充电控制相关变量                                                 //
+// =================================================================
+volatile u16 bat_adc_val;                                           // 电池电压检测脚采集到的ad值
+volatile u16 charging_adc_val;                                      // 充电电压检测脚采集的ad值
+volatile u16 current_adc_val;                                       // 充电电流检测脚采集的ad值
+volatile u8 flag_is_charging_adjust_time_come = 0;                  // 调节充电的时间到来
 volatile u8 cur_charging_pwm_status = CUR_CHARGING_PWM_STATUS_NONE; // 控制充电的PWM状态
-volatile u8 cur_charge_phase = CUR_CHARGE_PHASE_NONE; // 记录当前充电阶段
+volatile u8 cur_charge_phase = CUR_CHARGE_PHASE_NONE;               // 记录当前充电阶段
 
-
-volatile u32 light_adjust_time_cnt = 0; // 调节灯光的时间计数，暂定为每1s加一
+volatile u32 light_adjust_time_cnt = 0;    // 调节灯光的时间计数，暂定为每1s加一
 volatile u8 light_ctl_phase_in_rate_1 = 1; // 在放电速率M1时，使用到的变量，在计算公式里面用作系数，每次唤醒时需要初始化为1
 // volatile u8 flag_is_tim_turn_off_pwm = 0; // 标志位，在涓流充电期间，定时器是否关闭了PWM输出
 
-
+// =================================================================
+// 指示灯控制相关变量                                               //
+// =================================================================
+volatile u8 cur_initial_discharge_gear = 5; // 初始放电挡位（需要记忆）
+volatile u8 cur_discharge_rate = 1;         // 初始放电速率（需要记忆）
+volatile u8 cur_led_mode; // 当前的LED模式
+volatile u8 cur_led_gear;  // 当前led挡位
+volatile u8 last_led_gear; // 上次led挡位
+volatile u8 cur_led_gear_in_charging; // 充电指示，对应的挡位
 
 //
 void led_pin_config(void)
@@ -79,7 +86,7 @@ void led_pin_config(void)
 // 变量、参数，初始化
 void param_init(void)
 {
-    light_ctl_phase_in_rate_1 = 1; 
+    light_ctl_phase_in_rate_1 = 1;
 }
 
 /**
@@ -100,6 +107,8 @@ void main(void)
     WDT_KEY = 0xBB;  // 写一个无效的数据，触发写保护
 
     uart0_config();
+    my_debug_led_config();
+
     timer0_config();
     timer1_pwm_config(); // 控制充电的PWM
     timer1_pwm_disable();
@@ -161,6 +170,44 @@ void main(void)
         // ir_handle();
         // charge_handle();
         // led_handle_update_percent_of_bat();
+
+        if (CUR_CHARGE_PHASE_NONE == cur_charge_phase)
+        {
+            my_debug_led_2_off();
+            my_debug_led_3_off();
+            my_debug_led_4_off();
+
+            my_debug_led_1_on();
+        }
+        else if (CUR_CHARGE_PHASE_NORMAL_CHARGE == cur_charge_phase)
+        {
+            my_debug_led_1_off();
+            my_debug_led_3_off();
+            my_debug_led_4_off();
+
+            my_debug_led_2_on();
+        }
+        else if (CUR_CHARGE_PHASE_TRICKLE_CHARGE_WHEN_APPROACH_FULLY_CHARGE == cur_charge_phase)
+        {
+            my_debug_led_1_off();
+            my_debug_led_2_off();
+            my_debug_led_4_off();
+
+            my_debug_led_3_on();
+        }
+        else if (CUR_CHARGE_PHASE_FULLY_CHARGE == cur_charge_phase)
+        {
+            my_debug_led_1_off();
+            my_debug_led_2_off();
+            my_debug_led_3_off();
+
+            my_debug_led_4_on();
+        }
+
+        // my_debug_led_1_on();
+        // my_debug_led_2_on();
+        // my_debug_led_3_on();
+        // my_debug_led_4_on();
 
 #if 0 // 缓慢调节驱动灯光的pwm占空比（还未调试完成）
 

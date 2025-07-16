@@ -1,7 +1,5 @@
 #include "timer2.h"
 
-
-
 // pwm配置
 void timer2_pwm_config(void)
 {
@@ -34,8 +32,9 @@ void timer2_pwm_disable(void)
     P24 = 0;
 }
 
-// pwm_duty_val占空比值，不是以百分比为单位， 0 ~ 255，用7361最大只能在 0~255调节占空比，而且上限可能到不了255
-void timer2_set_pwm_duty(u8 pwm_duty_val)
+
+// pwm_duty_val占空比值，不是以百分比为单位
+void timer2_set_pwm_duty(u16 pwm_duty_val)
 {
     // TMR2_PWMH = TMR_PWM_VAL_H((((u32)TIMER2_FEQ * pwm_duty / 100) >> 8) & 0xFF); // 占空比设置值
     // TMR2_PWML = TMR_PWM_VAL_L((((u32)TIMER2_FEQ * pwm_duty / 100) >> 0) & 0xFF);
@@ -43,6 +42,8 @@ void timer2_set_pwm_duty(u8 pwm_duty_val)
     // TMR2_PWMH = TMR_PWM_VAL_H((((u32)TIMER2_FEQ * pwm_duty_val / 100) >> 8) & 0xFF); // 占空比设置值
     // TMR2_PWML = TMR_PWM_VAL_L((((u32)TIMER2_FEQ * pwm_duty_val / 100) >> 0) & 0xFF);
 
-    TMR2_PWMH = TMR_PWM_VAL_H(((u32)TIMER2_FEQ * pwm_duty_val >> 8) & 0xFF); // 占空比设置值
-    TMR2_PWML = TMR_PWM_VAL_L(((u32)TIMER2_FEQ * pwm_duty_val >> 0) & 0xFF);
+    TMR2_PWMH = (pwm_duty_val >> 8) & 0xFF; // 占空比设置值
+    TMR2_PWML = (pwm_duty_val >> 0) & 0xFF;
 }
+
+

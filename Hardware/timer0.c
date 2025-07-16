@@ -216,7 +216,6 @@ void TIMR0_IRQHandler(void) interrupt TMR0_IRQn
             static u8 cnt = 0;
             static u8 blink_cnt = 0;
             static bit flag_blink_dir = 0;
-
             cnt++;
 
             if (cnt >= 10) // 10 * 100us == 1ms
@@ -224,6 +223,7 @@ void TIMR0_IRQHandler(void) interrupt TMR0_IRQn
                 cnt = 0;
 
 #if 1 // 控制LED指示灯的闪烁效果
+
                 blink_cnt++;
                 if (blink_cnt >= 200)
                 {
@@ -234,7 +234,6 @@ void TIMR0_IRQHandler(void) interrupt TMR0_IRQn
                     {
                         if (0 == flag_blink_dir)
                         {
-                            // LED_1_ON();
                             switch (cur_initial_discharge_gear)
                             {
                             case 1:
@@ -258,7 +257,6 @@ void TIMR0_IRQHandler(void) interrupt TMR0_IRQn
                         }
                         else
                         {
-                            // LED_1_OFF();
                             switch (cur_initial_discharge_gear)
                             {
                             case 1:
@@ -281,7 +279,87 @@ void TIMR0_IRQHandler(void) interrupt TMR0_IRQn
                             flag_blink_dir = 0;
                         }
                     } // if (CUR_LED_MODE_INITIAL_DISCHARGE_GEAR == cur_led_mode)
+                    // 刚按下遥控器的 SET 按键，会进入 设置模式，5个指示灯一起闪烁
+                    else if (CUR_LED_MODE_SETTING == cur_led_mode)
+                    {
+                        if (0 == flag_blink_dir)
+                        {
+                            LED_1_ON();
+                            LED_2_ON();
+                            LED_3_ON();
+                            LED_4_ON();
+                            LED_5_ON();
+                            flag_blink_dir = 1;
+                        }
+                        else
+                        {
+                            LED_1_OFF();
+                            LED_2_OFF();
+                            LED_3_OFF();
+                            LED_4_OFF();
+                            LED_5_OFF();
+                            flag_blink_dir = 0;
+                        }
+                    }
+                    // 指示灯处于充电指示模式
+                    else if (CUR_LED_MODE_CHARGING == cur_led_mode)
+                    {
+                        if (cur_led_gear_in_charging <= 2)
+                        {
+                            if (0 == flag_blink_dir)
+                            {
+                                LED_2_ON();
+                                flag_blink_dir = 1;
+                            }
+                            else
+                            {
+                                LED_2_OFF();
+                                flag_blink_dir = 0;
+                            }
+                        }
+                        else if (cur_led_gear_in_charging <= 3)
+                        {
+                            if (0 == flag_blink_dir)
+                            {
+                                LED_3_ON();
+                                flag_blink_dir = 1;
+                            }
+                            else
+                            {
+                                LED_3_OFF();
+                                flag_blink_dir = 0;
+                            }
+                        }
+                        else if (cur_led_gear_in_charging <= 4)
+                        {
+                            if (0 == flag_blink_dir)
+                            {
+                                LED_4_ON();
+                                flag_blink_dir = 1;
+                            }
+                            else
+                            {
+                                LED_4_OFF();
+                                flag_blink_dir = 0;
+                            }
+                        }
+                        else if (cur_led_gear_in_charging <= 5)
+                        {
+                            if (0 == flag_blink_dir)
+                            {
+                                LED_5_ON();
+                                flag_blink_dir = 1;
+                            }
+                            else
+                            {
+                                LED_5_OFF();
+                                flag_blink_dir = 0;
+                            }
+                        }
+                    }
+
                 } // if (blink_cnt >= 200)
+
 #endif // 控制LED指示灯的闪烁效果
 
 #if 1 // 退出特殊的led指示模式的时间计数
@@ -345,7 +423,7 @@ void TIMR0_IRQHandler(void) interrupt TMR0_IRQn
         }
 
 #if 1 // 放电时间控制
- 
+
         // TODO:如果不在充电，设备没有关机，才进行放电时间累计
         if (CUR_CHARGE_PHASE_NONE == cur_charge_phase) // 如果不在充电
         {

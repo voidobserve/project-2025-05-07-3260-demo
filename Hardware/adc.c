@@ -29,7 +29,7 @@ void adc_config(void)
 /**
  * @brief 切换adc的参考电压
  *
- * @param adc_ref_voltage  
+ * @param adc_ref_voltage
  *              ADC_REF_2_0_VOL = 0x00, // adc使用2.0V参考电压
                 ADC_REF_3_0_VOL,        // adc使用3.0V参考电压
  */
@@ -74,15 +74,15 @@ void adc_sel_pin(u8 adc_pin)
                   (0x01 << 0)); // 选择外部通路，清空选择的adc0通路
 
     if (ADC_PIN_DETECT_CHARGE == adc_pin)
-    { 
+    {
         ADC_CHS0 |= (0x0E << 0); // P16 对应的模拟通道
     }
     else if (ADC_PIN_DETECT_BATTERY == adc_pin)
-    { 
+    {
         ADC_CHS0 |= (0x12 << 0); // P22 对应的模拟通道
     }
     else if (ADC_PIN_DETECT_CURRENT == adc_pin)
-    { 
+    {
         ADC_CHS0 |= (0x19 << 0); // P31 对应的模拟通道
     }
 
@@ -124,4 +124,40 @@ u16 adc_getval(void)
     g_temp_value = (g_tmpbuff >> 4); // 除以16，取平均值
 
     return g_temp_value;
+}
+
+/**
+ * @brief 更新电池对应的ad值，内部使用2.0V参考电压
+ *
+ */
+void adc_update_bat_adc_val(void)
+{
+    adc_sel_ref_voltage(ADC_REF_2_0_VOL);
+    adc_sel_pin(ADC_PIN_DETECT_BATTERY);
+    bat_adc_val = adc_getval();
+}
+
+/**
+ * @brief 更新充电对应的ad值
+ *
+ * @param adc_ref_voltage
+ *          ADC_REF_2_0_VOL 使用2.0V作为参考电压
+ *          ADC_REF_3_0_VOL 使用3.0V作为参考电压
+ */
+void adc_update_charge_adc_val(u8 adc_ref_voltage)
+{
+    adc_sel_ref_voltage(adc_ref_voltage);
+    adc_sel_pin(ADC_PIN_DETECT_CHARGE);
+    charging_adc_val = adc_getval();
+}
+
+/**
+ * @brief 更新电流对应的ad值，内部使用3.0V参考电压
+ *
+ */
+void adc_update_current_adc_val(void)
+{
+    adc_sel_ref_voltage(ADC_REF_3_0_VOL);
+    adc_sel_pin(ADC_PIN_DETECT_CURRENT);
+    current_adc_val = adc_getval();
 }

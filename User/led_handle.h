@@ -21,6 +21,8 @@ enum
     BAT_ADC_VAL_2 = (u16)((u32)2850 * 4096 / 2 / 2 / 1000),
     BAT_ADC_VAL_3 = (u16)((u32)3050 * 4096 / 2 / 2 / 1000),
     BAT_ADC_VAL_4 = (u16)((u32)3200 * 4096 / 2 / 2 / 1000),
+
+    BAT_ADC_VAL_5 = (u16)((u32)3400 * 4096 / 2 / 2 / 1000), 
 };
 
 // #define BAT_ADC_VAL_DEAD_ZONE (50) // 电池电压对应的ad值死区
@@ -29,17 +31,17 @@ enum
 {
     CUR_LED_MODE_OFF = 0,                // 关机，指示灯全灭
     CUR_LED_MODE_BAT_INDICATOR,          // 电池电量指示模式
-    CUR_LED_MODE_INITIAL_DISCHARGE_GEAR, // 初始放电挡位 -- 从 xx% PWW开始放电
+    CUR_LED_MODE_INITIAL_DISCHARGE_GEAR, // 初始放电挡位 -- 从 xx% PWW开始放电（指示灯由定时器控制）
     CUR_LED_MODE_DISCHARGE_RATE,         // 放电速率
     CUR_LED_MODE_CHARGING,               // 充电指示模式
+    CUR_LED_MODE_SETTING,                // 刚用遥控器按下SET按键，未按下其他按键，5个指示灯会一起闪烁（指示灯由定时器控制）
 };
 
-#define BAT_ADC_VAL_SAMPLE_COUNT 20 // 滑动平均的样本计数
+// #define BAT_ADC_VAL_SAMPLE_COUNT 20 // 滑动平均的样本计数
 
 extern volatile u8 cur_led_mode;                   // 当前的LED模式
 extern volatile u8 bat_remaining_power_indication; // 电池剩余电量指示挡位
-extern volatile u8 cur_initial_discharge_gear;     // 初始放电挡位
-extern volatile u8 cur_discharge_rate;             // 初始放电速率（需要记忆）
+
 
 extern volatile u8 flag_is_update_led_mode_times_come; // 标志位，LED特殊模式的时间到来
 

@@ -10,7 +10,8 @@
 ".\Release\Objects\charge_handle.obj",
 ".\Release\Objects\ir_handle.obj",
 ".\Release\Objects\led_handle.obj",
-".\Release\Objects\light_handle.obj" 
+".\Release\Objects\light_handle.obj",
+".\Release\Objects\my_debug.obj" 
 TO ".\Release\Objects\Demo" 
 PRINT(".\Release\Listings\Demo.m51") RAMSIZE(256) 
 CODE( 0X0000-0X3EEF )

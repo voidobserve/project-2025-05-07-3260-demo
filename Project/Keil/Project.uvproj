@@ -451,6 +451,11 @@
               <FileType>1</FileType>
               <FilePath>..\..\User\light_handle.c</FilePath>
             </File>
+            <File>
+              <FileName>my_debug.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\User\my_debug.c</FilePath>
+            </File>
           </Files>
         </Group>
       </Groups>

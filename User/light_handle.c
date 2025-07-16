@@ -14,10 +14,19 @@ void light_blink(void)
     }
 }
 
-// 灯光控制（放电控制）
+ 
+/**
+ * @brief 灯光控制（放电控制）
+ *          进入前要先确认 expect_light_pwm_duty_val 的值是否初始化过一次，
+ *          light_adjust_time_cnt调节灯光的时间计时是否正确，如果切换了模式或放电速度，要先清零
+ */
 void light_handle(void)
 {
     // 如果正在充电，直接返回
+    if (cur_charge_phase != CUR_CHARGE_PHASE_NONE)
+    {
+        return;
+    }
 
     // 如果未在充电
 
@@ -79,7 +88,8 @@ void light_handle(void)
             暂定每次降低 0.6%
         */
 
-        if (cur_light_pwm_duty_val > (u32)TIMER2_FEQ * 47 / 100)
+        // 当前的占空比在47%以上时，不包括47%，每40s降低一次占空比
+        if (cur_light_pwm_duty_val > (u32)TIMER2_FEQ * 47 / 100) 
         {
             if (light_adjust_time_cnt >= 40)
             {
@@ -97,7 +107,8 @@ void light_handle(void)
                 }
             }
         }
-        else if (cur_light_pwm_duty_val > (u32)TIMER2_FEQ * 42 / 100)
+        // 当前的占空比在42%以上时，不包括42%，每240秒降低一次占空比
+        else if (cur_light_pwm_duty_val > (u32)TIMER2_FEQ * 42 / 100) 
         {
             if (light_adjust_time_cnt >= 240)
             {
@@ -115,7 +126,7 @@ void light_handle(void)
                 }
             }
         }
-        else
+        else // 当前的占空比在42%及以下，每420秒降低一次占空比
         {
             if (light_adjust_time_cnt >= 420)
             {

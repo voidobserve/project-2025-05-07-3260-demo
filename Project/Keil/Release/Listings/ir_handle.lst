@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.7.0   IR_HANDLE                                                         07/15/2025 15:50:44 PAGE 1   
+C51 COMPILER V9.60.7.0   IR_HANDLE                                                         07/16/2025 16:01:08 PAGE 1   
 
 
 C51 COMPILER V9.60.7.0, COMPILATION OF MODULE IR_HANDLE
@@ -40,180 +40,234 @@ line level    source
   29          */
   30          void set_led_mode_status(u8 set_led_mode, u8 val)
   31          {
-  32   1          if (flag_is_in_setting_mode)
-  33   1          {
-  34   2              if (CUR_LED_MODE_INITIAL_DISCHARGE_GEAR == set_led_mode)
-  35   2              {
-  36   3                  cur_initial_discharge_gear = val;
-  37   3              }
-  38   2              else // CUR_LED_MODE_DISCHARGE_RATE == set_led_mode
-  39   2              {
-  40   3                  cur_discharge_rate = val;
-  41   3              }
-  42   2      
-  43   2              cur_led_mode = set_led_mode;
-  44   2              refresh_led_mode_status();
-  45   2          }
-  46   1      }
-  47          
-  48          void ir_handle(void)
-  49          {
-  50   1          if (flag_is_recved_data)
-  51   1          {
-  52   2              flag_is_recved_data = 0;
-  53   2      
-C51 COMPILER V9.60.7.0   IR_HANDLE                                                         07/15/2025 15:50:44 PAGE 2   
+  32   1          // 如果在设置模式，才会进入
+  33   1          if (flag_is_in_setting_mode)
+  34   1          {
+  35   2              if (CUR_LED_MODE_INITIAL_DISCHARGE_GEAR == set_led_mode)
+  36   2              {
+  37   3                  cur_initial_discharge_gear = val;
+  38   3              }
+  39   2              else // CUR_LED_MODE_DISCHARGE_RATE == set_led_mode
+  40   2              {
+  41   3                  cur_discharge_rate = val;
+  42   3              }
+  43   2      
+  44   2              cur_led_mode = set_led_mode;
+  45   2              refresh_led_mode_status();
+  46   2          }
+  47   1      }
+  48          
+  49          void ir_handle(void)
+  50          {
+  51   1          static u8 last_ir_data = 0;
+  52   1      
+  53   1          if (cur_charge_phase != CUR_CHARGE_PHASE_NONE)
+C51 COMPILER V9.60.7.0   IR_HANDLE                                                         07/16/2025 16:01:08 PAGE 2   
 
-  54   2              switch (ir_data)
-  55   2              {
-  56   3              case IR_KEY_RED:
-  57   3                  // 大摇控器的红色按键，小遥控器的绿色按键
-  58   3      
-  59   3                  if (flag_is_in_setting_mode)
-  60   3                  {
-  61   4                      // 正处于设置模式，不响应
-  62   4                      return;
-  63   4                  }
-  64   3      
-  65   3                  refresh_led_mode_status();
-  66   3                  cur_led_mode++;
-  67   3                  if (cur_led_mode > CUR_LED_MODE_DISCHARGE_RATE)
-  68   3                  {
-  69   4                      cur_led_mode = CUR_LED_MODE_BAT_INDICATOR;
-  70   4                  }
+  54   1          {
+  55   2              // 如果当前正在充电，直接返回
+  56   2              flag_is_recved_data = 0;
+  57   2              last_ir_data = 0;
+  58   2              return;
+  59   2          }
+  60   1      
+  61   1          if (flag_is_recved_data)
+  62   1          {
+  63   2              flag_is_recved_data = 0;
+  64   2      
+  65   2              last_ir_data = ir_data;
+  66   2      
+  67   2              switch (ir_data)
+  68   2              {
+  69   3              case IR_KEY_RED:
+  70   3                  // 大摇控器的红色按键，小遥控器的绿色按键
   71   3      
-  72   3                  break;
-  73   3      
-  74   3              case IR_KEY_NUM_1:
-  75   3                  // 数字1
-  76   3      
-  77   3                  set_led_mode_status(CUR_LED_MODE_INITIAL_DISCHARGE_GEAR, 1);
-  78   3      
-  79   3                  break;
-  80   3      
-  81   3              case IR_KEY_BRIGHTNESS_SUB_OR_NUM_2:
-  82   3                  // 亮度减，也是小遥控器的数字2
-  83   3      
-  84   3                  set_led_mode_status(CUR_LED_MODE_INITIAL_DISCHARGE_GEAR, 2);
-  85   3      
-  86   3                  break;
-  87   3      
-  88   3              case IR_KEY_3H_OR_NUM_3:
-  89   3                  // 3H，也是小遥控器的数字3
-  90   3      
-  91   3                  set_led_mode_status(CUR_LED_MODE_INITIAL_DISCHARGE_GEAR, 3);
-  92   3      
-  93   3                  break;
+  72   3                  if (flag_is_in_setting_mode)
+  73   3                  {
+  74   4                      // 正处于设置模式，不响应
+  75   4                      return;
+  76   4                  }
+  77   3      
+  78   3                  refresh_led_mode_status();
+  79   3      
+  80   3                  /*
+  81   3                      不在设置模式，每次按下按键，在
+  82   3                      电池电量指示 -> 初始放电挡位 -> 放电速率 -> 电池电量指示 之间切�
+             -�
+  83   3                  */
+  84   3                  cur_led_mode++;
+  85   3                  if (cur_led_mode > CUR_LED_MODE_DISCHARGE_RATE)
+  86   3                  {
+  87   4                      cur_led_mode = CUR_LED_MODE_BAT_INDICATOR;
+  88   4                  }
+  89   3      
+  90   3                  break;
+  91   3      
+  92   3              case IR_KEY_NUM_1:
+  93   3                  // 数字1
   94   3      
-  95   3              case IR_KEY_BRIGHTNESS_ADD_OR_NUM_4:
-  96   3                  // 亮度加，也是小遥控器的数字4
-  97   3      
-  98   3                  set_led_mode_status(CUR_LED_MODE_INITIAL_DISCHARGE_GEAR, 4);
-  99   3      
- 100   3                  break;
- 101   3      
- 102   3              case IR_KEY_AUTO_OR_NUM_5:
- 103   3                  // 自动模式 ，也是小遥控器的数字5
+  95   3                  set_led_mode_status(CUR_LED_MODE_INITIAL_DISCHARGE_GEAR, 1);
+  96   3      
+  97   3                  break;
+  98   3      
+  99   3              case IR_KEY_BRIGHTNESS_SUB_OR_NUM_2:
+ 100   3                  // 亮度减，也是小遥控器的数字2
+ 101   3                  // TODO：待完善功能
+ 102   3      
+ 103   3                  set_led_mode_status(CUR_LED_MODE_INITIAL_DISCHARGE_GEAR, 2);
  104   3      
- 105   3                  set_led_mode_status(CUR_LED_MODE_INITIAL_DISCHARGE_GEAR, 5);
+ 105   3                  break;
  106   3      
- 107   3                  break;
- 108   3      
- 109   3              case IR_KEY_5H_OR_M1:
- 110   3                  // 5H，也是小遥控器的M1
- 111   3      
- 112   3                  set_led_mode_status(CUR_LED_MODE_DISCHARGE_RATE, 1);
- 113   3      
- 114   3                  break;
- 115   3      
-C51 COMPILER V9.60.7.0   IR_HANDLE                                                         07/15/2025 15:50:44 PAGE 3   
+ 107   3              case IR_KEY_3H_OR_NUM_3:
+ 108   3                  // 3H，也是小遥控器的数字3
+ 109   3                  // TODO：待完善功能
+ 110   3      
+ 111   3                  set_led_mode_status(CUR_LED_MODE_INITIAL_DISCHARGE_GEAR, 3);
+ 112   3      
+ 113   3                  break;
+ 114   3      
+C51 COMPILER V9.60.7.0   IR_HANDLE                                                         07/16/2025 16:01:08 PAGE 3   
 
- 116   3              case IR_KEY_M2:
- 117   3                  // 小遥控器的M2
+ 115   3              case IR_KEY_BRIGHTNESS_ADD_OR_NUM_4:
+ 116   3                  // 亮度加，也是小遥控器的数字4
+ 117   3                  // TODO：待完善功能
  118   3      
- 119   3                  set_led_mode_status(CUR_LED_MODE_DISCHARGE_RATE, 2);
+ 119   3                  set_led_mode_status(CUR_LED_MODE_INITIAL_DISCHARGE_GEAR, 4);
  120   3      
  121   3                  break;
  122   3      
- 123   3              case IR_KEY_8H_OR_M3:
- 124   3                  // 8H，也是小遥控器的M3
- 125   3      
- 126   3                  set_led_mode_status(CUR_LED_MODE_DISCHARGE_RATE, 3);
- 127   3      
- 128   3                  break;
- 129   3      
- 130   3              case IR_KEY_SET:
- 131   3                  // SET 模式设置
- 132   3      
- 133   3                  flag_is_in_setting_mode = 1;
- 134   3                  cur_led_mode = CUR_LED_MODE_INITIAL_DISCHARGE_GEAR;
- 135   3                  refresh_led_mode_status();
+ 123   3              case IR_KEY_AUTO_OR_NUM_5:
+ 124   3                  // 自动模式 ，也是小遥控器的数字5
+ 125   3                  // TODO：待完善功能
+ 126   3      
+ 127   3                  set_led_mode_status(CUR_LED_MODE_INITIAL_DISCHARGE_GEAR, 5);
+ 128   3      
+ 129   3                  break;
+ 130   3      
+ 131   3              case IR_KEY_5H_OR_M1:
+ 132   3                  // 5H，也是小遥控器的M1
+ 133   3                  // TODO：待完善功能
+ 134   3      
+ 135   3                  set_led_mode_status(CUR_LED_MODE_DISCHARGE_RATE, 1);
  136   3      
  137   3                  break;
  138   3      
- 139   3              case IR_KEY_ON:
- 140   3                  // 开灯
+ 139   3              case IR_KEY_M2:
+ 140   3                  // 小遥控器的M2
  141   3      
- 142   3                  /* 根据初始的放电挡位来设定灯光对应的pwm占空比 */
- 143   3                  switch (cur_initial_discharge_gear)
- 144   3                  {
- 145   4                  case 1:
- 146   4      
- 147   4                      break;
- 148   4      
- 149   4                  case 2:
- 150   4      
- 151   4                      break;
- 152   4      
- 153   4                  case 3:
- 154   4      
- 155   4                      break;
- 156   4      
- 157   4                  case 4:
- 158   4                      // 初始放电挡位 4档，刚开始是 56.98%开始放电
- 159   4                      expect_light_pwm_duty_val = (u8)((u32)255 * 5698 / 10000);                
- 160   4      
- 161   4                      break;
- 162   4      
- 163   4                  case 5:
- 164   4                      // 初始放电挡位 5档，刚开始是 49.8%开始放电
- 165   4                      expect_light_pwm_duty_val = (u8)((u32)255 * 4980 / 10000);
- 166   4                      
- 167   4                      break;
- 168   4                  }
- 169   3      
- 170   3                  cur_light_pwm_duty_val = expect_light_pwm_duty_val;
- 171   3                  SET_LIGHT_PWM_DUTY(cur_light_pwm_duty_val);
- 172   3                  light_blink();
- 173   3                  LIGHT_ON();
- 174   3                  cur_led_mode = CUR_LED_MODE_BAT_INDICATOR;
- 175   3      
- 176   3                  break;
- 177   3      
-C51 COMPILER V9.60.7.0   IR_HANDLE                                                         07/15/2025 15:50:44 PAGE 4   
+ 142   3                  set_led_mode_status(CUR_LED_MODE_DISCHARGE_RATE, 2);
+ 143   3      
+ 144   3                  break;
+ 145   3      
+ 146   3              case IR_KEY_8H_OR_M3:
+ 147   3                  // 8H，也是小遥控器的M3
+ 148   3                  // TODO：待完善功能
+ 149   3      
+ 150   3                  set_led_mode_status(CUR_LED_MODE_DISCHARGE_RATE, 3);
+ 151   3      
+ 152   3                  break;
+ 153   3      
+ 154   3              case IR_KEY_SET:
+ 155   3                  // SET 模式设置
+ 156   3      
+ 157   3                  flag_is_in_setting_mode = 1; // 表示进入设置模式
+ 158   3                  refresh_led_mode_status();
+ 159   3                  cur_led_mode = CUR_LED_MODE_SETTING; // 交给定时器处理，让所有指示灯都闪烁
+ 160   3      
+ 161   3                  break;
+ 162   3      
+ 163   3              case IR_KEY_ON:
+ 164   3                  // 开灯
+ 165   3      
+ 166   3                  /* 根据初始的放电挡位来设定灯光对应的pwm占空比 */
+ 167   3                  switch (cur_initial_discharge_gear)
+ 168   3                  {
+ 169   4                  case 1:
+ 170   4                      // 初始放电挡位 1档，刚开始是 83.67%开始放电
+ 171   4      
+ 172   4                      // 定时器对应的重装载值最大值 对应 100%占空比
+ 173   4                      expect_light_pwm_duty_val = ((u32)TIMER2_FEQ * 8367 / 10000);
+ 174   4      
+ 175   4                      break;
+ 176   4      
+C51 COMPILER V9.60.7.0   IR_HANDLE                                                         07/16/2025 16:01:08 PAGE 4   
 
- 178   3              case IR_KEY_OFF:
- 179   3      
- 180   3                  if (expect_light_pwm_duty_val > 0) // TODO: 如果未关机
- 181   3                  {
- 182   4                      light_blink();
- 183   4                      // LIGHT_OFF() // light_blink() 最后就是关灯操作，可以不写这一句
- 184   4                      expect_light_pwm_duty_val = 0;
- 185   4                      cur_light_pwm_duty_val = 0;                
- 186   4                      cur_led_mode = CUR_LED_MODE_OFF;
- 187   4                  }
- 188   3      
- 189   3                  break;
- 190   3      
- 191   3              } // switch (ir_data)
- 192   2          } // if (flag_is_recved_data)
- 193   1      }
+ 177   4                  case 2:
+ 178   4                      // 初始放电挡位 2档，刚开始是 74.11%开始放电
+ 179   4      
+ 180   4                      // 定时器对应的重装载值最大值 对应 100%占空比
+ 181   4                      expect_light_pwm_duty_val = ((u32)TIMER2_FEQ * 7411 / 10000);
+ 182   4      
+ 183   4                      break;
+ 184   4      
+ 185   4                  case 3:
+ 186   4                      // 初始放电挡位 3档，刚开始是 64.55%开始放电
+ 187   4      
+ 188   4                      // 定时器对应的重装载值最大值 对应 100%占空比
+ 189   4                      expect_light_pwm_duty_val = ((u32)TIMER2_FEQ * 6455 / 10000);
+ 190   4      
+ 191   4                      break;
+ 192   4      
+ 193   4                  case 4:
+ 194   4                      // 初始放电挡位 4档，刚开始是 56.98%开始放电
+ 195   4      
+ 196   4                      // 定时器对应的重装载值最大值 对应 100%占空比
+ 197   4                      expect_light_pwm_duty_val = ((u32)TIMER2_FEQ * 5698 / 10000);
+ 198   4      
+ 199   4                      break;
+ 200   4      
+ 201   4                  case 5:
+ 202   4                      // 初始放电挡位 5档，刚开始是 49.8%开始放电
+ 203   4      
+ 204   4                      // 定时器对应的重装载值最大值 对应 100%占空比
+ 205   4                      expect_light_pwm_duty_val = ((u32)TIMER2_FEQ * 4980 / 10000);
+ 206   4      
+ 207   4                      break;
+ 208   4                  }
+ 209   3      
+ 210   3                  cur_light_pwm_duty_val = expect_light_pwm_duty_val;
+ 211   3                  // SET_LIGHT_PWM_DUTY(cur_light_pwm_duty_val);
+ 212   3                  timer2_set_pwm_duty(cur_light_pwm_duty_val); // 立刻更新PWM占空比
+ 213   3                  LIGHT_ON();                                  // 使能PWM输出
+ 214   3                  light_blink();
+ 215   3                  refresh_led_mode_status();
+ 216   3                  cur_led_mode = CUR_LED_MODE_BAT_INDICATOR;
+ 217   3      
+ 218   3                  break;
+ 219   3      
+ 220   3              case IR_KEY_OFF:
+ 221   3      
+ 222   3              // TODO: 如果未关机
+ 223   3                  if (expect_light_pwm_duty_val > 0 && /* 如果灯光还是亮的 */
+ 224   3                        CUR_CHARGE_PHASE_NONE == cur_charge_phase)  /* 当前未在充电 */
+ 225   3                  {
+ 226   4                      light_blink();
+ 227   4                      // LIGHT_OFF() // light_blink() 最后就是关灯操作，可以不写这一句
+ 228   4                      expect_light_pwm_duty_val = 0;
+ 229   4                      cur_light_pwm_duty_val = 0;
+ 230   4                      timer2_set_pwm_duty(0);
+ 231   4                      LIGHT_OFF();
+ 232   4                      cur_led_mode = CUR_LED_MODE_OFF;
+ 233   4                  }
+ 234   3      
+ 235   3                  break;
+ 236   3      
+ 237   3              } // switch (ir_data)
+ 238   2          } // if (flag_is_recved_data)
+C51 COMPILER V9.60.7.0   IR_HANDLE                                                         07/16/2025 16:01:08 PAGE 5   
+
+ 239   1      
+ 240   1          if (flag_is_recv_ir_repeat_code)
+ 241   1          {
+ 242   2              flag_is_recv_ir_repeat_code = 0;
+ 243   2          }
+ 244   1      }
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =    271    ----
+   CODE SIZE        =    394    ----
    CONSTANT SIZE    =   ----    ----
-   XDATA SIZE       =      1    ----
+   XDATA SIZE       =      2    ----
    PDATA SIZE       =   ----    ----
    DATA SIZE        =   ----    ----
    IDATA SIZE       =   ----    ----
