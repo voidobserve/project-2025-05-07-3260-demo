@@ -9,20 +9,15 @@
 
 // 充电控制
 void charge_handle(void)
-{  
+{
     if (flag_is_charging_adjust_time_come) // 一定要加入缓慢调节，不能迅速调节，否则会等不到电压稳定
     {
-        u16 current = 0; // 充电电流，单位：mA
-        // u16 voltage_of_charging = 0; // 充电电压，单位：mV
-        u16 voltage_of_bat = 0; // 电池电压
+        static u8 pwm_duty = 0; // 单位：1%
+        u16 current = 0;        // 充电电流，单位：mA
+        u16 voltage_of_bat = 0; // 电池电压，单位：mV
         u32 power = 0;          // 功率，单位：mW 毫瓦
-        static u8 pwm_duty = 0; //
         u16 pwm_reg = 0;        // 存放要写入到寄存器中的占空比值
-
-        u16 expected_power = 0; // 期望功率
-        // u16 limited_current = 0;
-
-        // static u16 real_bat_adc_val = 0;
+        u16 expected_power = 0; // 期望功率 ，单位：mW 毫瓦
 
         flag_is_charging_adjust_time_come = 0; // 清除标志位
 
@@ -137,10 +132,8 @@ void charge_handle(void)
         //     (CUR_CHARGE_PHASE_TRICKLE_CHARGE_WHEN_APPROACH_FULLY_CHARGE != cur_charge_phase))
         // if ((bat_adc_val >= (u16)((u32)(3500 + 100) * 4096 / 2 / 2 / 1000)) && /* 3500 + 100 毫伏，实际测试在 电池电压3.56V，单片机检测脚1.81V都没有进入*/
         //     (CUR_CHARGE_PHASE_TRICKLE_CHARGE_WHEN_APPROACH_FULLY_CHARGE != cur_charge_phase))
-        if ((bat_adc_val >= (u16)((u32)(3500 + 50 + 20) * 4096 / 2 / 2 / 1000)) && /* xxx 毫伏，实际测试在 */
+        if ((bat_adc_val >= (u16)((u32)(3500 + 50 + 20) * 4096 / 2 / 2 / 1000)) && /* xxx 毫伏，实际测试在 3.53V，单片机检测脚电压1.793V*/
             (CUR_CHARGE_PHASE_TRICKLE_CHARGE_WHEN_APPROACH_FULLY_CHARGE != cur_charge_phase))
-        // if ((bat_adc_val >= (u16)((u32)(3600 + 50) * 4096 / 2 / 2 / 1000)) &&
-        //     (CUR_CHARGE_PHASE_TRICKLE_CHARGE_WHEN_APPROACH_FULLY_CHARGE != cur_charge_phase))
         {
 
 #if 0
@@ -150,6 +143,11 @@ void charge_handle(void)
             TMR1_PWML = pwm_reg & 0xFF;
 #endif
 
+            // 准备进入涓流充电，设置PWM，样机最小PWM为4.8%
+            pwm_duty = MIN_PWM_DUTY_IN_TRICKLE_CHARGE;
+            pwm_reg = (u32)TIMER1_HIGH_FEQ_PEROID_VAL * pwm_duty / 100; // 最终的占空比值
+            TMR1_PWMH = (pwm_reg >> 8) & 0xFF;
+            TMR1_PWML = pwm_reg & 0xFF;
             cur_charge_phase = CUR_CHARGE_PHASE_TRICKLE_CHARGE_WHEN_APPROACH_FULLY_CHARGE;
         }
 
@@ -158,11 +156,12 @@ void charge_handle(void)
         {
             static u8 fully_charge_cnt = 0;
 
-            adc_sel_ref_voltage(ADC_REF_3_0_VOL);
-            adc_sel_pin(ADC_PIN_DETECT_CURRENT);
-            current_adc_val = adc_getval();
-            current = (u32)current_adc_val * 3 * 1000 * (1000 / 5) / 4096 / 76; //
+            // adc_sel_ref_voltage(ADC_REF_3_0_VOL);
+            // adc_sel_pin(ADC_PIN_DETECT_CURRENT);
+            // current_adc_val = adc_getval();
+            // current = (u32)current_adc_val * 3 * 1000 * (1000 / 5) / 4096 / 76; //
 
+#if 0
             // if (bat_adc_val < (u16)((u32)(3500) * 4096 / 2 / 2 / 1000))
             // {
             //     if (current > 2000) // 计算出来是2A恒流充电
@@ -197,11 +196,16 @@ void charge_handle(void)
                     }
                 }
             }
+#endif
 
             if (bat_adc_val < (u16)((u32)(3500 + 50) * 4096 / 2 / 2 / 1000)) // 如果电池电压小于3.5V
             {
                 fully_charge_cnt = 0;
-                cur_charge_phase = CUR_CHARGE_PHASE_NORMAL_CHARGE; // 回到正常充电调节
+                /*  
+                    不能回到正常调节，会影响指示灯的状态，
+                    样机涓流时指示灯全部常亮，正常充电时最高一格的指示灯闪烁：
+                */ 
+                // cur_charge_phase = CUR_CHARGE_PHASE_NORMAL_CHARGE; // 回到正常充电调节
                 // return;
             }
 
@@ -211,7 +215,7 @@ void charge_handle(void)
 
                 fully_charge_cnt++;
 
-                pwm_duty = MIN_PWM_DUTY_IN_TRICKLE_CHARGE;
+                // pwm_duty = MIN_PWM_DUTY_IN_TRICKLE_CHARGE;
                 if (fully_charge_cnt >= 10)
                 {
                     fully_charge_cnt = 0;
@@ -229,10 +233,6 @@ void charge_handle(void)
                 // cur_charging_pwm_status = CUR_CHARGING_PWM_STATUS_NONE;
                 // fully_charge_cnt = 0;
             }
-
-            pwm_reg = (u32)TIMER1_HIGH_FEQ_PEROID_VAL * pwm_duty / 100; // 最终的占空比值
-            TMR1_PWMH = (pwm_reg >> 8) & 0xFF;
-            TMR1_PWML = pwm_reg & 0xFF;
 
             return;
         }
@@ -425,5 +425,5 @@ void charge_handle(void)
         //     // printf("pwm_duty :%u\n", pwm_duty);
         TMR1_PWMH = (pwm_reg >> 8) & 0xFF;
         TMR1_PWML = pwm_reg & 0xFF;
-    } 
+    }
 }

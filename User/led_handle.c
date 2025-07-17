@@ -3,26 +3,7 @@
 // TODO:需要初始化为5
 // volatile u8 bat_remaining_power_indication = 5; // 电池剩余电量指示挡位
 
-volatile u8 flag_is_update_led_mode_times_come = 0; // 标志位，LED模式的刷新时间到来
-
-#if 0  // 滑动平均
-/* 滑动平均 */
-static volatile u16 bat_adc_val_samples[BAT_ADC_VAL_SAMPLE_COUNT];
-static volatile u8 bat_adc_val_sample_index = 0;
-u16 get_filtered_bat_adc_val(u16 bat_adc_val)
-{
-    u8 i = 0;
-    u32 sum = 0;
-    bat_adc_val_samples[bat_adc_val_sample_index++] = bat_adc_val;
-    if (bat_adc_val_sample_index >= BAT_ADC_VAL_SAMPLE_COUNT)
-        bat_adc_val_sample_index = 0;
-
-    for (i = 0; i < BAT_ADC_VAL_SAMPLE_COUNT; i++)
-        sum += bat_adc_val_samples[i];
-
-    return sum / BAT_ADC_VAL_SAMPLE_COUNT;
-}
-#endif // 滑动平均
+volatile u8 flag_led_exit_setting_times_come = 0; // 标志位，led退出设置模式的时间到来
 
 /**
  * @brief 更新led指示灯相关的状态
@@ -30,7 +11,7 @@ u16 get_filtered_bat_adc_val(u16 bat_adc_val)
  *          并且要放在 led_handle_update_percent_of_bat() 函数前
  *
  */
-void led_stats_update(void)
+void led_status_refresh(void)
 {
     LED_1_OFF();
     LED_2_OFF();
@@ -39,17 +20,36 @@ void led_stats_update(void)
     LED_5_OFF();
     last_led_gear = 0; // 赋值为初始值
     cur_led_gear_in_charging = 0;
+
+    led_mode_setting_exit_times_cnt = 0; // 清除设置模式下的退出时间计时
 }
 
-// 更新LED指示灯 
-void led_handle_update_percent_of_bat(void)
+/**
+ * @brief 更改led_mode
+ *
+ * @param led_mode
+ *              CUR_LED_MODE_OFF = 0,                // 关机，指示灯全灭
+                CUR_LED_MODE_BAT_INDICATOR,          // 电池电量指示模式
+                CUR_LED_MODE_INITIAL_DISCHARGE_GEAR, // 初始放电挡位 -- 从 xx% PWW开始放电（指示灯由定时器控制）
+                CUR_LED_MODE_DISCHARGE_RATE,         // 放电速率
+                CUR_LED_MODE_CHARGING,               // 充电指示模式
+                CUR_LED_MODE_SETTING,                // 刚用遥控器按下SET按键，未按下其他按键，5个指示灯会一起闪烁（指示灯由定时器控制）
+ */
+void led_mode_alter(u8 led_mode)
 {
+    led_status_refresh();
 
-    // if (CUR_LED_MODE_OFF == cur_led_mode)
-    // {
-    //     refresh_led_mode_status(); // 关闭所有指示灯
-    //     return;
-    // }
+    cur_led_mode = led_mode;
+}
+
+//
+void led_handle(void)
+{
+    if (CUR_LED_MODE_OFF == cur_led_mode)
+    {
+        led_status_refresh();
+        return;
+    }
 
     // 如果当前处于电池电量指示模式
     // 设备处于放电时，电量指示灯只显示电池电量降低的部分
@@ -155,11 +155,12 @@ void led_handle_update_percent_of_bat(void)
         /* 点亮指示灯1（指示灯1始终点亮） */
         LED_1_ON();
 
-        if (bat_adc_val > BAT_ADC_VAL_5) // 电池电量大于5格
-        {
-            cur_led_gear = 6; // 亮5格，并且所有指示灯常亮
-        }
-        else if (bat_adc_val > BAT_ADC_VAL_4) // 电池电量大于4格
+        // if (bat_adc_val > BAT_ADC_VAL_5) // 电池电量大于5格
+        // {
+        //     cur_led_gear = 6; // 亮5格，并且所有指示灯常亮
+        // }
+        // else if (bat_adc_val > BAT_ADC_VAL_4) // 电池电量大于4格
+        if (bat_adc_val > BAT_ADC_VAL_4) // 电池电量大于4格
         {
             cur_led_gear = 5; // 亮5格，让第5格闪烁
         }
@@ -178,6 +179,13 @@ void led_handle_update_percent_of_bat(void)
         else
         {
             cur_led_gear = 1; // 亮1格，让第2格闪烁
+        }
+
+        if (CUR_CHARGE_PHASE_TRICKLE_CHARGE_WHEN_APPROACH_FULLY_CHARGE == cur_charge_phase || /* 快满电，涓流充电 */
+            CUR_CHARGE_PHASE_FULLY_CHARGE == cur_charge_phase)                                /* 已经充满电 */
+        {
+            // 样机是进入涓流充电才把所有指示灯变为常亮
+            cur_led_gear = 6;
         }
 
         if (0 == last_led_gear)
@@ -217,10 +225,11 @@ void led_handle_update_percent_of_bat(void)
         }
     }
 
-    if (flag_is_update_led_mode_times_come) // 时间到来，回到电池电量指示模式
+    if (flag_led_exit_setting_times_come) // 时间到来，回到电池电量指示模式
     {
-        flag_is_update_led_mode_times_come = 0;
+        flag_led_exit_setting_times_come = 0;
 
+        // TODO：这里还未处理好切换问题
         if (cur_light_pwm_duty_val) // 如果灯光还是亮着的
         {
             cur_led_mode = CUR_LED_MODE_BAT_INDICATOR; // 恢复到电池电量指示模式

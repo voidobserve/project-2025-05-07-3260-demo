@@ -22,12 +22,12 @@ enum
     BAT_ADC_VAL_3 = (u16)((u32)3050 * 4096 / 2 / 2 / 1000),
     BAT_ADC_VAL_4 = (u16)((u32)3200 * 4096 / 2 / 2 / 1000),
 
-    BAT_ADC_VAL_5 = (u16)((u32)3400 * 4096 / 2 / 2 / 1000), 
+    BAT_ADC_VAL_5 = (u16)((u32)3400 * 4096 / 2 / 2 / 1000),
 };
 
 // #define BAT_ADC_VAL_DEAD_ZONE (50) // 电池电压对应的ad值死区
 
-enum
+enum LED_MODE
 {
     CUR_LED_MODE_OFF = 0,                // 关机，指示灯全灭
     CUR_LED_MODE_BAT_INDICATOR,          // 电池电量指示模式
@@ -42,9 +42,10 @@ enum
 extern volatile u8 cur_led_mode;                   // 当前的LED模式
 extern volatile u8 bat_remaining_power_indication; // 电池剩余电量指示挡位
 
+extern volatile u8 flag_led_exit_setting_times_come; // 标志位，led退出设置模式的时间到来
 
-extern volatile u8 flag_is_update_led_mode_times_come; // 标志位，LED特殊模式的时间到来
-
-void led_handle_update_percent_of_bat(void);
+void led_status_refresh(void);
+void led_mode_alter(u8 led_mode);
+void led_handle(void);
 
 #endif

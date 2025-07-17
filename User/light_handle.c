@@ -2,6 +2,7 @@
 // 灯光控制源程序
 #include "light_handle.h"
 
+// TODO：闪灯动画需要放到定时器来处理
 void light_blink(void)
 {
     u8 i;
@@ -14,7 +15,59 @@ void light_blink(void)
     }
 }
 
- 
+void light_init(void)
+{
+    /* 根据初始的放电挡位来设定灯光对应的pwm占空比 */
+    switch (cur_initial_discharge_gear)
+    {
+    case 1:
+        // 初始放电挡位 1档，刚开始是 83.67%开始放电
+
+        // 定时器对应的重装载值最大值 对应 100%占空比
+        expect_light_pwm_duty_val = ((u32)TIMER2_FEQ * 8367 / 10000);
+
+        break;
+
+    case 2:
+        // 初始放电挡位 2档，刚开始是 74.11%开始放电
+
+        // 定时器对应的重装载值最大值 对应 100%占空比
+        expect_light_pwm_duty_val = ((u32)TIMER2_FEQ * 7411 / 10000);
+
+        break;
+
+    case 3:
+        // 初始放电挡位 3档，刚开始是 64.55%开始放电
+
+        // 定时器对应的重装载值最大值 对应 100%占空比
+        expect_light_pwm_duty_val = ((u32)TIMER2_FEQ * 6455 / 10000);
+
+        break;
+
+    case 4:
+        // 初始放电挡位 4档，刚开始是 56.98%开始放电
+
+        // 定时器对应的重装载值最大值 对应 100%占空比
+        expect_light_pwm_duty_val = ((u32)TIMER2_FEQ * 5698 / 10000);
+
+        break;
+
+    case 5:
+        // 初始放电挡位 5档，刚开始是 49.8%开始放电
+
+        // 定时器对应的重装载值最大值 对应 100%占空比
+        expect_light_pwm_duty_val = ((u32)TIMER2_FEQ * 4980 / 10000);
+
+        break;
+    }
+
+    cur_light_pwm_duty_val = expect_light_pwm_duty_val;
+    timer2_set_pwm_duty(cur_light_pwm_duty_val); // 立刻更新PWM占空比
+    LIGHT_ON();                                  // 使能PWM输出
+    light_blink();
+    light_adjust_time_cnt = 0;
+}
+
 /**
  * @brief 灯光控制（放电控制）
  *          进入前要先确认 expect_light_pwm_duty_val 的值是否初始化过一次，
@@ -23,7 +76,8 @@ void light_blink(void)
 void light_handle(void)
 {
     // 如果正在充电，直接返回
-    if (cur_charge_phase != CUR_CHARGE_PHASE_NONE)
+    if (cur_charge_phase != CUR_CHARGE_PHASE_NONE ||
+        cur_led_mode == CUR_LED_MODE_OFF) /* 如果指示灯已经关闭 */
     {
         return;
     }
@@ -89,7 +143,7 @@ void light_handle(void)
         */
 
         // 当前的占空比在47%以上时，不包括47%，每40s降低一次占空比
-        if (cur_light_pwm_duty_val > (u32)TIMER2_FEQ * 47 / 100) 
+        if (cur_light_pwm_duty_val > (u32)TIMER2_FEQ * 47 / 100)
         {
             if (light_adjust_time_cnt >= 40)
             {
@@ -101,14 +155,14 @@ void light_handle(void)
                     expect_light_pwm_duty_val -= (u32)TIMER2_FEQ * 6 / 1000;
                 }
                 else
-                { 
+                {
                     // 4.8%占空比
                     expect_light_pwm_duty_val = (u32)TIMER2_FEQ * 48 / 1000;
                 }
             }
         }
         // 当前的占空比在42%以上时，不包括42%，每240秒降低一次占空比
-        else if (cur_light_pwm_duty_val > (u32)TIMER2_FEQ * 42 / 100) 
+        else if (cur_light_pwm_duty_val > (u32)TIMER2_FEQ * 42 / 100)
         {
             if (light_adjust_time_cnt >= 240)
             {
@@ -120,7 +174,7 @@ void light_handle(void)
                     expect_light_pwm_duty_val -= (u32)TIMER2_FEQ * 6 / 1000;
                 }
                 else
-                { 
+                {
                     // 4.8%占空比
                     expect_light_pwm_duty_val = (u32)TIMER2_FEQ * 48 / 1000;
                 }
@@ -138,11 +192,30 @@ void light_handle(void)
                     expect_light_pwm_duty_val -= (u32)TIMER2_FEQ * 6 / 1000;
                 }
                 else
-                { 
+                {
                     // 4.8%占空比
                     expect_light_pwm_duty_val = (u32)TIMER2_FEQ * 48 / 1000;
                 }
             }
         }
-    }
+    } // 放电速率M2，放电速率M3
+
+    // // 如果缓慢调节PWM占空比的时间到来 -- 需要放到定时器中断调节，主循环的时间过长
+    // if (flag_is_light_pwm_duty_val_adjust_time_come)
+    // {
+    //     flag_is_light_pwm_duty_val_adjust_time_come = 0;
+
+    //     if (cur_light_pwm_duty_val > expect_light_pwm_duty_val)
+    //     {
+    //         // 如果要调小灯光的占空比
+    //         cur_light_pwm_duty_val--;
+    //     }
+    //     else if (cur_light_pwm_duty_val < expect_light_pwm_duty_val)
+    //     {
+    //         // 如果要调大灯光的占空比
+    //         cur_light_pwm_duty_val++;
+    //     }
+
+    //     timer2_set_pwm_duty(cur_light_pwm_duty_val);
+    // }
 }

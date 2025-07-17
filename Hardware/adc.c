@@ -161,3 +161,23 @@ void adc_update_current_adc_val(void)
     adc_sel_pin(ADC_PIN_DETECT_CURRENT);
     current_adc_val = adc_getval();
 }
+
+
+#if 0  // 滑动平均
+/* 滑动平均 */
+static volatile u16 bat_adc_val_samples[BAT_ADC_VAL_SAMPLE_COUNT];
+static volatile u8 bat_adc_val_sample_index = 0;
+u16 get_filtered_bat_adc_val(u16 bat_adc_val)
+{
+    u8 i = 0;
+    u32 sum = 0;
+    bat_adc_val_samples[bat_adc_val_sample_index++] = bat_adc_val;
+    if (bat_adc_val_sample_index >= BAT_ADC_VAL_SAMPLE_COUNT)
+        bat_adc_val_sample_index = 0;
+
+    for (i = 0; i < BAT_ADC_VAL_SAMPLE_COUNT; i++)
+        sum += bat_adc_val_samples[i];
+
+    return sum / BAT_ADC_VAL_SAMPLE_COUNT;
+}
+#endif // 滑动平均

@@ -5,20 +5,9 @@ volatile u8 ir_data = 0;
 volatile bit flag_is_recv_ir_repeat_code = 0;
 volatile bit flag_is_recved_data = 0;
 
-volatile bit flag_is_in_setting_mode = 0; // 是否处于设置模式
 
-void refresh_led_mode_status(void)
-{
-    // 每次按下，清除退出时间计时
-    special_led_mode_times_cnt = 0;
 
-    // 切换LED要显示的模式前，先关闭所有指示灯
-    LED_1_OFF();
-    LED_2_OFF();
-    LED_3_OFF();
-    LED_4_OFF();
-    LED_5_OFF();
-}
+
 
 /*
     set_led_mode
@@ -52,7 +41,7 @@ void set_led_mode_status(u8 set_led_mode, u8 val)
         }
 
         cur_led_mode = set_led_mode;
-        refresh_led_mode_status();
+        led_status_refresh();
     }
 }
 
@@ -86,7 +75,7 @@ void ir_handle(void)
                 return;
             }
 
-            refresh_led_mode_status();
+            led_status_refresh();
 
             /*
                 不在设置模式，每次按下按键，在
@@ -166,7 +155,7 @@ void ir_handle(void)
             // SET 模式设置
 
             flag_is_in_setting_mode = 1; // 表示进入设置模式
-            refresh_led_mode_status();
+            led_status_refresh();
             cur_led_mode = CUR_LED_MODE_SETTING; // 交给定时器处理，让所有指示灯都闪烁
 
             break;
@@ -174,58 +163,10 @@ void ir_handle(void)
         case IR_KEY_ON:
             // 开灯
 
-            /* 根据初始的放电挡位来设定灯光对应的pwm占空比 */
-            switch (cur_initial_discharge_gear)
-            {
-            case 1:
-                // 初始放电挡位 1档，刚开始是 83.67%开始放电
-
-                // 定时器对应的重装载值最大值 对应 100%占空比
-                expect_light_pwm_duty_val = ((u32)TIMER2_FEQ * 8367 / 10000);
-
-                break;
-
-            case 2:
-                // 初始放电挡位 2档，刚开始是 74.11%开始放电
-
-                // 定时器对应的重装载值最大值 对应 100%占空比
-                expect_light_pwm_duty_val = ((u32)TIMER2_FEQ * 7411 / 10000);
-
-                break;
-
-            case 3:
-                // 初始放电挡位 3档，刚开始是 64.55%开始放电
-
-                // 定时器对应的重装载值最大值 对应 100%占空比
-                expect_light_pwm_duty_val = ((u32)TIMER2_FEQ * 6455 / 10000);
-
-                break;
-
-            case 4:
-                // 初始放电挡位 4档，刚开始是 56.98%开始放电
-
-                // 定时器对应的重装载值最大值 对应 100%占空比
-                expect_light_pwm_duty_val = ((u32)TIMER2_FEQ * 5698 / 10000);
-
-                break;
-
-            case 5:
-                // 初始放电挡位 5档，刚开始是 49.8%开始放电
-
-                // 定时器对应的重装载值最大值 对应 100%占空比
-                expect_light_pwm_duty_val = ((u32)TIMER2_FEQ * 4980 / 10000);
-
-                break;
-            }
-
-            cur_light_pwm_duty_val = expect_light_pwm_duty_val;
-            // SET_LIGHT_PWM_DUTY(cur_light_pwm_duty_val);
-            timer2_set_pwm_duty(cur_light_pwm_duty_val); // 立刻更新PWM占空比
-            LIGHT_ON();                                  // 使能PWM输出
-            light_blink();
-            light_adjust_time_cnt = 0; 
-            refresh_led_mode_status(); 
-            cur_led_mode = CUR_LED_MODE_BAT_INDICATOR;
+            light_init();
+            // led_status_refresh(); 
+            // cur_led_mode = CUR_LED_MODE_BAT_INDICATOR;
+            led_mode_alter(CUR_LED_MODE_BAT_INDICATOR);
 
             break;
 
@@ -245,7 +186,6 @@ void ir_handle(void)
             }
 
             break;
-
         } // switch (ir_data)
     } // if (flag_is_recved_data)
 

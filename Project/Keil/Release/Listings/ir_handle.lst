@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.7.0   IR_HANDLE                                                         07/16/2025 16:01:08 PAGE 1   
+C51 COMPILER V9.60.7.0   IR_HANDLE                                                         07/17/2025 14:33:58 PAGE 1   
 
 
 C51 COMPILER V9.60.7.0, COMPILATION OF MODULE IR_HANDLE
@@ -16,57 +16,57 @@ line level    source
    5          volatile bit flag_is_recv_ir_repeat_code = 0;
    6          volatile bit flag_is_recved_data = 0;
    7          
-   8          volatile bit flag_is_in_setting_mode = 0; // 是否处于设置模式
+   8          
    9          
-  10          void refresh_led_mode_status(void)
-  11          {
-  12   1          // 每次按下，清除退出时间计时
-  13   1          special_led_mode_times_cnt = 0;
-  14   1      
-  15   1          // 切换LED要显示的模式前，先关闭所有指示灯
-  16   1          LED_1_OFF();
-  17   1          LED_2_OFF();
-  18   1          LED_3_OFF();
-  19   1          LED_4_OFF();
-  20   1          LED_5_OFF();
-  21   1      }
-  22          
-  23          /*
-  24              set_led_mode
-  25          
-  26              CUR_LED_MODE_BAT_INDICATOR = 0,      // 电池电量指示模式
-  27              CUR_LED_MODE_INITIAL_DISCHARGE_GEAR, // 初始放电挡位 -- 从 xx% PWW开始放电
-  28              CUR_LED_MODE_DISCHARGE_RATE,         // 放电速率
-  29          */
-  30          void set_led_mode_status(u8 set_led_mode, u8 val)
-  31          {
-  32   1          // 如果在设置模式，才会进入
-  33   1          if (flag_is_in_setting_mode)
-  34   1          {
-  35   2              if (CUR_LED_MODE_INITIAL_DISCHARGE_GEAR == set_led_mode)
-  36   2              {
-  37   3                  cur_initial_discharge_gear = val;
-  38   3              }
-  39   2              else // CUR_LED_MODE_DISCHARGE_RATE == set_led_mode
-  40   2              {
-  41   3                  cur_discharge_rate = val;
-  42   3              }
-  43   2      
-  44   2              cur_led_mode = set_led_mode;
-  45   2              refresh_led_mode_status();
-  46   2          }
-  47   1      }
-  48          
-  49          void ir_handle(void)
-  50          {
-  51   1          static u8 last_ir_data = 0;
-  52   1      
-  53   1          if (cur_charge_phase != CUR_CHARGE_PHASE_NONE)
-C51 COMPILER V9.60.7.0   IR_HANDLE                                                         07/16/2025 16:01:08 PAGE 2   
+  10          
+  11          
+  12          /*
+  13              set_led_mode
+  14          
+  15              CUR_LED_MODE_BAT_INDICATOR = 0,      // 电池电量指示模式
+  16              CUR_LED_MODE_INITIAL_DISCHARGE_GEAR, // 初始放电挡位 -- 从 xx% PWW开始放电
+  17              CUR_LED_MODE_DISCHARGE_RATE,         // 放电速率
+  18          */
+  19          
+  20          /**
+  21           * @brief 在设置模式，设置初始放电挡位或放电速率
+  22           *          函数内部会判断 当前 是否处于设置模式
+  23           *
+  24           * @param set_led_mode
+  25           *          CUR_LED_MODE_INITIAL_DISCHARGE_GEAR 要设置的是初始放电挡位
+  26           *          CUR_LED_MODE_DISCHARGE_RATE     要设置的是放电速率
+  27           * @param val 初始放电挡位 或 放电速率对应的值（需要注意不能超过范围）
+  28           */
+  29          void set_led_mode_status(u8 set_led_mode, u8 val)
+  30          {
+  31   1          // 如果在设置模式，才会进入
+  32   1          if (flag_is_in_setting_mode)
+  33   1          {
+  34   2              if (CUR_LED_MODE_INITIAL_DISCHARGE_GEAR == set_led_mode)
+  35   2              {
+  36   3                  cur_initial_discharge_gear = val;
+  37   3              }
+  38   2              else // CUR_LED_MODE_DISCHARGE_RATE == set_led_mode
+  39   2              {
+  40   3                  cur_discharge_rate = val;
+  41   3              }
+  42   2      
+  43   2              cur_led_mode = set_led_mode;
+  44   2              led_status_refresh();
+  45   2          }
+  46   1      }
+  47          
+  48          void ir_handle(void)
+  49          {
+  50   1          static u8 last_ir_data = 0;
+  51   1      
+  52   1          if (cur_charge_phase != CUR_CHARGE_PHASE_NONE)
+  53   1          {
+C51 COMPILER V9.60.7.0   IR_HANDLE                                                         07/17/2025 14:33:58 PAGE 2   
 
-  54   1          {
-  55   2              // 如果当前正在充电，直接返回
-  56   2              flag_is_recved_data = 0;
+  54   2              // 如果当前正在充电，直接返回
+  55   2              flag_is_recved_data = 0;
+  56   2              flag_is_recv_ir_repeat_code = 0;
   57   2              last_ir_data = 0;
   58   2              return;
   59   2          }
@@ -88,7 +88,7 @@ line level    source
   75   4                      return;
   76   4                  }
   77   3      
-  78   3                  refresh_led_mode_status();
+  78   3                  led_status_refresh();
   79   3      
   80   3                  /*
   81   3                      不在设置模式，每次按下按键，在
@@ -126,7 +126,7 @@ line level    source
  112   3      
  113   3                  break;
  114   3      
-C51 COMPILER V9.60.7.0   IR_HANDLE                                                         07/16/2025 16:01:08 PAGE 3   
+C51 COMPILER V9.60.7.0   IR_HANDLE                                                         07/17/2025 14:33:58 PAGE 3   
 
  115   3              case IR_KEY_BRIGHTNESS_ADD_OR_NUM_4:
  116   3                  // 亮度加，也是小遥控器的数字4
@@ -171,7 +171,7 @@ line level    source
  155   3                  // SET 模式设置
  156   3      
  157   3                  flag_is_in_setting_mode = 1; // 表示进入设置模式
- 158   3                  refresh_led_mode_status();
+ 158   3                  led_status_refresh();
  159   3                  cur_led_mode = CUR_LED_MODE_SETTING; // 交给定时器处理，让所有指示灯都闪烁
  160   3      
  161   3                  break;
@@ -179,99 +179,50 @@ line level    source
  163   3              case IR_KEY_ON:
  164   3                  // 开灯
  165   3      
- 166   3                  /* 根据初始的放电挡位来设定灯光对应的pwm占空比 */
- 167   3                  switch (cur_initial_discharge_gear)
- 168   3                  {
- 169   4                  case 1:
- 170   4                      // 初始放电挡位 1档，刚开始是 83.67%开始放电
- 171   4      
- 172   4                      // 定时器对应的重装载值最大值 对应 100%占空比
- 173   4                      expect_light_pwm_duty_val = ((u32)TIMER2_FEQ * 8367 / 10000);
- 174   4      
- 175   4                      break;
- 176   4      
-C51 COMPILER V9.60.7.0   IR_HANDLE                                                         07/16/2025 16:01:08 PAGE 4   
+ 166   3                  light_init();
+ 167   3                  // led_status_refresh(); 
+ 168   3                  // cur_led_mode = CUR_LED_MODE_BAT_INDICATOR;
+ 169   3                  led_mode_alter(CUR_LED_MODE_BAT_INDICATOR);
+ 170   3      
+ 171   3                  break;
+ 172   3      
+ 173   3              case IR_KEY_OFF:
+ 174   3      
+ 175   3                  // TODO: 如果未关机
+ 176   3                  if (expect_light_pwm_duty_val > 0 &&           /* 如果灯光还是亮的 */
+C51 COMPILER V9.60.7.0   IR_HANDLE                                                         07/17/2025 14:33:58 PAGE 4   
 
- 177   4                  case 2:
- 178   4                      // 初始放电挡位 2档，刚开始是 74.11%开始放电
- 179   4      
- 180   4                      // 定时器对应的重装载值最大值 对应 100%占空比
- 181   4                      expect_light_pwm_duty_val = ((u32)TIMER2_FEQ * 7411 / 10000);
- 182   4      
- 183   4                      break;
- 184   4      
- 185   4                  case 3:
- 186   4                      // 初始放电挡位 3档，刚开始是 64.55%开始放电
- 187   4      
- 188   4                      // 定时器对应的重装载值最大值 对应 100%占空比
- 189   4                      expect_light_pwm_duty_val = ((u32)TIMER2_FEQ * 6455 / 10000);
- 190   4      
- 191   4                      break;
- 192   4      
- 193   4                  case 4:
- 194   4                      // 初始放电挡位 4档，刚开始是 56.98%开始放电
- 195   4      
- 196   4                      // 定时器对应的重装载值最大值 对应 100%占空比
- 197   4                      expect_light_pwm_duty_val = ((u32)TIMER2_FEQ * 5698 / 10000);
- 198   4      
- 199   4                      break;
- 200   4      
- 201   4                  case 5:
- 202   4                      // 初始放电挡位 5档，刚开始是 49.8%开始放电
- 203   4      
- 204   4                      // 定时器对应的重装载值最大值 对应 100%占空比
- 205   4                      expect_light_pwm_duty_val = ((u32)TIMER2_FEQ * 4980 / 10000);
- 206   4      
- 207   4                      break;
- 208   4                  }
- 209   3      
- 210   3                  cur_light_pwm_duty_val = expect_light_pwm_duty_val;
- 211   3                  // SET_LIGHT_PWM_DUTY(cur_light_pwm_duty_val);
- 212   3                  timer2_set_pwm_duty(cur_light_pwm_duty_val); // 立刻更新PWM占空比
- 213   3                  LIGHT_ON();                                  // 使能PWM输出
- 214   3                  light_blink();
- 215   3                  refresh_led_mode_status();
- 216   3                  cur_led_mode = CUR_LED_MODE_BAT_INDICATOR;
- 217   3      
- 218   3                  break;
- 219   3      
- 220   3              case IR_KEY_OFF:
- 221   3      
- 222   3              // TODO: 如果未关机
- 223   3                  if (expect_light_pwm_duty_val > 0 && /* 如果灯光还是亮的 */
- 224   3                        CUR_CHARGE_PHASE_NONE == cur_charge_phase)  /* 当前未在充电 */
- 225   3                  {
- 226   4                      light_blink();
- 227   4                      // LIGHT_OFF() // light_blink() 最后就是关灯操作，可以不写这一句
- 228   4                      expect_light_pwm_duty_val = 0;
- 229   4                      cur_light_pwm_duty_val = 0;
- 230   4                      timer2_set_pwm_duty(0);
- 231   4                      LIGHT_OFF();
- 232   4                      cur_led_mode = CUR_LED_MODE_OFF;
- 233   4                  }
- 234   3      
- 235   3                  break;
- 236   3      
- 237   3              } // switch (ir_data)
- 238   2          } // if (flag_is_recved_data)
-C51 COMPILER V9.60.7.0   IR_HANDLE                                                         07/16/2025 16:01:08 PAGE 5   
-
- 239   1      
- 240   1          if (flag_is_recv_ir_repeat_code)
- 241   1          {
- 242   2              flag_is_recv_ir_repeat_code = 0;
- 243   2          }
- 244   1      }
+ 177   3                      CUR_CHARGE_PHASE_NONE == cur_charge_phase) /* 当前未在充电 */
+ 178   3                  {
+ 179   4                      light_blink();
+ 180   4                      // LIGHT_OFF() // light_blink() 最后就是关灯操作，可以不写这一句
+ 181   4                      expect_light_pwm_duty_val = 0;
+ 182   4                      cur_light_pwm_duty_val = 0;
+ 183   4                      timer2_set_pwm_duty(0);
+ 184   4                      LIGHT_OFF();
+ 185   4                      cur_led_mode = CUR_LED_MODE_OFF;
+ 186   4                  }
+ 187   3      
+ 188   3                  break;
+ 189   3      
+ 190   3              } // switch (ir_data)
+ 191   2          } // if (flag_is_recved_data)
+ 192   1      
+ 193   1          if (flag_is_recv_ir_repeat_code)
+ 194   1          {
+ 195   2              flag_is_recv_ir_repeat_code = 0;
+ 196   2          }
+ 197   1      }
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =    394    ----
+   CODE SIZE        =    253    ----
    CONSTANT SIZE    =   ----    ----
    XDATA SIZE       =      2    ----
    PDATA SIZE       =   ----    ----
    DATA SIZE        =   ----    ----
    IDATA SIZE       =   ----    ----
-   BIT SIZE         =      3    ----
+   BIT SIZE         =      2    ----
 END OF MODULE INFORMATION.
 
 

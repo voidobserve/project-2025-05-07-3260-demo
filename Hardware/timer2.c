@@ -33,7 +33,7 @@ void timer2_pwm_disable(void)
 }
 
 
-// pwm_duty_val占空比值，不是以百分比为单位
+// pwm_duty_val占空比值，不是以百分比为单位，直接将该参数写入寄存器
 void timer2_set_pwm_duty(u16 pwm_duty_val)
 {
     // TMR2_PWMH = TMR_PWM_VAL_H((((u32)TIMER2_FEQ * pwm_duty / 100) >> 8) & 0xFF); // 占空比设置值

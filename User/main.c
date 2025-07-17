@@ -24,12 +24,6 @@
 volatile bit_flag flag1 = {0};
 volatile bit_flag flag2 = {0};
 
-// TODO£º3260Ê¹ÓÃ16Î»¼Ä´æÆ÷£¬7361Ê¹ÓÃ8Î»¼Ä´æÆ÷£¬Òª½øÐÐÊÊÅäÐÞ¸Ä 
-volatile u16 cur_light_pwm_duty_val = 0;    // µ±Ç°µÆ¹â¶ÔÓ¦µÄÕ¼¿Õ±ÈÖµ 
-volatile u16 expect_light_pwm_duty_val = 0; // ÆÚÍûµ÷½Úµ½µÄ¡¢µÆ¹â¶ÔÓ¦µÄÕ¼¿Õ±ÈÖµ 
-
-volatile u8 flag_is_light_adjust_time_come = 0; // µ÷½ÚµÆ¹âµÄÊ±¼äµ½À´£¬Ä¿Ç°Îª1s 
-
 // =================================================================
 // ³äµç¿ØÖÆÏà¹Ø±äÁ¿                                                 //
 // =================================================================
@@ -40,21 +34,38 @@ volatile u8 flag_is_charging_adjust_time_come = 0;                  // µ÷½Ú³äµçµ
 volatile u8 cur_charging_pwm_status = CUR_CHARGING_PWM_STATUS_NONE; // ¿ØÖÆ³äµçµÄPWM×´Ì¬
 volatile u8 cur_charge_phase = CUR_CHARGE_PHASE_NONE;               // ¼ÇÂ¼µ±Ç°³äµç½×¶Î
 
-volatile u32 light_adjust_time_cnt = 0;    // µ÷½ÚµÆ¹âµÄÊ±¼ä¼ÆÊý£¬ÔÝ¶¨ÎªÃ¿1s¼ÓÒ»
-volatile u8 light_ctl_phase_in_rate_1 = 1; // ÔÚ·ÅµçËÙÂÊM1Ê±£¬Ê¹ÓÃµ½µÄ±äÁ¿£¬ÔÚ¼ÆËã¹«Ê½ÀïÃæÓÃ×÷ÏµÊý£¬Ã¿´Î»½ÐÑÊ±ÐèÒª³õÊ¼»¯Îª1
-// volatile u8 flag_is_tim_turn_off_pwm = 0; // ±êÖ¾Î»£¬ÔÚä¸Á÷³äµçÆÚ¼ä£¬¶¨Ê±Æ÷ÊÇ·ñ¹Ø±ÕÁËPWMÊä³ö
+
 
 // =================================================================
 // Ö¸Ê¾µÆ¿ØÖÆÏà¹Ø±äÁ¿                                               //
 // =================================================================
 volatile u8 cur_initial_discharge_gear = 5; // ³õÊ¼·Åµçµ²Î»£¨ÐèÒª¼ÇÒä£©
-volatile u8 cur_discharge_rate = 1;         // ³õÊ¼·ÅµçËÙÂÊ£¨ÐèÒª¼ÇÒä£©
-volatile u8 cur_led_mode; // µ±Ç°µÄLEDÄ£Ê½
-volatile u8 cur_led_gear;  // µ±Ç°ledµ²Î»
-volatile u8 last_led_gear; // ÉÏ´Îledµ²Î»
-volatile u8 cur_led_gear_in_charging; // ³äµçÖ¸Ê¾£¬¶ÔÓ¦µÄµ²Î»
-
+volatile u8 cur_discharge_rate = 2;         // ³õÊ¼·ÅµçËÙÂÊ£¨ÐèÒª¼ÇÒä£©
+volatile u8 cur_led_mode;                   // µ±Ç°µÄLEDÄ£Ê½
+volatile u8 cur_led_gear;                   // µ±Ç°ledµ²Î»
+volatile u8 last_led_gear;                  // ÉÏ´Îledµ²Î»
+volatile u8 cur_led_gear_in_charging;       // ³äµçÖ¸Ê¾£¬¶ÔÓ¦µÄµ²Î»
+volatile bit flag_is_in_setting_mode = 0;   // ÊÇ·ñ´¦ÓÚÉèÖÃÄ£Ê½
+// ÌØÊâµÄLEDÄ£Ê½£¬ÍË³öÊ±¼ä¼ÆÊý
+volatile u16 led_mode_setting_exit_times_cnt = 0;
+// volatile u16 special_led_mode_times_cnt = 0;
 //
+
+// =================================================================
+// Ö÷µÆ¹â¿ØÖÆÏà¹Ø±äÁ¿                                               //
+// =================================================================
+volatile u32 light_adjust_time_cnt = 0;    // µ÷½ÚµÆ¹âµÄÊ±¼ä¼ÆÊý£¬ÔÝ¶¨ÎªÃ¿1s¼ÓÒ»
+volatile u8 light_ctl_phase_in_rate_1 = 1; // ÔÚ·ÅµçËÙÂÊM1Ê±£¬Ê¹ÓÃµ½µÄ±äÁ¿£¬ÔÚ¼ÆËã¹«Ê½ÀïÃæÓÃ×÷ÏµÊý£¬Ã¿´Î»½ÐÑÊ±ÐèÒª³õÊ¼»¯Îª1
+
+// TODO£º3260Ê¹ÓÃ16Î»¼Ä´æÆ÷£¬7361Ê¹ÓÃ8Î»¼Ä´æÆ÷£¬Òª½øÐÐÊÊÅäÐÞ¸Ä
+volatile u16 cur_light_pwm_duty_val = 0;                     // µ±Ç°µÆ¹â¶ÔÓ¦µÄÕ¼¿Õ±ÈÖµ
+volatile u16 expect_light_pwm_duty_val = 0;                  // ÆÚÍûµ÷½Úµ½µÄ¡¢µÆ¹â¶ÔÓ¦µÄÕ¼¿Õ±ÈÖµ
+volatile u8 flag_is_light_adjust_time_come = 0;              // µ÷½ÚµÆ¹âµÄÊ±¼äµ½À´£¬Ä¿Ç°Îª1s
+volatile u8 flag_is_light_pwm_duty_val_adjust_time_come = 0; // µÆ¹âÕ¼¿Õ±ÈÖµµ÷½ÚÊ±¼äµ½À´
+
+volatile u8 flag_is_ctl_light_blink = 0; // ÊÇ·ñ¿ØÖÆÖ÷µÆ¹âÉÁË¸
+volatile u8 light_ctl_blink_times = 0; // Òª¿ØÖÆÖ÷µÆ¹âÉÁË¸µÄ´ÎÊý
+
 void led_pin_config(void)
 {
     P1_MD0 &= ~GPIO_P11_MODE_SEL(0x03);
@@ -83,7 +94,11 @@ void led_pin_config(void)
     P15 = 0;
 }
 
-// ±äÁ¿¡¢²ÎÊý£¬³õÊ¼»¯
+/*
+    ±äÁ¿¡¢²ÎÊý£¬³õÊ¼»¯
+
+    Èç¹ûÊÇµÚÒ»´ÎÉÏµç£¬ÐèÒª¶Á³ö´æ·ÅµÄÊý¾Ý
+*/
 void param_init(void)
 {
     light_ctl_phase_in_rate_1 = 1;
@@ -140,17 +155,16 @@ void main(void)
     cur_discharge_rate = 3;
 #endif
 
-    // timer1_set_pwm_high_feq();
+    // cur_led_mode = CUR_LED_MODE_CHARGING;
 
-    // {
-    //     u16 pwm_reg = 0;                                     // ´æ·ÅÒªÐ´Èëµ½¼Ä´æÆ÷ÖÐµÄÕ¼¿Õ±ÈÖµ
-    //     pwm_reg = (u32)TIMER1_LOW_FEQ_PEROID_VAL * 13 / 100; // ×îÖÕµÄÕ¼¿Õ±ÈÖµ
-    //     TMR1_PWMH = (pwm_reg >> 8) & 0xFF;
-    //     TMR1_PWML = pwm_reg & 0xFF;
-    //     timer1_set_pwm_low_feq();
-    //     cur_charging_pwm_status = CUR_CHARGING_PWM_STATUS_LOW_FEQ;
-    //     // cur_charge_phase = CUR_CHARGE_PHASE_;
-    // }
+    // bat_adc_val = 2000;
+    // led_status_refresh();
+    // cur_led_mode = CUR_LED_MODE_BAT_INDICATOR;
+
+    param_init();
+
+    led_mode_alter(CUR_LED_MODE_BAT_INDICATOR); // µç³ØµçÁ¿Ö¸Ê¾Ä£Ê½
+    light_init();
 
     while (1)
     {
@@ -165,11 +179,54 @@ void main(void)
 
         // printf("current_adc_val %u\n", current_adc_val);
 
+        // adc_update_bat_adc_val();
         charge_handle();
+        ir_handle(); // º¯ÊýÄÚ²¿»áÅÐ¶ÏÊÇ·ñÔÚ³äµç£¬Èç¹ûÔÚ³äµçÔòÍË³ö
 
-        // ir_handle();
-        // charge_handle();
-        // led_handle_update_percent_of_bat();
+        // Èç¹ûµ±Ç°ÕýÔÚ³äµç£¬µ«ÊÇÖ¸Ê¾µÆÃ»ÓÐÇÐ»»µ½³äµçÖ¸Ê¾Ä£Ê½£¬ÔòÇÐ»»£º
+        if (CUR_CHARGE_PHASE_NONE != cur_charge_phase)
+        {
+            if (cur_led_mode != CUR_LED_MODE_CHARGING &&
+                cur_led_mode != CUR_LED_MODE_OFF)
+            {
+                led_mode_alter(CUR_LED_MODE_CHARGING);
+            }
+
+            // TODO£ºÐèÒª¹Ø±ÕÖ÷µÆ¹â
+            // timer2_pwm_disable();
+            LIGHT_OFF();
+        } // if (CUR_CHARGE_PHASE_NONE != cur_charge_phase)
+        else // CUR_CHARGE_PHASE_NONE == cur_charge_phase
+        {
+            /*
+                Èç¹ûµ±Ç°Ã»ÓÐÔÚ³äµç£¬²¢ÇÒÖ¸Ê¾µÆ´¦ÓÚ³äµçÖ¸Ê¾Ä£Ê½£¬
+                ÇÐ»»»Øµç³ØµçÁ¿Ö¸Ê¾Ä£Ê½
+
+                ²âÊÔÊ±·¢ÏÖ´Ó³äµçµ½¶Ï¿ª³äµç£¬ledÖ¸Ê¾µÆ»¹ÔÚÉÁË¸£¬ÐèÒª¼ÓÉÏÕâ²¹¶¡
+            */
+            if (cur_led_mode == CUR_LED_MODE_CHARGING)
+            {
+                led_mode_alter(CUR_LED_MODE_BAT_INDICATOR);
+                // TODO£ºÐèÒª´ò¿ªÖ÷µÆ¹â
+                // timer2_pwm_enable();
+                LIGHT_ON();
+            }
+        }
+
+        adc_update_bat_adc_val();
+        led_handle();
+        light_handle();
+
+        // {
+        //     static u8 cnt = 0;
+        //     cnt++;
+        //     if (cnt >= 200)
+        //     {
+        //         cnt = 0;
+        //         // printf("bat_adc_val %u\n", bat_adc_val);
+        //         printf("cur_light_pwm_duty_val %u\n", cur_light_pwm_duty_val);
+        //     }
+        // }
 
         if (CUR_CHARGE_PHASE_NONE == cur_charge_phase)
         {
