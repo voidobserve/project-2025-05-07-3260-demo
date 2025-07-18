@@ -2,29 +2,34 @@
 // 灯光控制源程序
 #include "light_handle.h"
 
-// TODO：闪灯动画需要放到定时器来处理
-void light_blink(void)
+void light_blink(u8 blink_cnt)
 {
-    u8 i;
-    for (i = 0; i < 3; i++)
-    {
-        LIGHT_ON();
-        delay_ms(161);
-        LIGHT_OFF();
-        delay_ms(161);
-    }
+    // u8 i;
+    // for (i = 0; i < 3; i++)
+    // {
+    //     LIGHT_ON();
+    //     delay_ms(161);
+    //     LIGHT_OFF();
+    //     delay_ms(161);
+    // }
+
+    light_ctl_blink_times = blink_cnt;
+    flag_is_ctl_light_blink = 1; // 使能主灯光闪烁
 }
 
 void light_init(void)
 {
     /* 根据初始的放电挡位来设定灯光对应的pwm占空比 */
+
+#if 0
     switch (cur_initial_discharge_gear)
     {
     case 1:
         // 初始放电挡位 1档，刚开始是 83.67%开始放电
 
         // 定时器对应的重装载值最大值 对应 100%占空比
-        expect_light_pwm_duty_val = ((u32)TIMER2_FEQ * 8367 / 10000);
+        // expect_light_pwm_duty_val = ((u32)TIMER2_FEQ * 8367 / 10000);
+        cur_light_pwm_duty_val = ((u32)TIMER2_FEQ * 8367 / 10000);
 
         break;
 
@@ -32,7 +37,8 @@ void light_init(void)
         // 初始放电挡位 2档，刚开始是 74.11%开始放电
 
         // 定时器对应的重装载值最大值 对应 100%占空比
-        expect_light_pwm_duty_val = ((u32)TIMER2_FEQ * 7411 / 10000);
+        // expect_light_pwm_duty_val = ((u32)TIMER2_FEQ * 7411 / 10000);
+        cur_light_pwm_duty_val = ((u32)TIMER2_FEQ * 7411 / 10000);
 
         break;
 
@@ -40,7 +46,8 @@ void light_init(void)
         // 初始放电挡位 3档，刚开始是 64.55%开始放电
 
         // 定时器对应的重装载值最大值 对应 100%占空比
-        expect_light_pwm_duty_val = ((u32)TIMER2_FEQ * 6455 / 10000);
+        // expect_light_pwm_duty_val = ((u32)TIMER2_FEQ * 6455 / 10000);
+        cur_light_pwm_duty_val = ((u32)TIMER2_FEQ * 6455 / 10000);
 
         break;
 
@@ -48,7 +55,8 @@ void light_init(void)
         // 初始放电挡位 4档，刚开始是 56.98%开始放电
 
         // 定时器对应的重装载值最大值 对应 100%占空比
-        expect_light_pwm_duty_val = ((u32)TIMER2_FEQ * 5698 / 10000);
+        // expect_light_pwm_duty_val = ((u32)TIMER2_FEQ * 5698 / 10000);
+        cur_light_pwm_duty_val = ((u32)TIMER2_FEQ * 5698 / 10000);
 
         break;
 
@@ -56,25 +64,37 @@ void light_init(void)
         // 初始放电挡位 5档，刚开始是 49.8%开始放电
 
         // 定时器对应的重装载值最大值 对应 100%占空比
-        expect_light_pwm_duty_val = ((u32)TIMER2_FEQ * 4980 / 10000);
+        // expect_light_pwm_duty_val = ((u32)TIMER2_FEQ * 4980 / 10000);
+        cur_light_pwm_duty_val = ((u32)TIMER2_FEQ * 4980 / 10000);
 
         break;
     }
+#endif
 
-    cur_light_pwm_duty_val = expect_light_pwm_duty_val;
+    cur_light_pwm_duty_val = light_pwm_duty_init_val_table[cur_initial_discharge_gear - 1];
+
+    // cur_light_pwm_duty_val = expect_light_pwm_duty_val;
     timer2_set_pwm_duty(cur_light_pwm_duty_val); // 立刻更新PWM占空比
     LIGHT_ON();                                  // 使能PWM输出
-    light_blink();
+    // light_blink();
+    light_blink(3); // 开机前，主灯需要闪烁
     light_adjust_time_cnt = 0;
 }
 
 /**
  * @brief 灯光控制（放电控制）
  *          进入前要先确认 expect_light_pwm_duty_val 的值是否初始化过一次，
+ *          进入前要先确认 cur_light_pwm_duty_val 的值是否初始化过一次，
  *          light_adjust_time_cnt调节灯光的时间计时是否正确，如果切换了模式或放电速度，要先清零
  */
 void light_handle(void)
 {
+    // if (flag_is_need_to_exit_setting_mode_close_light && 0 == flag_is_in_setting_mode)
+    // {
+    //     LIGHT_OFF();
+    //     flag_is_need_to_exit_setting_mode_close_light = 0;
+    // }
+
     // 如果正在充电，直接返回
     if (cur_charge_phase != CUR_CHARGE_PHASE_NONE ||
         cur_led_mode == CUR_LED_MODE_OFF) /* 如果指示灯已经关闭 */
@@ -120,15 +140,25 @@ void light_handle(void)
             }
 
             // 定时器对应的重装载值最大值 对应 100%占空比
-            if (expect_light_pwm_duty_val >= ((u32)TIMER2_FEQ * 48 / 1000) + ((u32)TIMER2_FEQ * 10 / 100))
+            // if (expect_light_pwm_duty_val >= ((u32)TIMER2_FEQ * 48 / 1000) + ((u32)TIMER2_FEQ * 10 / 100))
+            // {
+            //     // 如果仍大于 4.8% + 10%， 减少10%占空比
+            //     expect_light_pwm_duty_val -= (u32)TIMER2_FEQ * 10 / 100;
+            // }
+            // else
+            // {
+            //     // 4.8%占空比
+            //     expect_light_pwm_duty_val = (u32)TIMER2_FEQ * 48 / 1000;
+            // }
+            if (cur_light_pwm_duty_val >= ((u32)TIMER2_FEQ * 48 / 1000) + ((u32)TIMER2_FEQ * 10 / 100))
             {
                 // 如果仍大于 4.8% + 10%， 减少10%占空比
-                expect_light_pwm_duty_val -= (u32)TIMER2_FEQ * 10 / 100;
+                cur_light_pwm_duty_val -= (u32)TIMER2_FEQ * 10 / 100;
             }
             else
             {
                 // 4.8%占空比
-                expect_light_pwm_duty_val = (u32)TIMER2_FEQ * 48 / 1000;
+                cur_light_pwm_duty_val = (u32)TIMER2_FEQ * 48 / 1000;
             }
         }
     }
@@ -149,15 +179,25 @@ void light_handle(void)
             {
                 light_adjust_time_cnt = 0;
 
-                if (expect_light_pwm_duty_val >= ((u32)TIMER2_FEQ * 48 / 1000) + ((u32)TIMER2_FEQ * 6 / 1000))
+                // if (expect_light_pwm_duty_val >= ((u32)TIMER2_FEQ * 48 / 1000) + ((u32)TIMER2_FEQ * 6 / 1000))
+                // {
+                //     // 如果仍大于 4.8% + xx %， 减少 xx %占空比
+                //     expect_light_pwm_duty_val -= (u32)TIMER2_FEQ * 6 / 1000;
+                // }
+                // else
+                // {
+                //     // 4.8%占空比
+                //     expect_light_pwm_duty_val = (u32)TIMER2_FEQ * 48 / 1000;
+                // }
+                if (cur_light_pwm_duty_val >= ((u32)TIMER2_FEQ * 48 / 1000) + ((u32)TIMER2_FEQ * 6 / 1000))
                 {
                     // 如果仍大于 4.8% + xx %， 减少 xx %占空比
-                    expect_light_pwm_duty_val -= (u32)TIMER2_FEQ * 6 / 1000;
+                    cur_light_pwm_duty_val -= (u32)TIMER2_FEQ * 6 / 1000;
                 }
                 else
                 {
                     // 4.8%占空比
-                    expect_light_pwm_duty_val = (u32)TIMER2_FEQ * 48 / 1000;
+                    cur_light_pwm_duty_val = (u32)TIMER2_FEQ * 48 / 1000;
                 }
             }
         }
@@ -168,15 +208,25 @@ void light_handle(void)
             {
                 light_adjust_time_cnt = 0;
 
-                if (expect_light_pwm_duty_val >= ((u32)TIMER2_FEQ * 48 / 1000) + ((u32)TIMER2_FEQ * 6 / 1000))
+                // if (expect_light_pwm_duty_val >= ((u32)TIMER2_FEQ * 48 / 1000) + ((u32)TIMER2_FEQ * 6 / 1000))
+                // {
+                //     // 如果仍大于 4.8% + xx %， 减少 xx %占空比
+                //     expect_light_pwm_duty_val -= (u32)TIMER2_FEQ * 6 / 1000;
+                // }
+                // else
+                // {
+                //     // 4.8%占空比
+                //     expect_light_pwm_duty_val = (u32)TIMER2_FEQ * 48 / 1000;
+                // }
+                if (cur_light_pwm_duty_val >= ((u32)TIMER2_FEQ * 48 / 1000) + ((u32)TIMER2_FEQ * 6 / 1000))
                 {
                     // 如果仍大于 4.8% + xx %， 减少 xx %占空比
-                    expect_light_pwm_duty_val -= (u32)TIMER2_FEQ * 6 / 1000;
+                    cur_light_pwm_duty_val -= (u32)TIMER2_FEQ * 6 / 1000;
                 }
                 else
                 {
                     // 4.8%占空比
-                    expect_light_pwm_duty_val = (u32)TIMER2_FEQ * 48 / 1000;
+                    cur_light_pwm_duty_val = (u32)TIMER2_FEQ * 48 / 1000;
                 }
             }
         }
@@ -186,15 +236,25 @@ void light_handle(void)
             {
                 light_adjust_time_cnt = 0;
 
-                if (expect_light_pwm_duty_val >= ((u32)TIMER2_FEQ * 48 / 1000) + ((u32)TIMER2_FEQ * 6 / 1000))
+                // if (expect_light_pwm_duty_val >= ((u32)TIMER2_FEQ * 48 / 1000) + ((u32)TIMER2_FEQ * 6 / 1000))
+                // {
+                //     // 如果仍大于 4.8% + xx %， 减少 xx %占空比
+                //     expect_light_pwm_duty_val -= (u32)TIMER2_FEQ * 6 / 1000;
+                // }
+                // else
+                // {
+                //     // 4.8%占空比
+                //     expect_light_pwm_duty_val = (u32)TIMER2_FEQ * 48 / 1000;
+                // }
+                if (cur_light_pwm_duty_val >= ((u32)TIMER2_FEQ * 48 / 1000) + ((u32)TIMER2_FEQ * 6 / 1000))
                 {
                     // 如果仍大于 4.8% + xx %， 减少 xx %占空比
-                    expect_light_pwm_duty_val -= (u32)TIMER2_FEQ * 6 / 1000;
+                    cur_light_pwm_duty_val -= (u32)TIMER2_FEQ * 6 / 1000;
                 }
                 else
                 {
                     // 4.8%占空比
-                    expect_light_pwm_duty_val = (u32)TIMER2_FEQ * 48 / 1000;
+                    cur_light_pwm_duty_val = (u32)TIMER2_FEQ * 48 / 1000;
                 }
             }
         }
@@ -218,4 +278,10 @@ void light_handle(void)
 
     //     timer2_set_pwm_duty(cur_light_pwm_duty_val);
     // }
+    LIGHT_SET_PWM_DUTY(cur_light_pwm_duty_val);
+}
+
+void light_set_pwm_duty(u16 pwm_duty_val)
+{
+    timer2_set_pwm_duty(pwm_duty_val);
 }

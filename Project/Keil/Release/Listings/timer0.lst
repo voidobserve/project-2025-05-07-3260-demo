@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.7.0   TIMER0                                                            07/17/2025 14:33:58 PAGE 1   
+C51 COMPILER V9.60.7.0   TIMER0                                                            07/18/2025 17:46:45 PAGE 1   
 
 
 C51 COMPILER V9.60.7.0, COMPILATION OF MODULE TIMER0
@@ -62,7 +62,7 @@ line level    source
   49   3                  // ir_fliter &= 0x07;
   50   3      
   51   3                  // if (ir_fliter == 0x07)
-C51 COMPILER V9.60.7.0   TIMER0                                                            07/17/2025 14:33:58 PAGE 2   
+C51 COMPILER V9.60.7.0   TIMER0                                                            07/18/2025 17:46:45 PAGE 2   
 
   52   3                  //     filter_level = 1;
   53   3                  // else if (ir_fliter == 0x00)
@@ -126,7 +126,7 @@ line level    source
  108   6                              __ir_data |= 0x01;
  109   6      
  110   6                              // P15D = 1; // 测试红外解码
-C51 COMPILER V9.60.7.0   TIMER0                                                            07/17/2025 14:33:58 PAGE 3   
+C51 COMPILER V9.60.7.0   TIMER0                                                            07/18/2025 17:46:45 PAGE 3   
 
  111   6                          }
  112   5                          else if (ir_level_cnt <= 150) // 小于15000us,说明接收到了格式头
@@ -190,7 +190,7 @@ line level    source
  169   3                  {
  170   4                      if (flag_is_led_1_enable)
  171   4                      {
-C51 COMPILER V9.60.7.0   TIMER0                                                            07/17/2025 14:33:58 PAGE 4   
+C51 COMPILER V9.60.7.0   TIMER0                                                            07/18/2025 17:46:45 PAGE 4   
 
  172   5                          LED_1_PIN = LED_ON_LEVEL;
  173   5                      }
@@ -234,319 +234,412 @@ line level    source
  211   2      #endif // 控制LED指示灯(软件PWM驱动)
  212   2      
  213   2              {
- 214   3                  static u8 cnt = 0;
- 215   3                  static u8 blink_cnt = 0;
- 216   3                  static bit flag_blink_dir = 0;
- 217   3                  cnt++;
- 218   3      
- 219   3                  if (cnt >= 10) // 10 * 100us == 1ms
- 220   3                  {
- 221   4                      cnt = 0;
+ 214   3                  static u8 cnt_100us = 0;
+ 215   3                  cnt_100us++;
+ 216   3      
+ 217   3                  if (cnt_100us >= 10) // 10 * 100us == 1ms
+ 218   3                  {
+ 219   4                      cnt_100us = 0;
+ 220   4      
+ 221   4      #if 1 // 控制LED指示灯的闪烁效果
  222   4      
- 223   4                      // {
- 224   4                      //     static u16 cnt = 0;
- 225   4                      //     cnt++;
- 226   4                      //     if (cnt >= 1000)
- 227   4                      //     {
- 228   4                      //         cnt = 0;
- 229   4                      //         // if (bat_adc_val > 100)
- 230   4                      //         //     bat_adc_val -= 100;
- 231   4      
- 232   4                      //         if (bat_adc_val < 4095 - 100)
- 233   4                      //         {
-C51 COMPILER V9.60.7.0   TIMER0                                                            07/17/2025 14:33:58 PAGE 5   
+ 223   4                      {
+ 224   5                          static u8 blink_cnt = 0;
+ 225   5                          static bit flag_blink_dir = 0;
+ 226   5                          blink_cnt++;
+ 227   5                          if (blink_cnt >= 200)
+ 228   5                          {
+ 229   6                              blink_cnt = 0;
+ 230   6      
+ 231   6                              // 处于初始放电挡位指示模式，才进入
+ 232   6                              if (CUR_LED_MODE_INITIAL_DISCHARGE_GEAR_IN_SETTING_MODE == cur_led_mode ||
+ 233   6                                  CUR_LED_MODE_INITIAL_DISCHARGE_GEAR_IN_INSTRUCTION_MODE == cur_led_mode)
+C51 COMPILER V9.60.7.0   TIMER0                                                            07/18/2025 17:46:45 PAGE 5   
 
- 234   4                      //             bat_adc_val += 100;
- 235   4                      //         }
- 236   4                      //     }
- 237   4                      // }
- 238   4      
- 239   4      #if 1 // 控制LED指示灯的闪烁效果
- 240   4      
- 241   4                      blink_cnt++;
- 242   4                      if (blink_cnt >= 200)
- 243   4                      {
- 244   5                          blink_cnt = 0;
- 245   5      
- 246   5                          // 处于初始放电挡位指示模式，才进入
- 247   5                          if (CUR_LED_MODE_INITIAL_DISCHARGE_GEAR == cur_led_mode)
- 248   5                          {
- 249   6                              if (0 == flag_blink_dir)
- 250   6                              {
- 251   7                                  switch (cur_initial_discharge_gear)
- 252   7                                  {
- 253   8                                  case 1:
- 254   8                                      LED_1_ON();
- 255   8                                      break;
- 256   8                                  case 2:
- 257   8                                      LED_2_ON();
- 258   8                                      break;
- 259   8                                  case 3:
- 260   8                                      LED_3_ON();
- 261   8                                      break;
- 262   8                                  case 4:
- 263   8                                      LED_4_ON();
- 264   8                                      break;
- 265   8                                  case 5:
- 266   8                                      LED_5_ON();
- 267   8                                      break;
- 268   8                                  }
- 269   7      
- 270   7                                  flag_blink_dir = 1;
- 271   7                              }
- 272   6                              else
- 273   6                              {
- 274   7                                  switch (cur_initial_discharge_gear)
- 275   7                                  {
- 276   8                                  case 1:
- 277   8                                      LED_1_OFF();
- 278   8                                      break;
- 279   8                                  case 2:
- 280   8                                      LED_2_OFF();
- 281   8                                      break;
- 282   8                                  case 3:
- 283   8                                      LED_3_OFF();
- 284   8                                      break;
- 285   8                                  case 4:
- 286   8                                      LED_4_OFF();
- 287   8                                      break;
- 288   8                                  case 5:
- 289   8                                      LED_5_OFF();
- 290   8                                      break;
- 291   8                                  }
- 292   7      
- 293   7                                  flag_blink_dir = 0;
- 294   7                              }
- 295   6                          } // if (CUR_LED_MODE_INITIAL_DISCHARGE_GEAR == cur_led_mode)
-C51 COMPILER V9.60.7.0   TIMER0                                                            07/17/2025 14:33:58 PAGE 6   
+ 234   6                              {
+ 235   7                                  if (0 == flag_blink_dir)
+ 236   7                                  {
+ 237   8                                      switch (cur_initial_discharge_gear)
+ 238   8                                      {
+ 239   9                                      case 1:
+ 240   9                                          LED_1_ON();
+ 241   9                                          break;
+ 242   9                                      case 2:
+ 243   9                                          LED_2_ON();
+ 244   9                                          break;
+ 245   9                                      case 3:
+ 246   9                                          LED_3_ON();
+ 247   9                                          break;
+ 248   9                                      case 4:
+ 249   9                                          LED_4_ON();
+ 250   9                                          break;
+ 251   9                                      case 5:
+ 252   9                                          LED_5_ON();
+ 253   9                                          break;
+ 254   9                                      }
+ 255   8      
+ 256   8                                      flag_blink_dir = 1;
+ 257   8                                  }
+ 258   7                                  else
+ 259   7                                  {
+ 260   8                                      switch (cur_initial_discharge_gear)
+ 261   8                                      {
+ 262   9                                      case 1:
+ 263   9                                          LED_1_OFF();
+ 264   9                                          break;
+ 265   9                                      case 2:
+ 266   9                                          LED_2_OFF();
+ 267   9                                          break;
+ 268   9                                      case 3:
+ 269   9                                          LED_3_OFF();
+ 270   9                                          break;
+ 271   9                                      case 4:
+ 272   9                                          LED_4_OFF();
+ 273   9                                          break;
+ 274   9                                      case 5:
+ 275   9                                          LED_5_OFF();
+ 276   9                                          break;
+ 277   9                                      }
+ 278   8      
+ 279   8                                      flag_blink_dir = 0;
+ 280   8                                  }
+ 281   7                              } // if (CUR_LED_MODE_INITIAL_DISCHARGE_GEAR == cur_led_mode)
+ 282   6                              else if (CUR_LED_MODE_SETTING == cur_led_mode)
+ 283   6                              {
+ 284   7                                  // 刚按下遥控器的 SET 按键，会进入 设置模式，5个指示灯�
+             -�起闪烁
+ 285   7                                  if (0 == flag_blink_dir)
+ 286   7                                  {
+ 287   8                                      LED_1_ON();
+ 288   8                                      LED_2_ON();
+ 289   8                                      LED_3_ON();
+ 290   8                                      LED_4_ON();
+ 291   8                                      LED_5_ON();
+ 292   8                                      flag_blink_dir = 1;
+ 293   8                                  }
+ 294   7                                  else
+C51 COMPILER V9.60.7.0   TIMER0                                                            07/18/2025 17:46:45 PAGE 6   
 
- 296   5                          // 刚按下遥控器的 SET 按键，会进入 设置模式，5个指示灯一起闪�
-             -��
- 297   5                          else if (CUR_LED_MODE_SETTING == cur_led_mode)
- 298   5                          {
- 299   6                              if (0 == flag_blink_dir)
- 300   6                              {
- 301   7                                  LED_1_ON();
- 302   7                                  LED_2_ON();
- 303   7                                  LED_3_ON();
- 304   7                                  LED_4_ON();
- 305   7                                  LED_5_ON();
- 306   7                                  flag_blink_dir = 1;
- 307   7                              }
- 308   6                              else
- 309   6                              {
- 310   7                                  LED_1_OFF();
- 311   7                                  LED_2_OFF();
- 312   7                                  LED_3_OFF();
- 313   7                                  LED_4_OFF();
- 314   7                                  LED_5_OFF();
- 315   7                                  flag_blink_dir = 0;
- 316   7                              }
- 317   6                          }
- 318   5                          // 指示灯处于充电指示模式
- 319   5                          else if (CUR_LED_MODE_CHARGING == cur_led_mode)
- 320   5                          {
- 321   6                              if (cur_led_gear_in_charging <= 2)
- 322   6                              {
- 323   7                                  if (0 == flag_blink_dir)
- 324   7                                  {
- 325   8                                      LED_2_ON();
- 326   8                                      flag_blink_dir = 1;
- 327   8                                  }
- 328   7                                  else
- 329   7                                  {
- 330   8                                      LED_2_OFF();
- 331   8                                      flag_blink_dir = 0;
+ 295   7                                  {
+ 296   8                                      LED_1_OFF();
+ 297   8                                      LED_2_OFF();
+ 298   8                                      LED_3_OFF();
+ 299   8                                      LED_4_OFF();
+ 300   8                                      LED_5_OFF();
+ 301   8                                      flag_blink_dir = 0;
+ 302   8                                  }
+ 303   7                              }
+ 304   6                              // 指示灯处于充电指示模式
+ 305   6                              else if (CUR_LED_MODE_CHARGING == cur_led_mode)
+ 306   6                              {
+ 307   7                                  if (cur_led_gear_in_charging <= 2)
+ 308   7                                  {
+ 309   8                                      if (0 == flag_blink_dir)
+ 310   8                                      {
+ 311   9                                          LED_2_ON();
+ 312   9                                          flag_blink_dir = 1;
+ 313   9                                      }
+ 314   8                                      else
+ 315   8                                      {
+ 316   9                                          LED_2_OFF();
+ 317   9                                          flag_blink_dir = 0;
+ 318   9                                      }
+ 319   8                                  }
+ 320   7                                  else if (cur_led_gear_in_charging <= 3)
+ 321   7                                  {
+ 322   8                                      if (0 == flag_blink_dir)
+ 323   8                                      {
+ 324   9                                          LED_3_ON();
+ 325   9                                          flag_blink_dir = 1;
+ 326   9                                      }
+ 327   8                                      else
+ 328   8                                      {
+ 329   9                                          LED_3_OFF();
+ 330   9                                          flag_blink_dir = 0;
+ 331   9                                      }
  332   8                                  }
- 333   7                              }
- 334   6                              else if (cur_led_gear_in_charging <= 3)
- 335   6                              {
- 336   7                                  if (0 == flag_blink_dir)
- 337   7                                  {
- 338   8                                      LED_3_ON();
- 339   8                                      flag_blink_dir = 1;
- 340   8                                  }
- 341   7                                  else
- 342   7                                  {
- 343   8                                      LED_3_OFF();
- 344   8                                      flag_blink_dir = 0;
+ 333   7                                  else if (cur_led_gear_in_charging <= 4)
+ 334   7                                  {
+ 335   8                                      if (0 == flag_blink_dir)
+ 336   8                                      {
+ 337   9                                          LED_4_ON();
+ 338   9                                          flag_blink_dir = 1;
+ 339   9                                      }
+ 340   8                                      else
+ 341   8                                      {
+ 342   9                                          LED_4_OFF();
+ 343   9                                          flag_blink_dir = 0;
+ 344   9                                      }
  345   8                                  }
- 346   7                              }
- 347   6                              else if (cur_led_gear_in_charging <= 4)
- 348   6                              {
- 349   7                                  if (0 == flag_blink_dir)
- 350   7                                  {
- 351   8                                      LED_4_ON();
- 352   8                                      flag_blink_dir = 1;
- 353   8                                  }
- 354   7                                  else
- 355   7                                  {
- 356   8                                      LED_4_OFF();
-C51 COMPILER V9.60.7.0   TIMER0                                                            07/17/2025 14:33:58 PAGE 7   
+ 346   7                                  else if (cur_led_gear_in_charging <= 5)
+ 347   7                                  {
+ 348   8                                      if (0 == flag_blink_dir)
+ 349   8                                      {
+ 350   9                                          LED_5_ON();
+ 351   9                                          flag_blink_dir = 1;
+ 352   9                                      }
+ 353   8                                      else
+ 354   8                                      {
+ 355   9                                          LED_5_OFF();
+ 356   9                                          flag_blink_dir = 0;
+C51 COMPILER V9.60.7.0   TIMER0                                                            07/18/2025 17:46:45 PAGE 7   
 
- 357   8                                      flag_blink_dir = 0;
+ 357   9                                      }
  358   8                                  }
  359   7                              }
- 360   6                              else if (cur_led_gear_in_charging <= 5)
- 361   6                              {
- 362   7                                  if (0 == flag_blink_dir)
- 363   7                                  {
- 364   8                                      LED_5_ON();
- 365   8                                      flag_blink_dir = 1;
- 366   8                                  }
- 367   7                                  else
- 368   7                                  {
- 369   8                                      LED_5_OFF();
- 370   8                                      flag_blink_dir = 0;
- 371   8                                  }
- 372   7                              }
- 373   6                          }
- 374   5      
- 375   5                      } // if (blink_cnt >= 200)
- 376   4      
- 377   4      #endif // 控制LED指示灯的闪烁效果
- 378   4      
- 379   4      #if 1 // 退出特殊的led指示模式的时间计数
- 380   4            // if (cur_led_mode != CUR_LED_MODE_BAT_INDICATOR) // 不处于电池电量指示模式，开始累�
-             -��时间
- 381   4                      if (CUR_LED_MODE_INITIAL_DISCHARGE_GEAR == cur_led_mode ||
- 382   4                          CUR_LED_MODE_DISCHARGE_RATE == cur_led_mode ||
- 383   4                          CUR_LED_MODE_SETTING == cur_led_mode)
- 384   4                      {
- 385   5                          // special_led_mode_times_cnt++;
- 386   5                          // if (special_led_mode_times_cnt >= 5000)
- 387   5                          // {
- 388   5                          //     special_led_mode_times_cnt = 0;
- 389   5                          //     flag_led_exit_setting_times_come = 1;
- 390   5                          // }
- 391   5                          led_mode_setting_exit_times_cnt++;
- 392   5                          if (led_mode_setting_exit_times_cnt >= 5000)
- 393   5                          {
- 394   6                              led_mode_setting_exit_times_cnt = 0;
- 395   6                              flag_led_exit_setting_times_come = 1;
- 396   6                          }
- 397   5                      }
- 398   4      #endif // 退出特殊的led指示模式的时间计数
- 399   4      
- 400   4                      {
- 401   5                          static u8 cnt = 0;
- 402   5                          // static u16 cnt = 0;
- 403   5                          cnt++;
- 404   5                          if (cnt >= 200)
- 405   5                          // if (cnt >= 1000) // 延长时间并不会影响电池快满电后，调节PWM的大
+ 360   6      
+ 361   6                          } // if (blink_cnt >= 200)
+ 362   5                      }
+ 363   4      
+ 364   4      #endif // 控制LED指示灯的闪烁效果
+ 365   4      
+ 366   4      #if 1 // 退出led设置模式的时间计数
+ 367   4      
+ 368   4                      // if (CUR_LED_MODE_INITIAL_DISCHARGE_GEAR == cur_led_mode ||
+ 369   4                      //     CUR_LED_MODE_DISCHARGE_RATE == cur_led_mode ||
+ 370   4                      //     CUR_LED_MODE_SETTING == cur_led_mode)
+ 371   4      
+ 372   4                      if (flag_is_in_setting_mode) // 处于设置模式，开始累计时间
+ 373   4                      {
+ 374   5                          // special_led_mode_times_cnt++;
+ 375   5                          // if (special_led_mode_times_cnt >= 5000)
+ 376   5                          // {
+ 377   5                          //     special_led_mode_times_cnt = 0;
+ 378   5                          //     flag_led_exit_setting_times_come = 1;
+ 379   5                          // }
+ 380   5                          led_setting_mode_exit_times_cnt++;
+ 381   5                          if (led_setting_mode_exit_times_cnt >= 5000)
+ 382   5                          {
+ 383   6                              led_setting_mode_exit_times_cnt = 0;
+ 384   6                              flag_led_setting_mode_exit_times_come = 1;
+ 385   6                          }
+ 386   5                      }
+ 387   4      
+ 388   4      #endif // 退出led设置模式的时间计数
+ 389   4      
+ 390   4                      {
+ 391   5                          static u8 cnt = 0;
+ 392   5                          // static u16 cnt = 0;
+ 393   5                          cnt++;
+ 394   5                          if (cnt >= 200)
+ 395   5                          // if (cnt >= 1000) // 延长时间并不会影响电池快满电后，调节PWM的大
              -小，还是会过冲，电流过大
- 406   5                          {
- 407   6                              cnt = 0;
- 408   6                              flag_is_charging_adjust_time_come = 1; // 调节充电电流/功率
- 409   6                          }
- 410   5                      }
- 411   4      
- 412   4      #if 1 // 在涓流充电时，负责每段时间断开一会PWM输出
- 413   4                      {
- 414   5                          static u16 cnt = 0;
- 415   5      
- 416   5                          if (CUR_CHARGING_PWM_STATUS_LOW_FEQ == cur_charging_pwm_status)
-C51 COMPILER V9.60.7.0   TIMER0                                                            07/17/2025 14:33:58 PAGE 8   
+ 396   5                          {
+ 397   6                              cnt = 0;
+ 398   6                              flag_is_charging_adjust_time_come = 1; // 调节充电电流/功率
+ 399   6                          }
+ 400   5                      }
+ 401   4      
+ 402   4      #if 1 // 在涓流充电时，负责每段时间断开一会PWM输出
+ 403   4                      {
+ 404   5                          static u16 cnt = 0;
+ 405   5      
+ 406   5                          if (CUR_CHARGING_PWM_STATUS_LOW_FEQ == cur_charging_pwm_status)
+ 407   5                          {
+ 408   6                              // 如果在涓流充电
+ 409   6                              cnt++;
+ 410   6      
+ 411   6                              if (cnt < 22000) // 22 s
+ 412   6                              {
+ 413   7                                  timer1_pwm_enable();
+ 414   7                                  // flag_is_tim_turn_off_pwm = 0;
+ 415   7                              }
+ 416   6                              else if (cnt <= (22000 + 60)) // 22s + 60ms
+ 417   6                              {
+C51 COMPILER V9.60.7.0   TIMER0                                                            07/18/2025 17:46:45 PAGE 8   
 
- 417   5                          {
- 418   6                              // 如果在涓流充电
- 419   6                              cnt++;
- 420   6      
- 421   6                              if (cnt < 22000) // 22 s
- 422   6                              {
- 423   7                                  timer1_pwm_enable();
- 424   7                                  // flag_is_tim_turn_off_pwm = 0;
- 425   7                              }
- 426   6                              else if (cnt <= (22000 + 60)) // 22s + 60ms
- 427   6                              {
- 428   7                                  // 累计涓流充电22s后，关闭控制充电的PWM，之后可以在这期
+ 418   7                                  // 累计涓流充电22s后，关闭控制充电的PWM，之后可以在这期
              -间检测电池是否满电
- 429   7                                  timer1_pwm_disable();
- 430   7                                  // flag_is_tim_turn_off_pwm = 1;
- 431   7                                  // cnt = 0;
- 432   7                              }
- 433   6                              else
- 434   6                              {
- 435   7                                  cnt = 0;
- 436   7                              }
- 437   6                          }
- 438   5                          else
- 439   5                          {
- 440   6                              cnt = 0;
- 441   6                          }
- 442   5                      }
- 443   4      #endif // 在涓流充电时，负责每段时间断开一会PWM输出
- 444   4      
- 445   4                  } // if (cnt >= 10) // 10 * 100us == 1ms
- 446   3              }
- 447   2      
- 448   2      #if 1 // 放电时间控制
- 449   2      
- 450   2              // 如果不在充电，设备没有关机，才进行放电时间累计
- 451   2              {
- 452   3                  static u16 cnt = 0;
- 453   3                  if (CUR_CHARGE_PHASE_NONE == cur_charge_phase && /* 如果不在充电 */
- 454   3                      cur_led_mode != CUR_LED_MODE_OFF)            /* 如果指示灯没有关闭 */
- 455   3                  {
- 456   4                      cnt++;
- 457   4                      if (cnt >= 10000) // 10000 * 100us，1s
- 458   4                      {
- 459   5                          cnt = 0;
- 460   5                          // flag_is_light_adjust_time_come = 1;
- 461   5      
- 462   5                          if (light_adjust_time_cnt < 4294967295) // 防止计数溢出
- 463   5                          {
- 464   6                              light_adjust_time_cnt++;
- 465   6                          }
- 466   5                      }
- 467   4                  }
- 468   3                  else
- 469   3                  {
- 470   4                      cnt = 0;
- 471   4                  }
- 472   3              }
- 473   2      
- 474   2      #endif // 放电时间控制
- 475   2      
- 476   2      #if 1 // 缓慢调节驱动灯光的pwm占空比
- 477   2      
-C51 COMPILER V9.60.7.0   TIMER0                                                            07/17/2025 14:33:58 PAGE 9   
+ 419   7                                  timer1_pwm_disable();
+ 420   7                                  // flag_is_tim_turn_off_pwm = 1;
+ 421   7                                  // cnt = 0;
+ 422   7                              }
+ 423   6                              else
+ 424   6                              {
+ 425   7                                  cnt = 0;
+ 426   7                              }
+ 427   6                          }
+ 428   5                          else
+ 429   5                          {
+ 430   6                              cnt = 0;
+ 431   6                          }
+ 432   5                      }
+ 433   4      #endif // 在涓流充电时，负责每段时间断开一会PWM输出
+ 434   4      
+ 435   4      #if 1 // 控制主灯光的闪烁效果
+ 436   4      
+ 437   4                      {
+ 438   5                          static u8 blink_cnt = 0; // 记录闪烁次数
+ 439   5                          static u16 time_cnt = 0; // 控制灯光闪烁的时间
+ 440   5      
+ 441   5                          if (flag_is_ctl_light_blink)
+ 442   5                          {
+ 443   6                              blink_cnt = light_ctl_blink_times;
+ 444   6                              time_cnt = 0;
+ 445   6                              // 闪烁完成后，清除标志位
+ 446   6                              flag_is_ctl_light_blink = 0;
+ 447   6                          }
+ 448   5      
+ 449   5                          if (blink_cnt)
+ 450   5                          {
+ 451   6                              time_cnt++;
+ 452   6                              if (time_cnt < 161) // 0 ~ 161 ms
+ 453   6                              {
+ 454   7                                  // 如果当前在放电：
+ 455   7                                  if (cur_led_mode != CUR_LED_MODE_OFF &&      /* 指示灯开启 */
+ 456   7                                      cur_led_mode != CUR_LED_MODE_CHARGING && /* 不在充电 */
+ 457   7                                      (0 == flag_allow_light_in_setting_mode)) /* 不需要闪完灯后关闭主
+             -灯光 */
+ 458   7                                  // if (cur_led_mode != CUR_LED_MODE_OFF &&
+ 459   7                                  //     cur_led_mode != CUR_LED_MODE_CHARGING)
+ 460   7                                  {
+ 461   8                                      // LIGHT_OFF();
+ 462   8      
+ 463   8                                      LIGHT_ON();
+ 464   8                                  }
+ 465   7                                  else
+ 466   7                                  {
+ 467   8                                      // LIGHT_ON();
+ 468   8      
+ 469   8                                      LIGHT_OFF();
+ 470   8                                  }
+ 471   7                              }
+ 472   6                              else if (time_cnt < (161 * 2)) // 161 ~ 322 ms
+ 473   6                              {
+ 474   7                                  // 如果当前在放电：
+ 475   7                                  if (cur_led_mode != CUR_LED_MODE_OFF &&
+ 476   7                                      cur_led_mode != CUR_LED_MODE_CHARGING &&
+ 477   7                                      (0 == flag_allow_light_in_setting_mode))
+C51 COMPILER V9.60.7.0   TIMER0                                                            07/18/2025 17:46:45 PAGE 9   
 
- 478   2              {
- 479   3                  // static u16 cnt = 0;
- 480   3      
- 481   3                  if (CUR_CHARGE_PHASE_NONE == cur_charge_phase &&
- 482   3                      cur_led_mode != CUR_LED_MODE_OFF)
- 483   3                  {
- 484   4      
- 485   4                      if (cur_light_pwm_duty_val > expect_light_pwm_duty_val)
- 486   4                      {
- 487   5                          // 如果要调小灯光的占空比
- 488   5                          cur_light_pwm_duty_val--;
- 489   5                      }
- 490   4                      else if (cur_light_pwm_duty_val < expect_light_pwm_duty_val)
- 491   4                      {
- 492   5                          // 如果要调大灯光的占空比
- 493   5                          cur_light_pwm_duty_val++;
- 494   5                      }
- 495   4      
- 496   4                      timer2_set_pwm_duty(cur_light_pwm_duty_val);
- 497   4                  }
- 498   3              }
- 499   2      
- 500   2      #endif // 缓慢调节驱动灯光的pwm占空比
- 501   2          }
- 502   1      
- 503   1          // 退出中断设置IP，不可删除
- 504   1          __IRQnIPnPop(TMR0_IRQn);
- 505   1      }
+ 478   7                                  // if (cur_led_mode != CUR_LED_MODE_OFF &&
+ 479   7                                  //     cur_led_mode != CUR_LED_MODE_CHARGING)
+ 480   7                                  {
+ 481   8                                      // LIGHT_ON();
+ 482   8      
+ 483   8                                      LIGHT_OFF();
+ 484   8                                  }
+ 485   7                                  else
+ 486   7                                  {
+ 487   8                                      // LIGHT_OFF();
+ 488   8      
+ 489   8                                      LIGHT_ON();
+ 490   8                                  }
+ 491   7                              }
+ 492   6                              else // 超过 161 * 2ms，清除时间计数，闪烁次数减一，表示完成�
+             -��次闪烁
+ 493   6                              {
+ 494   7                                  time_cnt = 0;
+ 495   7                                  blink_cnt--;
+ 496   7      
+ 497   7                                  // 如果当前在放电：
+ 498   7                                  if (cur_led_mode != CUR_LED_MODE_OFF &&
+ 499   7                                      cur_led_mode != CUR_LED_MODE_CHARGING &&
+ 500   7                                      (0 == flag_allow_light_in_setting_mode))
+ 501   7                                  // if (cur_led_mode != CUR_LED_MODE_OFF &&
+ 502   7                                  //     cur_led_mode != CUR_LED_MODE_CHARGING)
+ 503   7                                  {
+ 504   8                                      LIGHT_ON();
+ 505   8                                  }
+ 506   7                                  else
+ 507   7                                  {
+ 508   8                                      LIGHT_OFF();
+ 509   8                                  }
+ 510   7      
+ 511   7                                  // flag_is_need_to_exit_setting_mode_close_light = 0;
+ 512   7                              }
+ 513   6                          }
+ 514   5                      }
+ 515   4      
+ 516   4      #endif // 控制主灯光的闪烁效果
+ 517   4      
+ 518   4      #if 1 // 控制退出指示灯指示模式
+ 519   4      
+ 520   4                      if (flag_is_led_mode_exit_enable)
+ 521   4                      {
+ 522   5                          led_struction_mode_exit_times_cnt++;
+ 523   5                          if (led_struction_mode_exit_times_cnt >= 5000)
+ 524   5                          {
+ 525   6                              led_struction_mode_exit_times_cnt = 0;
+ 526   6                              flag_is_led_mode_exit_enable = 0;
+ 527   6                              flag_is_led_mode_exit_times_come = 1;
+ 528   6                          }
+ 529   5                      }
+ 530   4      
+ 531   4      #endif // 控制退出指示灯指示模式
+ 532   4      
+ 533   4                  } // if (cnt >= 10) // 10 * 100us == 1ms
+ 534   3              }
+ 535   2      
+ 536   2      #if 1 // 放电时间控制
+ 537   2      
+ 538   2              // 如果不在充电，设备没有关机，才进行放电时间累计
+C51 COMPILER V9.60.7.0   TIMER0                                                            07/18/2025 17:46:45 PAGE 10  
+
+ 539   2              {
+ 540   3                  static u16 cnt = 0;
+ 541   3                  if (CUR_CHARGE_PHASE_NONE == cur_charge_phase && /* 如果不在充电 */
+ 542   3                      cur_led_mode != CUR_LED_MODE_OFF)            /* 如果指示灯没有关闭 */
+ 543   3                  {
+ 544   4                      cnt++;
+ 545   4                      if (cnt >= 10000) // 10000 * 100us，1s
+ 546   4                      {
+ 547   5                          cnt = 0;
+ 548   5                          // flag_is_light_adjust_time_come = 1;
+ 549   5      
+ 550   5                          if (light_adjust_time_cnt < 4294967295) // 防止计数溢出
+ 551   5                          {
+ 552   6                              light_adjust_time_cnt++;
+ 553   6                          }
+ 554   5                      }
+ 555   4                  }
+ 556   3                  else
+ 557   3                  {
+ 558   4                      cnt = 0;
+ 559   4                  }
+ 560   3              }
+ 561   2      
+ 562   2      #endif // 放电时间控制
+ 563   2      
+ 564   2      #if 0 // 缓慢调节驱动灯光的pwm占空比
+              
+                      {
+                          // static u16 cnt = 0;
+              
+                          if (CUR_CHARGE_PHASE_NONE == cur_charge_phase &&
+                              cur_led_mode != CUR_LED_MODE_OFF)
+                          {
+              
+                              if (cur_light_pwm_duty_val > expect_light_pwm_duty_val)
+                              {
+                                  // 如果要调小灯光的占空比
+                                  cur_light_pwm_duty_val--;
+                              }
+                              else if (cur_light_pwm_duty_val < expect_light_pwm_duty_val)
+                              {
+                                  // 如果要调大灯光的占空比
+                                  cur_light_pwm_duty_val++;
+                              }
+              
+                              timer2_set_pwm_duty(cur_light_pwm_duty_val);
+                          }
+                      }
+              
+              #endif // 缓慢调节驱动灯光的pwm占空比
+ 589   2          }
+ 590   1      
+ 591   1          // 退出中断设置IP，不可删除
+ 592   1          __IRQnIPnPop(TMR0_IRQn);
+ 593   1      }
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =   1219    ----
+   CODE SIZE        =   1303    ----
    CONSTANT SIZE    =   ----    ----
-   XDATA SIZE       =     15    ----
+   XDATA SIZE       =     18    ----
    PDATA SIZE       =   ----    ----
+C51 COMPILER V9.60.7.0   TIMER0                                                            07/18/2025 17:46:45 PAGE 11  
+
    DATA SIZE        =   ----    ----
    IDATA SIZE       =   ----    ----
    BIT SIZE         =      2    ----

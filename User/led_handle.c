@@ -1,10 +1,5 @@
 #include "led_handle.h"
 
-// TODO:需要初始化为5
-// volatile u8 bat_remaining_power_indication = 5; // 电池剩余电量指示挡位
-
-volatile u8 flag_led_exit_setting_times_come = 0; // 标志位，led退出设置模式的时间到来
-
 /**
  * @brief 更新led指示灯相关的状态
  *          当 cur_led_mode 改变时，会调用此函数，
@@ -18,16 +13,40 @@ void led_status_refresh(void)
     LED_3_OFF();
     LED_4_OFF();
     LED_5_OFF();
+    last_led_gear = 0;            // 赋值为初始值
+    cur_led_gear_in_charging = 0; // 这个变量应该在刚上电或是断开充电时清零
+
+    led_setting_mode_exit_times_cnt = 0; // 清除设置模式下的退出时间计时
+}
+
+void led_init(void)
+{
+    LED_1_OFF();
+    LED_2_OFF();
+    LED_3_OFF();
+    LED_4_OFF();
+    LED_5_OFF();
     last_led_gear = 0; // 赋值为初始值
     cur_led_gear_in_charging = 0;
+    led_setting_mode_exit_times_cnt = 0; // 清除设置模式下的退出时间计时
+    flag_is_led_mode_exit_enable = 0;
+}
 
-    led_mode_setting_exit_times_cnt = 0; // 清除设置模式下的退出时间计时
+void led_all_off(void)
+{
+    LED_1_OFF();
+    LED_2_OFF();
+    LED_3_OFF();
+    LED_4_OFF();
+    LED_5_OFF();
 }
 
 /**
  * @brief 更改led_mode
  *
  * @param led_mode
+ *              相关定义在 枚举类型 CUR_LED_MODE_XXX 中
+ *
  *              CUR_LED_MODE_OFF = 0,                // 关机，指示灯全灭
                 CUR_LED_MODE_BAT_INDICATOR,          // 电池电量指示模式
                 CUR_LED_MODE_INITIAL_DISCHARGE_GEAR, // 初始放电挡位 -- 从 xx% PWW开始放电（指示灯由定时器控制）
@@ -37,9 +56,41 @@ void led_status_refresh(void)
  */
 void led_mode_alter(u8 led_mode)
 {
-    led_status_refresh();
+    // led_status_refresh();
+    led_all_off();
 
     cur_led_mode = led_mode;
+}
+
+/**
+ * @brief 在设置模式，设置初始放电挡位或放电速率
+ *          函数内部会判断 当前 是否处于设置模式
+ *
+ * @param set_led_mode
+ *          CUR_LED_MODE_INITIAL_DISCHARGE_GEAR_IN_SETTING_MODE 要设置的是初始放电挡位
+ *          CUR_LED_MODE_DISCHARGE_RATE_IN_SETTING_MODE     要设置的是放电速率
+ * @param val 初始放电挡位 或 放电速率对应的值（需要注意不能超过范围）
+ */
+void set_led_mode_status(u8 set_led_mode, u8 val)
+{
+    // 如果在设置模式，才会进入
+    if (flag_is_in_setting_mode)
+    {
+        if (CUR_LED_MODE_INITIAL_DISCHARGE_GEAR_IN_SETTING_MODE == set_led_mode)
+        {
+            cur_initial_discharge_gear = val;
+        }
+        else // CUR_LED_MODE_DISCHARGE_RATE_IN_SETTING_MODE == set_led_mode
+        {
+            cur_discharge_rate = val;
+        }
+
+        cur_led_mode = set_led_mode;
+        // led_status_refresh();
+        led_all_off();
+        led_setting_mode_exit_times_cnt = 0; // 清空退出设置模式的时间计数
+        light_blink(val);
+    }
 }
 
 //
@@ -47,7 +98,8 @@ void led_handle(void)
 {
     if (CUR_LED_MODE_OFF == cur_led_mode)
     {
-        led_status_refresh();
+        // led_status_refresh();
+        led_all_off();
         return;
     }
 
@@ -132,8 +184,10 @@ void led_handle(void)
         }
 
     } // if (CUR_LED_MODE_BAT_INDICATOR == cur_led_mode)
-    else if (CUR_LED_MODE_DISCHARGE_RATE == cur_led_mode) // 放电速率指示模式，M1、M2、M3
+    else if (CUR_LED_MODE_DISCHARGE_RATE_IN_SETTING_MODE == cur_led_mode ||
+             CUR_LED_MODE_DISCHARGE_RATE_IN_INSTRUCTION_MODE == cur_led_mode)
     {
+        // 放电速率指示模式，M1、M2、M3，需要对应的指示灯常亮
         switch (cur_discharge_rate)
         {
         case 1:
@@ -225,12 +279,13 @@ void led_handle(void)
         }
     }
 
-    if (flag_led_exit_setting_times_come) // 时间到来，回到电池电量指示模式
+    if (flag_led_setting_mode_exit_times_come) // 时间到来，回到电池电量指示模式
     {
-        flag_led_exit_setting_times_come = 0;
+        flag_led_setting_mode_exit_times_come = 0;
 
         // TODO：这里还未处理好切换问题
-        if (cur_light_pwm_duty_val) // 如果灯光还是亮着的
+        if (cur_light_pwm_duty_val && /* 如果灯光还是亮着的 */
+            0 == flag_allow_light_in_setting_mode)
         {
             cur_led_mode = CUR_LED_MODE_BAT_INDICATOR; // 恢复到电池电量指示模式
         }
@@ -240,6 +295,14 @@ void led_handle(void)
         }
 
         flag_is_in_setting_mode = 0; // 退出设置模式
+        flag_allow_light_in_setting_mode = 0;
+    }
+
+    // led指示灯退出指示模式的时间到来
+    if (flag_is_led_mode_exit_times_come)
+    {
+        flag_is_led_mode_exit_times_come = 0;
+        cur_led_mode = CUR_LED_MODE_OFF;
     }
 
     if (CUR_LED_MODE_OFF == cur_led_mode)

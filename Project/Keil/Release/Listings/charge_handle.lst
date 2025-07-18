@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.7.0   CHARGE_HANDLE                                                     07/17/2025 14:33:58 PAGE 1   
+C51 COMPILER V9.60.7.0   CHARGE_HANDLE                                                     07/18/2025 17:29:25 PAGE 1   
 
 
 C51 COMPILER V9.60.7.0, COMPILATION OF MODULE CHARGE_HANDLE
@@ -62,7 +62,7 @@ line level    source
   48   3                  {
   49   4                      return;
   50   4                  }
-C51 COMPILER V9.60.7.0   CHARGE_HANDLE                                                     07/17/2025 14:33:58 PAGE 2   
+C51 COMPILER V9.60.7.0   CHARGE_HANDLE                                                     07/18/2025 17:29:25 PAGE 2   
 
   51   3              }
   52   2              else
@@ -126,7 +126,7 @@ line level    source
  109   2              {
  110   3                  // 如果电池电压小于2.7V，进行涓流充电
  111   3                  if (bat_adc_val <= (u16)((u32)2700 * 4096 / 2 / 2 / 1000))
-C51 COMPILER V9.60.7.0   CHARGE_HANDLE                                                     07/17/2025 14:33:58 PAGE 3   
+C51 COMPILER V9.60.7.0   CHARGE_HANDLE                                                     07/18/2025 17:29:25 PAGE 3   
 
  112   3                  {
  113   4                      if (CUR_CHARGING_PWM_STATUS_LOW_FEQ != cur_charging_pwm_status)
@@ -190,7 +190,7 @@ line level    source
                           //         if (pwm_duty > 0)
                           //         {
                           //             pwm_duty--;
-C51 COMPILER V9.60.7.0   CHARGE_HANDLE                                                     07/17/2025 14:33:58 PAGE 4   
+C51 COMPILER V9.60.7.0   CHARGE_HANDLE                                                     07/18/2025 17:29:25 PAGE 4   
 
                           //         }
                           //     }
@@ -254,7 +254,7 @@ line level    source
  227   5                          cur_charging_pwm_status = CUR_CHARGING_PWM_STATUS_NONE;
  228   5                          return;
  229   5                      }
-C51 COMPILER V9.60.7.0   CHARGE_HANDLE                                                     07/17/2025 14:33:58 PAGE 5   
+C51 COMPILER V9.60.7.0   CHARGE_HANDLE                                                     07/18/2025 17:29:25 PAGE 5   
 
  230   4      
  231   4                      // real_bat_adc_val = 0; // 好像可以不加
@@ -318,7 +318,7 @@ line level    source
  287   2              // if (bat_adc_val >= (u16)((u32)3450 * 4096 / 2 / 2 / 1000)) // 3.45V，实际测试是在 3.38V 
              -附近开始降低功率
  288   2              if (bat_adc_val >= (u16)((u32)(3500 + 50) * 4096 / 2 / 2 / 1000)) // 3.55V，实际测试在 3.48V
-C51 COMPILER V9.60.7.0   CHARGE_HANDLE                                                     07/17/2025 14:33:58 PAGE 6   
+C51 COMPILER V9.60.7.0   CHARGE_HANDLE                                                     07/18/2025 17:29:25 PAGE 6   
 
              - 附近开始降低功率
  289   2              {
@@ -382,7 +382,7 @@ line level    source
                                   pwm_duty--;
                                   // pwm_duty = 0; // 刚从正常充电变为涓流充电，如果pwm占空比没有迅
              -速调节，电池电压有可能会直接跳到3.6V，认为充满电
-C51 COMPILER V9.60.7.0   CHARGE_HANDLE                                                     07/17/2025 14:33:58 PAGE 7   
+C51 COMPILER V9.60.7.0   CHARGE_HANDLE                                                     07/18/2025 17:29:25 PAGE 7   
 
                               }
                           }
@@ -446,7 +446,7 @@ line level    source
  403   4      
  404   4                      // else if (power > 26500) //
  405   4      
-C51 COMPILER V9.60.7.0   CHARGE_HANDLE                                                     07/17/2025 14:33:58 PAGE 8   
+C51 COMPILER V9.60.7.0   CHARGE_HANDLE                                                     07/18/2025 17:29:25 PAGE 8   
 
  406   4                      // else if (power > 24000) // （实际测试不到20W，接近20W）
  407   4                      // else if (power > 20000)

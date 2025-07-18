@@ -16,6 +16,12 @@
 #include "led_handle.h"
 #include "ir_handle.h"
 #include "light_handle.h"
+// =================================================================
+// 红外接收相关变量                                                //
+// =================================================================
+extern volatile u8 ir_data;
+extern volatile bit flag_is_recv_ir_repeat_code;
+extern volatile bit flag_is_recved_data;
 
 // =================================================================
 // 充电控制相关变量                                                 //
@@ -37,8 +43,13 @@ extern volatile u8 cur_led_gear;               // 当前led挡位
 extern volatile u8 last_led_gear;              // 上次led挡位
 extern volatile u8 cur_led_gear_in_charging;   // 充电指示，对应的挡位
 extern volatile bit flag_is_in_setting_mode;   // 是否处于设置模式
-// 特殊的LED模式，退出时间计数
-extern u16 led_mode_setting_exit_times_cnt;
+
+extern volatile u16 led_setting_mode_exit_times_cnt;      // 特殊的LED模式，退出时间计数
+extern volatile u8 flag_led_setting_mode_exit_times_come; // 标志位，led退出设置模式的时间到来
+
+extern volatile bit flag_is_led_mode_exit_enable;      // 是否退出指示灯指示模式
+extern volatile bit flag_is_led_mode_exit_times_come;  // 退出指示灯指示模式的时间到来
+extern volatile u16 led_struction_mode_exit_times_cnt; // 退出指示灯指示模式时间计数
 
 // =================================================================
 // 主灯光控制相关变量                                               //
@@ -47,13 +58,23 @@ extern volatile u32 light_adjust_time_cnt;    // 调节灯光的时间计数，�
 extern volatile u8 light_ctl_phase_in_rate_1; // 在放电速率M1时，使用到的变量，在计算公式里面用作系数，每次唤醒时需要初始化为1
 
 // TODO：3260使用16位寄存器，7361使用8位寄存器，要进行适配修改
-extern volatile u16 cur_light_pwm_duty_val;                     // 当前灯光对应的占空比值
-extern volatile u16 expect_light_pwm_duty_val;                  // 期望调节到的、灯光对应的占空比值
+extern volatile u16 cur_light_pwm_duty_val; // 当前灯光对应的占空比值
+// extern volatile u16 expect_light_pwm_duty_val;                  // 期望调节到的、灯光对应的占空比值
 extern volatile u8 flag_is_light_adjust_time_come;              // 调节灯光的时间到来，目前为1s
 extern volatile u8 flag_is_light_pwm_duty_val_adjust_time_come; // 灯光占空比值调节时间到来
 
 extern volatile u8 flag_is_ctl_light_blink; // 是否控制主灯光闪烁
 extern volatile u8 light_ctl_blink_times;   // 要控制主灯光闪烁的次数
+/*
+    是否要在设置模式期间关闭主灯光
+
+    如果已经关灯，在设置模式期间，主灯闪烁完成后，直接关灯
+*/
+extern volatile bit flag_allow_light_in_setting_mode;
+
+extern const u16 light_pwm_sub_table[9];
+extern const u16 light_pwm_add_table[9];
+extern const u16 light_pwm_duty_init_val_table[5];
 
 enum
 {

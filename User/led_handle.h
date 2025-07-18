@@ -27,25 +27,43 @@ enum
 
 // #define BAT_ADC_VAL_DEAD_ZONE (50) // 电池电压对应的ad值死区
 
-enum LED_MODE
+enum
 {
-    CUR_LED_MODE_OFF = 0,                // 关机，指示灯全灭
-    CUR_LED_MODE_BAT_INDICATOR,          // 电池电量指示模式
-    CUR_LED_MODE_INITIAL_DISCHARGE_GEAR, // 初始放电挡位 -- 从 xx% PWW开始放电（指示灯由定时器控制）
-    CUR_LED_MODE_DISCHARGE_RATE,         // 放电速率
-    CUR_LED_MODE_CHARGING,               // 充电指示模式
-    CUR_LED_MODE_SETTING,                // 刚用遥控器按下SET按键，未按下其他按键，5个指示灯会一起闪烁（指示灯由定时器控制）
+    CUR_LED_MODE_OFF = 0, // 关机，指示灯全灭
+
+    CUR_LED_MODE_BAT_INDICATOR, // 电池电量指示模式
+
+    // CUR_LED_MODE_INITIAL_DISCHARGE_GEAR, // 初始放电挡位 -- 从 xx% PWW开始放电（指示灯由定时器控制）
+    // CUR_LED_MODE_DISCHARGE_RATE,         // 放电速率
+
+    CUR_LED_MODE_CHARGING, // 充电指示模式
+
+    CUR_LED_MODE_SETTING, // 刚用遥控器按下SET按键，未按下其他按键，5个指示灯会一起闪烁（指示灯由定时器控制）
+
+    CUR_LED_MODE_INITIAL_DISCHARGE_GEAR_IN_SETTING_MODE, // 设置模式，子模式 初始放电挡位
+    CUR_LED_MODE_DISCHARGE_RATE_IN_SETTING_MODE,    // 设置模式，子模式 放电速率
+
+    CUR_LED_MODE_IN_INSTRUCTION_MODE, // 指示模式，只用作比较，不用作赋值
+
+    CUR_LED_MODE_BAT_INDICATIOR_IN_INSTRUCTION_MODE,         // 指示模式，子模式 电池电量指示
+    CUR_LED_MODE_INITIAL_DISCHARGE_GEAR_IN_INSTRUCTION_MODE, // 指示模式，子模式 初始放电档位指示
+    CUR_LED_MODE_DISCHARGE_RATE_IN_INSTRUCTION_MODE,         // 指示模式，子模式 放电速率指示
+
+    CUR_LED_MODE_MAX = 0xFF,
 };
 
 // #define BAT_ADC_VAL_SAMPLE_COUNT 20 // 滑动平均的样本计数
 
-extern volatile u8 cur_led_mode;                   // 当前的LED模式
-extern volatile u8 bat_remaining_power_indication; // 电池剩余电量指示挡位
+// extern volatile u8 bat_remaining_power_indication; // 电池剩余电量指示挡位
 
-extern volatile u8 flag_led_exit_setting_times_come; // 标志位，led退出设置模式的时间到来
+void led_init(void);
+void led_all_off(void);
 
 void led_status_refresh(void);
+
 void led_mode_alter(u8 led_mode);
 void led_handle(void);
+
+void set_led_mode_status(u8 set_led_mode, u8 val);
 
 #endif

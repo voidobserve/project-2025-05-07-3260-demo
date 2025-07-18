@@ -7,7 +7,7 @@
 #define TIMER2_FEQ (SYSCLK / 128 / 1000 - 1) // 周期值=系统时钟/分频/频率 - 1
 
 // duty_val 占空比值，不是以百分比为单位
-#define SET_LIGHT_PWM_DUTY(duty_val)   \
+#define LIGHT_SET_PWM_DUTY(duty_val)   \
     do                                 \
     {                                  \
         timer2_set_pwm_duty(duty_val); \

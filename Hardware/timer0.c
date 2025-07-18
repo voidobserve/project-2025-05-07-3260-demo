@@ -211,176 +211,165 @@ void TIMR0_IRQHandler(void) interrupt TMR0_IRQn
 #endif // 控制LED指示灯(软件PWM驱动)
 
         {
-            static u8 cnt = 0;
-            static u8 blink_cnt = 0;
-            static bit flag_blink_dir = 0;
-            cnt++;
+            static u8 cnt_100us = 0;
+            cnt_100us++;
 
-            if (cnt >= 10) // 10 * 100us == 1ms
+            if (cnt_100us >= 10) // 10 * 100us == 1ms
             {
-                cnt = 0;
-
-                // {
-                //     static u16 cnt = 0;
-                //     cnt++;
-                //     if (cnt >= 1000)
-                //     {
-                //         cnt = 0;
-                //         // if (bat_adc_val > 100)
-                //         //     bat_adc_val -= 100;
-
-                //         if (bat_adc_val < 4095 - 100)
-                //         {
-                //             bat_adc_val += 100;
-                //         }
-                //     }
-                // }
+                cnt_100us = 0;
 
 #if 1 // 控制LED指示灯的闪烁效果
 
-                blink_cnt++;
-                if (blink_cnt >= 200)
                 {
-                    blink_cnt = 0;
-
-                    // 处于初始放电挡位指示模式，才进入
-                    if (CUR_LED_MODE_INITIAL_DISCHARGE_GEAR == cur_led_mode)
+                    static u8 blink_cnt = 0;
+                    static bit flag_blink_dir = 0;
+                    blink_cnt++;
+                    if (blink_cnt >= 200)
                     {
-                        if (0 == flag_blink_dir)
+                        blink_cnt = 0;
+
+                        // 处于初始放电挡位指示模式，才进入
+                        if (CUR_LED_MODE_INITIAL_DISCHARGE_GEAR_IN_SETTING_MODE == cur_led_mode ||
+                            CUR_LED_MODE_INITIAL_DISCHARGE_GEAR_IN_INSTRUCTION_MODE == cur_led_mode)
                         {
-                            switch (cur_initial_discharge_gear)
+                            if (0 == flag_blink_dir)
                             {
-                            case 1:
+                                switch (cur_initial_discharge_gear)
+                                {
+                                case 1:
+                                    LED_1_ON();
+                                    break;
+                                case 2:
+                                    LED_2_ON();
+                                    break;
+                                case 3:
+                                    LED_3_ON();
+                                    break;
+                                case 4:
+                                    LED_4_ON();
+                                    break;
+                                case 5:
+                                    LED_5_ON();
+                                    break;
+                                }
+
+                                flag_blink_dir = 1;
+                            }
+                            else
+                            {
+                                switch (cur_initial_discharge_gear)
+                                {
+                                case 1:
+                                    LED_1_OFF();
+                                    break;
+                                case 2:
+                                    LED_2_OFF();
+                                    break;
+                                case 3:
+                                    LED_3_OFF();
+                                    break;
+                                case 4:
+                                    LED_4_OFF();
+                                    break;
+                                case 5:
+                                    LED_5_OFF();
+                                    break;
+                                }
+
+                                flag_blink_dir = 0;
+                            }
+                        } // if (CUR_LED_MODE_INITIAL_DISCHARGE_GEAR == cur_led_mode)
+                        else if (CUR_LED_MODE_SETTING == cur_led_mode)
+                        {
+                            // 刚按下遥控器的 SET 按键，会进入 设置模式，5个指示灯一起闪烁
+                            if (0 == flag_blink_dir)
+                            {
                                 LED_1_ON();
-                                break;
-                            case 2:
                                 LED_2_ON();
-                                break;
-                            case 3:
                                 LED_3_ON();
-                                break;
-                            case 4:
                                 LED_4_ON();
-                                break;
-                            case 5:
                                 LED_5_ON();
-                                break;
+                                flag_blink_dir = 1;
                             }
-
-                            flag_blink_dir = 1;
-                        }
-                        else
-                        {
-                            switch (cur_initial_discharge_gear)
+                            else
                             {
-                            case 1:
                                 LED_1_OFF();
-                                break;
-                            case 2:
                                 LED_2_OFF();
-                                break;
-                            case 3:
                                 LED_3_OFF();
-                                break;
-                            case 4:
                                 LED_4_OFF();
-                                break;
-                            case 5:
-                                LED_5_OFF();
-                                break;
-                            }
-
-                            flag_blink_dir = 0;
-                        }
-                    } // if (CUR_LED_MODE_INITIAL_DISCHARGE_GEAR == cur_led_mode)
-                    // 刚按下遥控器的 SET 按键，会进入 设置模式，5个指示灯一起闪烁
-                    else if (CUR_LED_MODE_SETTING == cur_led_mode)
-                    {
-                        if (0 == flag_blink_dir)
-                        {
-                            LED_1_ON();
-                            LED_2_ON();
-                            LED_3_ON();
-                            LED_4_ON();
-                            LED_5_ON();
-                            flag_blink_dir = 1;
-                        }
-                        else
-                        {
-                            LED_1_OFF();
-                            LED_2_OFF();
-                            LED_3_OFF();
-                            LED_4_OFF();
-                            LED_5_OFF();
-                            flag_blink_dir = 0;
-                        }
-                    }
-                    // 指示灯处于充电指示模式
-                    else if (CUR_LED_MODE_CHARGING == cur_led_mode)
-                    {
-                        if (cur_led_gear_in_charging <= 2)
-                        {
-                            if (0 == flag_blink_dir)
-                            {
-                                LED_2_ON();
-                                flag_blink_dir = 1;
-                            }
-                            else
-                            {
-                                LED_2_OFF();
-                                flag_blink_dir = 0;
-                            }
-                        }
-                        else if (cur_led_gear_in_charging <= 3)
-                        {
-                            if (0 == flag_blink_dir)
-                            {
-                                LED_3_ON();
-                                flag_blink_dir = 1;
-                            }
-                            else
-                            {
-                                LED_3_OFF();
-                                flag_blink_dir = 0;
-                            }
-                        }
-                        else if (cur_led_gear_in_charging <= 4)
-                        {
-                            if (0 == flag_blink_dir)
-                            {
-                                LED_4_ON();
-                                flag_blink_dir = 1;
-                            }
-                            else
-                            {
-                                LED_4_OFF();
-                                flag_blink_dir = 0;
-                            }
-                        }
-                        else if (cur_led_gear_in_charging <= 5)
-                        {
-                            if (0 == flag_blink_dir)
-                            {
-                                LED_5_ON();
-                                flag_blink_dir = 1;
-                            }
-                            else
-                            {
                                 LED_5_OFF();
                                 flag_blink_dir = 0;
                             }
                         }
-                    }
+                        // 指示灯处于充电指示模式
+                        else if (CUR_LED_MODE_CHARGING == cur_led_mode)
+                        {
+                            if (cur_led_gear_in_charging <= 2)
+                            {
+                                if (0 == flag_blink_dir)
+                                {
+                                    LED_2_ON();
+                                    flag_blink_dir = 1;
+                                }
+                                else
+                                {
+                                    LED_2_OFF();
+                                    flag_blink_dir = 0;
+                                }
+                            }
+                            else if (cur_led_gear_in_charging <= 3)
+                            {
+                                if (0 == flag_blink_dir)
+                                {
+                                    LED_3_ON();
+                                    flag_blink_dir = 1;
+                                }
+                                else
+                                {
+                                    LED_3_OFF();
+                                    flag_blink_dir = 0;
+                                }
+                            }
+                            else if (cur_led_gear_in_charging <= 4)
+                            {
+                                if (0 == flag_blink_dir)
+                                {
+                                    LED_4_ON();
+                                    flag_blink_dir = 1;
+                                }
+                                else
+                                {
+                                    LED_4_OFF();
+                                    flag_blink_dir = 0;
+                                }
+                            }
+                            else if (cur_led_gear_in_charging <= 5)
+                            {
+                                if (0 == flag_blink_dir)
+                                {
+                                    LED_5_ON();
+                                    flag_blink_dir = 1;
+                                }
+                                else
+                                {
+                                    LED_5_OFF();
+                                    flag_blink_dir = 0;
+                                }
+                            }
+                        }
 
-                } // if (blink_cnt >= 200)
+                    } // if (blink_cnt >= 200)
+                }
 
 #endif // 控制LED指示灯的闪烁效果
 
-#if 1 // 退出特殊的led指示模式的时间计数
-      // if (cur_led_mode != CUR_LED_MODE_BAT_INDICATOR) // 不处于电池电量指示模式，开始累计时间
-                if (CUR_LED_MODE_INITIAL_DISCHARGE_GEAR == cur_led_mode ||
-                    CUR_LED_MODE_DISCHARGE_RATE == cur_led_mode ||
-                    CUR_LED_MODE_SETTING == cur_led_mode)
+#if 1 // 退出led设置模式的时间计数
+
+                // if (CUR_LED_MODE_INITIAL_DISCHARGE_GEAR == cur_led_mode ||
+                //     CUR_LED_MODE_DISCHARGE_RATE == cur_led_mode ||
+                //     CUR_LED_MODE_SETTING == cur_led_mode)
+
+                if (flag_is_in_setting_mode) // 处于设置模式，开始累计时间
                 {
                     // special_led_mode_times_cnt++;
                     // if (special_led_mode_times_cnt >= 5000)
@@ -388,14 +377,15 @@ void TIMR0_IRQHandler(void) interrupt TMR0_IRQn
                     //     special_led_mode_times_cnt = 0;
                     //     flag_led_exit_setting_times_come = 1;
                     // }
-                    led_mode_setting_exit_times_cnt++;
-                    if (led_mode_setting_exit_times_cnt >= 5000)
+                    led_setting_mode_exit_times_cnt++;
+                    if (led_setting_mode_exit_times_cnt >= 5000)
                     {
-                        led_mode_setting_exit_times_cnt = 0;
-                        flag_led_exit_setting_times_come = 1;
+                        led_setting_mode_exit_times_cnt = 0;
+                        flag_led_setting_mode_exit_times_come = 1;
                     }
                 }
-#endif // 退出特殊的led指示模式的时间计数
+
+#endif // 退出led设置模式的时间计数
 
                 {
                     static u8 cnt = 0;
@@ -445,15 +435,100 @@ void TIMR0_IRQHandler(void) interrupt TMR0_IRQn
 #if 1 // 控制主灯光的闪烁效果
 
                 {
+                    static u8 blink_cnt = 0; // 记录闪烁次数
+                    static u16 time_cnt = 0; // 控制灯光闪烁的时间
+
                     if (flag_is_ctl_light_blink)
                     {
-
+                        blink_cnt = light_ctl_blink_times;
+                        time_cnt = 0;
                         // 闪烁完成后，清除标志位
                         flag_is_ctl_light_blink = 0;
+                    }
+
+                    if (blink_cnt)
+                    {
+                        time_cnt++;
+                        if (time_cnt < 161) // 0 ~ 161 ms
+                        {
+                            // 如果当前在放电：
+                            if (cur_led_mode != CUR_LED_MODE_OFF &&      /* 指示灯开启 */
+                                cur_led_mode != CUR_LED_MODE_CHARGING && /* 不在充电 */
+                                (0 == flag_allow_light_in_setting_mode)) /* 不需要闪完灯后关闭主灯光 */
+                            // if (cur_led_mode != CUR_LED_MODE_OFF &&
+                            //     cur_led_mode != CUR_LED_MODE_CHARGING)
+                            {
+                                // LIGHT_OFF();
+
+                                LIGHT_ON();
+                            }
+                            else
+                            {
+                                // LIGHT_ON();
+
+                                LIGHT_OFF();
+                            }
+                        }
+                        else if (time_cnt < (161 * 2)) // 161 ~ 322 ms
+                        {
+                            // 如果当前在放电：
+                            if (cur_led_mode != CUR_LED_MODE_OFF &&
+                                cur_led_mode != CUR_LED_MODE_CHARGING &&
+                                (0 == flag_allow_light_in_setting_mode))
+                            // if (cur_led_mode != CUR_LED_MODE_OFF &&
+                            //     cur_led_mode != CUR_LED_MODE_CHARGING)
+                            {
+                                // LIGHT_ON();
+
+                                LIGHT_OFF();
+                            }
+                            else
+                            {
+                                // LIGHT_OFF();
+
+                                LIGHT_ON();
+                            }
+                        }
+                        else // 超过 161 * 2ms，清除时间计数，闪烁次数减一，表示完成一次闪烁
+                        {
+                            time_cnt = 0;
+                            blink_cnt--;
+
+                            // 如果当前在放电：
+                            if (cur_led_mode != CUR_LED_MODE_OFF &&
+                                cur_led_mode != CUR_LED_MODE_CHARGING &&
+                                (0 == flag_allow_light_in_setting_mode))
+                            // if (cur_led_mode != CUR_LED_MODE_OFF &&
+                            //     cur_led_mode != CUR_LED_MODE_CHARGING)
+                            {
+                                LIGHT_ON();
+                            }
+                            else
+                            {
+                                LIGHT_OFF();
+                            }
+
+                            // flag_is_need_to_exit_setting_mode_close_light = 0;
+                        }
                     }
                 }
 
 #endif // 控制主灯光的闪烁效果
+
+#if 1 // 控制退出指示灯指示模式
+
+                if (flag_is_led_mode_exit_enable)
+                {
+                    led_struction_mode_exit_times_cnt++;
+                    if (led_struction_mode_exit_times_cnt >= 5000)
+                    {
+                        led_struction_mode_exit_times_cnt = 0;
+                        flag_is_led_mode_exit_enable = 0;
+                        flag_is_led_mode_exit_times_come = 1;
+                    }
+                }
+
+#endif // 控制退出指示灯指示模式
 
             } // if (cnt >= 10) // 10 * 100us == 1ms
         }
@@ -486,7 +561,7 @@ void TIMR0_IRQHandler(void) interrupt TMR0_IRQn
 
 #endif // 放电时间控制
 
-#if 1 // 缓慢调节驱动灯光的pwm占空比
+#if 0 // 缓慢调节驱动灯光的pwm占空比
 
         {
             // static u16 cnt = 0;
