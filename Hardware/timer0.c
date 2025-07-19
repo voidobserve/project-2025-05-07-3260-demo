@@ -449,7 +449,7 @@ void TIMR0_IRQHandler(void) interrupt TMR0_IRQn
                     if (blink_cnt)
                     {
                         time_cnt++;
-                        if (time_cnt < 161) // 0 ~ 161 ms
+                        if (time_cnt < (u16)161) // 0 ~ 161 ms
                         {
                             // 如果当前在放电：
                             if (cur_led_mode != CUR_LED_MODE_OFF &&      /* 指示灯开启 */
@@ -469,7 +469,7 @@ void TIMR0_IRQHandler(void) interrupt TMR0_IRQn
                                 LIGHT_OFF();
                             }
                         }
-                        else if (time_cnt < (161 * 2)) // 161 ~ 322 ms
+                        else if (time_cnt < (u16)(161 * 2)) // 161 ~ 322 ms
                         {
                             // 如果当前在放电：
                             if (cur_led_mode != CUR_LED_MODE_OFF &&
@@ -517,18 +517,42 @@ void TIMR0_IRQHandler(void) interrupt TMR0_IRQn
 
 #if 1 // 控制退出指示灯指示模式
 
-                if (flag_is_led_mode_exit_enable)
+                if (flag_is_in_struction_mode)
                 {
                     led_struction_mode_exit_times_cnt++;
                     if (led_struction_mode_exit_times_cnt >= 5000)
                     {
                         led_struction_mode_exit_times_cnt = 0;
-                        flag_is_led_mode_exit_enable = 0;
-                        flag_is_led_mode_exit_times_come = 1;
+                        // flag_is_in_struction_mode = 0;
+                        flag_led_struction_mode_exit_times_come = 1;
                     }
                 }
 
 #endif // 控制退出指示灯指示模式
+
+#if 1 // 控制定时关机
+
+                {
+                    static u32 cnt = 0;
+
+                    if (flag_is_auto_shutdown_enable)
+                    {
+                        cnt++; // 累计定时关机时间
+                        if (cnt >= light_auto_shutdown_time_cnt)
+                        {
+                            // 让主函数关机
+                            flag_is_auto_shutdown_enable = 0;
+                            flag_is_auto_shutdown_times_come = 1;
+                        }
+                    }
+                    else
+                    {
+                        cnt = 0;
+                        flag_is_auto_shutdown_times_come = 0;
+                    }
+                }
+
+#endif // 控制定时关机
 
             } // if (cnt >= 10) // 10 * 100us == 1ms
         }
@@ -561,28 +585,42 @@ void TIMR0_IRQHandler(void) interrupt TMR0_IRQn
 
 #endif // 放电时间控制
 
-#if 0 // 缓慢调节驱动灯光的pwm占空比
+#if 1 // 缓慢调节驱动灯光的pwm占空比
 
         {
-            // static u16 cnt = 0;
+            static u8 cnt = 0;
 
-            if (CUR_CHARGE_PHASE_NONE == cur_charge_phase &&
-                cur_led_mode != CUR_LED_MODE_OFF)
+            // 目前是每100us调节一次
+
+            if (flag_is_adjust_light_slowly)
             {
-
-                if (cur_light_pwm_duty_val > expect_light_pwm_duty_val)
+                cnt++;
+                if (cnt >= 100) // 看起来调节效果较平滑
                 {
-                    // 如果要调小灯光的占空比
-                    cur_light_pwm_duty_val--;
-                }
-                else if (cur_light_pwm_duty_val < expect_light_pwm_duty_val)
-                {
-                    // 如果要调大灯光的占空比
-                    cur_light_pwm_duty_val++;
-                }
+                    cnt = 0;
+                    if (cur_light_pwm_duty_val > expect_light_pwm_duty_val)
+                    {
+                        // 如果要调小灯光的占空比
+                        cur_light_pwm_duty_val--;
+                    }
+                    else if (cur_light_pwm_duty_val < expect_light_pwm_duty_val)
+                    {
+                        // 如果要调大灯光的占空比
+                        cur_light_pwm_duty_val++;
+                    }
+                    else
+                    {
+                        // 如果灯光的占空比已经达到期望值，则取消灯光的调光
+                        flag_is_adjust_light_slowly = 0; //
+                    }
 
-                timer2_set_pwm_duty(cur_light_pwm_duty_val);
+                    LIGHT_SET_PWM_DUTY(cur_light_pwm_duty_val);
+                }
             }
+            // else
+            // {
+            //     cnt = 0;
+            // }
         }
 
 #endif // 缓慢调节驱动灯光的pwm占空比

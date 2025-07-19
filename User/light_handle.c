@@ -68,17 +68,18 @@ void light_init(void)
         cur_light_pwm_duty_val = ((u32)TIMER2_FEQ * 4980 / 10000);
 
         break;
-    }
+    } 
+    
+    // cur_light_pwm_duty_val = expect_light_pwm_duty_val;
 #endif
 
+    // 查表，获得挡位对应的占空比值
     cur_light_pwm_duty_val = light_pwm_duty_init_val_table[cur_initial_discharge_gear - 1];
 
-    // cur_light_pwm_duty_val = expect_light_pwm_duty_val;
-    timer2_set_pwm_duty(cur_light_pwm_duty_val); // 立刻更新PWM占空比
-    LIGHT_ON();                                  // 使能PWM输出
-    // light_blink();
-    light_blink(3); // 开机前，主灯需要闪烁
-    light_adjust_time_cnt = 0;
+    LIGHT_SET_PWM_DUTY(cur_light_pwm_duty_val); // 立刻更新PWM占空比
+    LIGHT_ON();                                 // 使能PWM输出
+    light_blink(3);                             // 开机前，主灯需要闪烁
+    light_adjust_time_cnt = 0;                  // 灯光调整时间清零
 }
 
 /**

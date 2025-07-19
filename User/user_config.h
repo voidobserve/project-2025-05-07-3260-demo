@@ -39,17 +39,21 @@ extern volatile u8 cur_charge_phase;                  // 记录当前充电阶�
 extern volatile u8 cur_initial_discharge_gear; // 初始放电挡位（需要记忆）
 extern volatile u8 cur_discharge_rate;         // 初始放电速率（需要记忆）
 extern volatile u8 cur_led_mode;               // 当前的LED模式
-extern volatile u8 cur_led_gear;               // 当前led挡位
-extern volatile u8 last_led_gear;              // 上次led挡位
-extern volatile u8 cur_led_gear_in_charging;   // 充电指示，对应的挡位
-extern volatile bit flag_is_in_setting_mode;   // 是否处于设置模式
+// extern volatile u8 last_led_mode;              // 上次的led模式
+extern volatile u8 cur_led_gear;             // 当前led挡位
+extern volatile u8 last_led_gear;            // 上次led挡位
+extern volatile u8 cur_led_gear_in_charging; // 充电指示，对应的挡位
+extern volatile bit flag_is_in_setting_mode; // 是否处于设置模式
 
 extern volatile u16 led_setting_mode_exit_times_cnt;      // 特殊的LED模式，退出时间计数
 extern volatile u8 flag_led_setting_mode_exit_times_come; // 标志位，led退出设置模式的时间到来
 
-extern volatile bit flag_is_led_mode_exit_enable;      // 是否退出指示灯指示模式
-extern volatile bit flag_is_led_mode_exit_times_come;  // 退出指示灯指示模式的时间到来
-extern volatile u16 led_struction_mode_exit_times_cnt; // 退出指示灯指示模式时间计数
+extern volatile bit flag_is_in_struction_mode;               // 是否退出指示灯指示模式
+extern volatile bit flag_led_struction_mode_exit_times_come; // 退出指示灯指示模式的时间到来
+extern volatile u16 led_struction_mode_exit_times_cnt;       // 退出指示灯指示模式时间计数
+
+// 标志位，是否要回到 led_off 模式
+extern volatile bit flag_is_led_off_enable;
 
 // =================================================================
 // 主灯光控制相关变量                                               //
@@ -71,6 +75,15 @@ extern volatile u8 light_ctl_blink_times;   // 要控制主灯光闪烁的次数
     如果已经关灯，在设置模式期间，主灯闪烁完成后，直接关灯
 */
 extern volatile bit flag_allow_light_in_setting_mode;
+
+// 是否要缓慢调节主灯光的占空比
+extern volatile bit flag_is_adjust_light_slowly;
+extern volatile u16 expect_light_pwm_duty_val; // 期望缓慢调节到的、主灯光对应的占空比值
+
+// 是否开启了定时关机功能：
+extern volatile bit flag_is_auto_shutdown_enable;
+extern volatile u32 light_auto_shutdown_time_cnt;     // 定时关机功能的定时器计数，单位：ms
+extern volatile bit flag_is_auto_shutdown_times_come; // 定时关机的时间到来
 
 extern const u16 light_pwm_sub_table[9];
 extern const u16 light_pwm_add_table[9];

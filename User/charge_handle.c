@@ -24,9 +24,10 @@ void charge_handle(void)
         // 如果当前没有在充电
         if (CUR_CHARGE_PHASE_NONE == cur_charge_phase)
         {
-            adc_sel_ref_voltage(ADC_REF_2_0_VOL); // 2V参考电压
-            adc_sel_pin(ADC_PIN_DETECT_CHARGE);
-            charging_adc_val = adc_getval();
+            // adc_sel_ref_voltage(ADC_REF_2_0_VOL); // 2V参考电压
+            // adc_sel_pin(ADC_PIN_DETECT_CHARGE);
+            // charging_adc_val = adc_getval();
+            adc_update_charge_adc_val(ADC_REF_2_0_VOL);
 
             // 如果充电输入电压大于4.9V，使能充电
             if (charging_adc_val >= (u16)((u32)4900 * 4096 / 11 / 2 / 1000))
@@ -100,9 +101,10 @@ void charge_handle(void)
         // 进入到这里，说明正在充电，且充电电压在 4V~30V之间，不包括4V和30V
 
         // 检测电池电压，使用内部2.0V参考电压
-        adc_sel_ref_voltage(ADC_REF_2_0_VOL);
-        adc_sel_pin(ADC_PIN_DETECT_BATTERY);
-        bat_adc_val = adc_getval();
+        // adc_sel_ref_voltage(ADC_REF_2_0_VOL);
+        // adc_sel_pin(ADC_PIN_DETECT_BATTERY);
+        // bat_adc_val = adc_getval();
+        adc_update_bat_adc_val();
 
         // 刚进入充电，会进入下面这个语句块：
         if (CUR_CHARGE_PHASE_TRICKLE_CHARGE == cur_charge_phase)

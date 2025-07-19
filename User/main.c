@@ -47,17 +47,21 @@ volatile u8 cur_charge_phase = CUR_CHARGE_PHASE_NONE;               // ¼ÇÂ¼µ±Ç°³
 volatile u8 cur_initial_discharge_gear; // ³õÊ¼·Åµçµ²Î»£¨ÐèÒª¼ÇÒä£©
 volatile u8 cur_discharge_rate;         // ³õÊ¼·ÅµçËÙÂÊ£¨ÐèÒª¼ÇÒä£©
 volatile u8 cur_led_mode;               // µ±Ç°µÄLEDÄ£Ê½
-volatile u8 cur_led_gear;               // µ±Ç°ledµ²Î»
-volatile u8 last_led_gear;              // ÉÏ´Îledµ²Î»
-volatile u8 cur_led_gear_in_charging;   // ³äµçÖ¸Ê¾£¬¶ÔÓ¦µÄµ²Î»
+// volatile u8 last_led_mode; // ÉÏ´ÎµÄledÄ£Ê½
+volatile u8 cur_led_gear;             // µ±Ç°ledµ²Î»
+volatile u8 last_led_gear;            // ÉÏ´Îledµ²Î»£¨Ö»ÄÜÔÚ¸ÕÉÏµçÊ±ÇåÁã¸³³õÊ¼Öµ£©
+volatile u8 cur_led_gear_in_charging; // ³äµçÖ¸Ê¾£¬¶ÔÓ¦µÄµ²Î»
 
 volatile bit flag_is_in_setting_mode = 0;              // ÊÇ·ñ´¦ÓÚÉèÖÃÄ£Ê½
 volatile u8 flag_led_setting_mode_exit_times_come = 0; // ±êÖ¾Î»£¬ledÍË³öÉèÖÃÄ£Ê½µÄÊ±¼äµ½À´
 volatile u16 led_setting_mode_exit_times_cnt = 0;      // ÌØÊâµÄLEDÄ£Ê½£¬ÍË³öÊ±¼ä¼ÆÊý
 
-volatile bit flag_is_led_mode_exit_enable = 0;      // ÊÇ·ñÍË³öÖ¸Ê¾µÆÖ¸Ê¾Ä£Ê½
-volatile bit flag_is_led_mode_exit_times_come = 0;  // ÍË³öÖ¸Ê¾µÆÖ¸Ê¾Ä£Ê½µÄÊ±¼äµ½À´
-volatile u16 led_struction_mode_exit_times_cnt = 0; // ÍË³öÖ¸Ê¾µÆÖ¸Ê¾Ä£Ê½Ê±¼ä¼ÆÊý
+volatile bit flag_is_in_struction_mode = 0;               // ÊÇ·ñ´¦ÓÚÖ¸Ê¾Ä£Ê½
+volatile bit flag_led_struction_mode_exit_times_come = 0; // ÍË³öÖ¸Ê¾µÆÖ¸Ê¾Ä£Ê½µÄÊ±¼äµ½À´
+volatile u16 led_struction_mode_exit_times_cnt = 0;       // ÍË³öÖ¸Ê¾µÆÖ¸Ê¾Ä£Ê½Ê±¼ä¼ÆÊý
+
+// ±êÖ¾Î»£¬ÊÇ·ñÒª»Øµ½ led_off Ä£Ê½
+volatile bit flag_is_led_off_enable = 0;
 
 // =================================================================
 // Ö÷µÆ¹â¿ØÖÆÏà¹Ø±äÁ¿                                               //
@@ -79,6 +83,15 @@ volatile u8 light_ctl_blink_times = 0;   // Òª¿ØÖÆÖ÷µÆ¹âÉÁË¸µÄ´ÎÊý
     Èç¹ûÒÑ¾­¹ØµÆ£¬ÔÚÉèÖÃÄ£Ê½ÆÚ¼ä£¬Ö÷µÆÉÁË¸Íê³Éºó£¬Ö±½Ó¹ØµÆ
 */
 volatile bit flag_allow_light_in_setting_mode = 0;
+
+// ÊÇ·ñÒª»ºÂýµ÷½ÚÖ÷µÆ¹âµÄÕ¼¿Õ±È
+volatile bit flag_is_adjust_light_slowly = 0;
+volatile u16 expect_light_pwm_duty_val = 0; // ÆÚÍû»ºÂýµ÷½Úµ½µÄ¡¢Ö÷µÆ¹â¶ÔÓ¦µÄÕ¼¿Õ±ÈÖµ
+
+// ÊÇ·ñ¿ªÆôÁË¶¨Ê±¹Ø»ú¹¦ÄÜ£º
+volatile bit flag_is_auto_shutdown_enable = 0;
+volatile u32 light_auto_shutdown_time_cnt = 0; // ¶¨Ê±¹Ø»ú¹¦ÄÜµÄ¶¨Ê±Æ÷¼ÆÊý£¬µ¥Î»£ºms
+volatile bit flag_is_auto_shutdown_times_come = 0; // ¶¨Ê±¹Ø»úµÄÊ±¼äµ½À´
 
 // ¶Ì°´¼õÐ¡µÆ¹âÁÁ¶È£¬¶ÔÓ¦¸÷¸öµ²Î»ÁÁ¶ÈµÄÕ¼¿Õ±ÈÖµ
 const u16 light_pwm_sub_table[9] = {
@@ -256,22 +269,24 @@ void main(void)
                 LIGHT_ON();
             }
         }
+        
+        // Èç¹û¶¨Ê±¹Ø»úµÄÊ±¼äµ½À´
+        if (flag_is_auto_shutdown_times_come)
+        {
+            flag_is_auto_shutdown_times_come = 0;
+            led_status_clear();
+            cur_led_mode = CUR_LED_MODE_OFF;
+            cur_light_pwm_duty_val = 0;
+            LIGHT_OFF();
+        }
 
-        // TODO£ºÎ´Æðµ½Ð§¹û
-        // if (cur_led_mode == CUR_LED_MODE_OFF)
-        // {
-        //     if (cur_light_pwm_duty_val > 0)
-        //     {
-        //         LIGHT_OFF();
-        //     }
-        // }
 
         adc_update_bat_adc_val();
         led_handle();
         light_handle();
 
-#if 1
-        // Ã¿¸ôÒ»¶ÎÊ±¼ä£¬´òÓ¡µ÷ÊÔÐÅÏ¢£º
+#if 0 // Ã¿¸ôÒ»¶ÎÊ±¼ä£¬´òÓ¡µ÷ÊÔÐÅÏ¢£º
+
         {
             static u8 cnt = 0;
             cnt++;
@@ -296,16 +311,28 @@ void main(void)
                     printf("led mode charging\n");
                     break;
 
-                    // case CUR_LED_MODE_DISCHARGE_RATE:
-                    //     printf("led mode discharge rate\n");
-                    //     break;
-
-                    // case CUR_LED_MODE_INITIAL_DISCHARGE_GEAR:
-                    //     printf("led mode initial discharge gear\n");
-                    //     break;
-
                 case CUR_LED_MODE_SETTING:
                     printf("led mode setting\n");
+                    break;
+
+                case CUR_LED_MODE_INITIAL_DISCHARGE_GEAR_IN_SETTING_MODE:
+                    printf("led mode initial discharge gear in setting mode\n");
+                    break;
+
+                case CUR_LED_MODE_DISCHARGE_RATE_IN_SETTING_MODE:
+                    printf("led mode discharge rate in setting mode\n");
+                    break;
+
+                case CUR_LED_MODE_BAT_INDICATIOR_IN_INSTRUCTION_MODE:
+                    printf("led mode bat indicator in instruction mode\n");
+                    break;
+
+                case CUR_LED_MODE_INITIAL_DISCHARGE_GEAR_IN_INSTRUCTION_MODE:
+                    printf("led mode initial discharge gear in instruction mode\n");
+                    break;
+
+                case CUR_LED_MODE_DISCHARGE_RATE_IN_INSTRUCTION_MODE:
+                    printf("led mode discharge rate in instruction mode\n");
                     break;
 
                 default:
@@ -313,8 +340,9 @@ void main(void)
                 }
             }
         }
-#endif
+#endif // Ã¿¸ôÒ»¶ÎÊ±¼ä£¬´òÓ¡µ÷ÊÔÐÅÏ¢
 
+#if 1 // demo°åÊ¹ÓÃµ½µÄµ÷ÊÔÖ¸Ê¾µÆ
         if (CUR_CHARGE_PHASE_NONE == cur_charge_phase)
         {
             my_debug_led_2_off();
@@ -347,6 +375,7 @@ void main(void)
 
             my_debug_led_4_on();
         }
+#endif // demo°åÊ¹ÓÃµ½µÄµ÷ÊÔÖ¸Ê¾µÆ
 
 #if 0 // »ºÂýµ÷½ÚÇý¶¯µÆ¹âµÄpwmÕ¼¿Õ±È£¨»¹Î´µ÷ÊÔÍê³É£©
 

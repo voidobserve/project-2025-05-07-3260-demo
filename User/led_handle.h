@@ -59,7 +59,9 @@ enum
 void led_init(void);
 void led_all_off(void);
 
-void led_status_refresh(void);
+// void led_status_refresh(void);
+// 清除led有关的状态
+void led_status_clear(void);
 
 void led_mode_alter(u8 led_mode);
 void led_handle(void);
