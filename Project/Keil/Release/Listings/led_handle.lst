@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.7.0   LED_HANDLE                                                        07/19/2025 15:17:19 PAGE 1   
+C51 COMPILER V9.60.7.0   LED_HANDLE                                                        07/21/2025 14:57:41 PAGE 1   
 
 
 C51 COMPILER V9.60.7.0, COMPILATION OF MODULE LED_HANDLE
@@ -36,318 +36,320 @@ line level    source
   25          {
   26   1          led_all_off();
   27   1      
-  28   1          flag_is_in_setting_mode = 0;
-  29   1          flag_led_setting_mode_exit_times_come = 0;
-  30   1          led_setting_mode_exit_times_cnt = 0;
-  31   1      
-  32   1          flag_is_in_struction_mode = 0;
-  33   1          flag_led_struction_mode_exit_times_come = 0;
-  34   1          led_struction_mode_exit_times_cnt = 0;
-  35   1      
-  36   1          // flag_is_led_off_enable = 0; // 不能加入这句，如果重复按下SET或红色按键，会导�
+  28   1          // 清空设置模式相关的变量
+  29   1          flag_is_in_setting_mode = 0;
+  30   1          flag_led_setting_mode_exit_times_come = 0;
+  31   1          led_setting_mode_exit_times_cnt = 0;
+  32   1      
+  33   1          // 清空指示模式相关的变量
+  34   1          flag_is_in_struction_mode = 0;
+  35   1          flag_led_struction_mode_exit_times_come = 0;
+  36   1          led_struction_mode_exit_times_cnt = 0;
+  37   1      
+  38   1          // flag_is_led_off_enable = 0; // 不能加入这句，如果重复按下SET或红色按键，会导�
              -�无法关指示灯
-  37   1      }
-  38          
-  39          /**
-  40           * @brief 更改led_mode
-  41           *
-  42           * @param led_mode
-  43           *              相关定义在 枚举类型 CUR_LED_MODE_XXX 中
-  44          
-  45           */
-  46          void led_mode_alter(u8 led_mode)
-  47          {
-  48   1          led_all_off();
-  49   1      
-  50   1          cur_led_mode = led_mode;
-  51   1      }
-  52          
-C51 COMPILER V9.60.7.0   LED_HANDLE                                                        07/19/2025 15:17:19 PAGE 2   
+  39   1      }
+  40          
+  41          /**
+  42           * @brief 更改led_mode
+  43           *
+  44           * @param led_mode
+  45           *              相关定义在 枚举类型 CUR_LED_MODE_XXX 中
+  46          
+  47           */
+  48          void led_mode_alter(u8 led_mode)
+  49          {
+  50   1          led_all_off();
+  51   1      
+  52   1          cur_led_mode = led_mode;
+C51 COMPILER V9.60.7.0   LED_HANDLE                                                        07/21/2025 14:57:41 PAGE 2   
 
-  53          /**
-  54           * @brief 在设置模式，设置初始放电挡位或放电速率
-  55           *          函数内部会判断 当前 是否处于设置模式
-  56           *
-  57           * @param set_led_mode
-  58           *          CUR_LED_MODE_INITIAL_DISCHARGE_GEAR_IN_SETTING_MODE 要设置的是初始放电挡位
-  59           *          CUR_LED_MODE_DISCHARGE_RATE_IN_SETTING_MODE     要设置的是放电速率
-  60           * @param val 初始放电挡位 或 放电速率对应的值（需要注意不能超过范围）
-  61           */
-  62          void set_led_mode_status(u8 set_led_mode, u8 val)
-  63          {
-  64   1          // 如果在设置模式，才会进入
-  65   1          if (flag_is_in_setting_mode)
-  66   1          {
-  67   2              if (CUR_LED_MODE_INITIAL_DISCHARGE_GEAR_IN_SETTING_MODE == set_led_mode)
-  68   2              {
-  69   3                  cur_initial_discharge_gear = val;
-  70   3      
-  71   3                  // 设置了初始挡位之后，更新当前主灯光对应的占空比值
-  72   3                  cur_light_pwm_duty_val = light_pwm_duty_init_val_table[cur_initial_discharge_gear - 1];
-  73   3              }
-  74   2              else // CUR_LED_MODE_DISCHARGE_RATE_IN_SETTING_MODE == set_led_mode
-  75   2              {
-  76   3                  cur_discharge_rate = val;
-  77   3              }
-  78   2      
-  79   2              cur_led_mode = set_led_mode;
-  80   2              led_all_off();
-  81   2              flag_led_setting_mode_exit_times_come = 0;
-  82   2              led_setting_mode_exit_times_cnt = 0; // 清空退出设置模式的时间计数
-  83   2      
-  84   2              // led_status_clear();
+  53   1      }
+  54          
+  55          /**
+  56           * @brief 在设置模式，设置初始放电挡位或放电速率
+  57           *          函数内部会判断 当前 是否处于设置模式
+  58           *
+  59           * @param set_led_mode
+  60           *          CUR_LED_MODE_INITIAL_DISCHARGE_GEAR_IN_SETTING_MODE 要设置的是初始放电挡位
+  61           *          CUR_LED_MODE_DISCHARGE_RATE_IN_SETTING_MODE     要设置的是放电速率
+  62           * @param val 初始放电挡位 或 放电速率对应的值（需要注意不能超过范围）
+  63           */
+  64          void set_led_mode_status(u8 set_led_mode, u8 val)
+  65          {
+  66   1          // 如果在设置模式，才会进入
+  67   1          if (flag_is_in_setting_mode)
+  68   1          {
+  69   2              if (CUR_LED_MODE_INITIAL_DISCHARGE_GEAR_IN_SETTING_MODE == set_led_mode)
+  70   2              {
+  71   3                  cur_initial_discharge_gear = val;
+  72   3      
+  73   3                  // 设置了初始挡位之后，更新当前主灯光对应的占空比值
+  74   3                  cur_light_pwm_duty_val = light_pwm_duty_init_val_table[cur_initial_discharge_gear - 1];
+  75   3              }
+  76   2              else // CUR_LED_MODE_DISCHARGE_RATE_IN_SETTING_MODE == set_led_mode
+  77   2              {
+  78   3                  cur_discharge_rate = val;
+  79   3              }
+  80   2      
+  81   2              cur_led_mode = set_led_mode;
+  82   2              led_all_off();
+  83   2              flag_led_setting_mode_exit_times_come = 0;
+  84   2              led_setting_mode_exit_times_cnt = 0; // 清空退出设置模式的时间计数
   85   2      
-  86   2              light_blink(val);
-  87   2          }
-  88   1      }
-  89          
-  90          //
-  91          void led_handle(void)
-  92          {
-  93   1          // if (CUR_LED_MODE_OFF == cur_led_mode)
-  94   1          // {
-  95   1          //     // led_status_refresh();
-  96   1          //     led_all_off();
-  97   1      
-  98   1          //     // last_led_mode = cur_led_mode;
-  99   1          //     return;
- 100   1          // }
- 101   1      
- 102   1          // 如果当前处于电池电量指示模式
- 103   1          // 设备处于放电时，电量指示灯只显示电池电量降低的部分
- 104   1          if (CUR_LED_MODE_BAT_INDICATOR == cur_led_mode ||
- 105   1              CUR_LED_MODE_BAT_INDICATIOR_IN_INSTRUCTION_MODE == cur_led_mode)
- 106   1          {
- 107   2              /* 点亮指示灯1（放电模式，指示灯1始终点亮） */
- 108   2              LED_1_ON();
- 109   2      
- 110   2              if (bat_adc_val > BAT_ADC_VAL_4) // 电池电量大于4格
- 111   2              {
- 112   3                  cur_led_gear = 5; // 亮5格
- 113   3              }
- 114   2              else if (bat_adc_val > BAT_ADC_VAL_3) // 电池电量大于3格
-C51 COMPILER V9.60.7.0   LED_HANDLE                                                        07/19/2025 15:17:19 PAGE 3   
+  86   2              // led_status_clear();
+  87   2      
+  88   2              light_blink(val);
+  89   2          }
+  90   1      }
+  91          
+  92          //
+  93          void led_handle(void)
+  94          {
+  95   1          // if (CUR_LED_MODE_OFF == cur_led_mode)
+  96   1          // {
+  97   1          //     // led_status_refresh();
+  98   1          //     led_all_off();
+  99   1      
+ 100   1          //     // last_led_mode = cur_led_mode;
+ 101   1          //     return;
+ 102   1          // }
+ 103   1      
+ 104   1          // 如果当前处于电池电量指示模式
+ 105   1          // 设备处于放电时，电量指示灯只显示电池电量降低的部分
+ 106   1          if (CUR_LED_MODE_BAT_INDICATOR == cur_led_mode ||
+ 107   1              CUR_LED_MODE_BAT_INDICATIOR_IN_INSTRUCTION_MODE == cur_led_mode)
+ 108   1          {
+ 109   2              /* 点亮指示灯1（放电模式，指示灯1始终点亮） */
+ 110   2              LED_1_ON();
+ 111   2      
+ 112   2              if (bat_adc_val > BAT_ADC_VAL_4) // 电池电量大于4格
+ 113   2              {
+ 114   3                  cur_led_gear = 5; // 亮5格
+C51 COMPILER V9.60.7.0   LED_HANDLE                                                        07/21/2025 14:57:41 PAGE 3   
 
- 115   2              {
- 116   3                  cur_led_gear = 4; // 亮4格
- 117   3              }
- 118   2              else if (bat_adc_val > BAT_ADC_VAL_2) // 电池电量大于2格
- 119   2              {
- 120   3                  cur_led_gear = 3; // 亮3格
- 121   3              }
- 122   2              else if (bat_adc_val > BAT_ADC_VAL_1) // 电池电量大于1格
- 123   2              {
- 124   3                  cur_led_gear = 2; // 亮2格
- 125   3              }
- 126   2              else
- 127   2              {
- 128   3                  cur_led_gear = 1; // 亮1格
- 129   3              }
- 130   2      
- 131   2              if (0 == last_led_gear)
- 132   2              {
- 133   3                  // 如果未初始化
- 134   3                  last_led_gear = cur_led_gear;
- 135   3              }
- 136   2              else
- 137   2              {
- 138   3                  // 如果 last_led_gear 不为0，则说明已经初始化过了
- 139   3      
- 140   3                  if (cur_led_gear > last_led_gear)
- 141   3                  {
- 142   4                      // 如果当前要显示的指示灯 大于 上次显示的指示灯（样机在电池电�
+ 115   3              }
+ 116   2              else if (bat_adc_val > BAT_ADC_VAL_3) // 电池电量大于3格
+ 117   2              {
+ 118   3                  cur_led_gear = 4; // 亮4格
+ 119   3              }
+ 120   2              else if (bat_adc_val > BAT_ADC_VAL_2) // 电池电量大于2格
+ 121   2              {
+ 122   3                  cur_led_gear = 3; // 亮3格
+ 123   3              }
+ 124   2              else if (bat_adc_val > BAT_ADC_VAL_1) // 电池电量大于1格
+ 125   2              {
+ 126   3                  cur_led_gear = 2; // 亮2格
+ 127   3              }
+ 128   2              else
+ 129   2              {
+ 130   3                  cur_led_gear = 1; // 亮1格
+ 131   3              }
+ 132   2      
+ 133   2              if (0 == last_led_gear)
+ 134   2              {
+ 135   3                  // 如果未初始化
+ 136   3                  last_led_gear = cur_led_gear;
+ 137   3              }
+ 138   2              else
+ 139   2              {
+ 140   3                  // 如果 last_led_gear 不为0，则说明已经初始化过了
+ 141   3      
+ 142   3                  if (cur_led_gear > last_led_gear)
+ 143   3                  {
+ 144   4                      // 如果当前要显示的指示灯 大于 上次显示的指示灯（样机在电池电�
              -��上升的情况下，不会更新显示）
- 143   4                      cur_led_gear = last_led_gear;
- 144   4                  }
- 145   3              }
- 146   2      
- 147   2              if (cur_led_gear >= 5)
- 148   2              {
- 149   3                  LED_5_ON();
- 150   3              }
- 151   2              else
- 152   2              {
- 153   3                  LED_5_OFF();
- 154   3              }
- 155   2      
- 156   2              if (cur_led_gear >= 4)
- 157   2              {
- 158   3                  LED_4_ON();
- 159   3              }
- 160   2              else
- 161   2              {
- 162   3                  LED_4_OFF();
- 163   3              }
- 164   2      
- 165   2              if (cur_led_gear >= 3)
- 166   2              {
- 167   3                  LED_3_ON();
- 168   3              }
- 169   2              else
- 170   2              {
- 171   3                  LED_3_OFF();
- 172   3              }
- 173   2      
- 174   2              if (cur_led_gear >= 2)
- 175   2              {
-C51 COMPILER V9.60.7.0   LED_HANDLE                                                        07/19/2025 15:17:19 PAGE 4   
+ 145   4                      cur_led_gear = last_led_gear;
+ 146   4                  }
+ 147   3              }
+ 148   2      
+ 149   2              if (cur_led_gear >= 5)
+ 150   2              {
+ 151   3                  LED_5_ON();
+ 152   3              }
+ 153   2              else
+ 154   2              {
+ 155   3                  LED_5_OFF();
+ 156   3              }
+ 157   2      
+ 158   2              if (cur_led_gear >= 4)
+ 159   2              {
+ 160   3                  LED_4_ON();
+ 161   3              }
+ 162   2              else
+ 163   2              {
+ 164   3                  LED_4_OFF();
+ 165   3              }
+ 166   2      
+ 167   2              if (cur_led_gear >= 3)
+ 168   2              {
+ 169   3                  LED_3_ON();
+ 170   3              }
+ 171   2              else
+ 172   2              {
+ 173   3                  LED_3_OFF();
+ 174   3              }
+ 175   2      
+C51 COMPILER V9.60.7.0   LED_HANDLE                                                        07/21/2025 14:57:41 PAGE 4   
 
- 176   3                  LED_2_ON();
- 177   3              }
- 178   2              else
- 179   2              {
- 180   3                  LED_2_OFF();
- 181   3              }
- 182   2      
- 183   2          } // if (CUR_LED_MODE_BAT_INDICATOR == cur_led_mode)
- 184   1          else if (CUR_LED_MODE_DISCHARGE_RATE_IN_SETTING_MODE == cur_led_mode ||
- 185   1                   CUR_LED_MODE_DISCHARGE_RATE_IN_INSTRUCTION_MODE == cur_led_mode)
- 186   1          {
- 187   2              // 放电速率指示模式，M1、M2、M3，需要对应的指示灯常亮
- 188   2              switch (cur_discharge_rate)
- 189   2              {
- 190   3              case 1:
- 191   3                  LED_1_ON();
- 192   3                  break;
- 193   3              case 2:
- 194   3                  LED_2_ON();
- 195   3                  break;
- 196   3              case 3:
- 197   3                  LED_3_ON();
- 198   3                  break;
- 199   3              }
- 200   2          }
- 201   1          else if (CUR_LED_MODE_CHARGING == cur_led_mode) // 充电指示模式
- 202   1          {
- 203   2              // 在充电指示模式中，如果电池电量降低，不更新显示
- 204   2              // TODO：样机是在电池电压超过3.55V并且进入涓流充电，绿色指示灯才一直�
+ 176   2              if (cur_led_gear >= 2)
+ 177   2              {
+ 178   3                  LED_2_ON();
+ 179   3              }
+ 180   2              else
+ 181   2              {
+ 182   3                  LED_2_OFF();
+ 183   3              }
+ 184   2      
+ 185   2          } // if (CUR_LED_MODE_BAT_INDICATOR == cur_led_mode)
+ 186   1          else if (CUR_LED_MODE_DISCHARGE_RATE_IN_SETTING_MODE == cur_led_mode ||
+ 187   1                   CUR_LED_MODE_DISCHARGE_RATE_IN_INSTRUCTION_MODE == cur_led_mode)
+ 188   1          {
+ 189   2              // 放电速率指示模式，M1、M2、M3，需要对应的指示灯常亮
+ 190   2              switch (cur_discharge_rate)
+ 191   2              {
+ 192   3              case 1:
+ 193   3                  LED_1_ON();
+ 194   3                  break;
+ 195   3              case 2:
+ 196   3                  LED_2_ON();
+ 197   3                  break;
+ 198   3              case 3:
+ 199   3                  LED_3_ON();
+ 200   3                  break;
+ 201   3              }
+ 202   2          }
+ 203   1          else if (CUR_LED_MODE_CHARGING == cur_led_mode) // 充电指示模式
+ 204   1          {
+ 205   2              // 在充电指示模式中，如果电池电量降低，不更新显示
+ 206   2              // TODO：样机是在电池电压超过3.55V并且进入涓流充电，绿色指示灯才一直�
              -�亮(第5格指示灯)
- 205   2      
- 206   2              /* 点亮指示灯1（指示灯1始终点亮） */
- 207   2              LED_1_ON();
- 208   2      
- 209   2              // if (bat_adc_val > BAT_ADC_VAL_5) // 电池电量大于5格
- 210   2              // {
- 211   2              //     cur_led_gear = 6; // 亮5格，并且所有指示灯常亮
- 212   2              // }
- 213   2              // else if (bat_adc_val > BAT_ADC_VAL_4) // 电池电量大于4格
- 214   2              if (bat_adc_val > BAT_ADC_VAL_4) // 电池电量大于4格
- 215   2              {
- 216   3                  cur_led_gear = 5; // 亮5格，让第5格闪烁
- 217   3              }
- 218   2              else if (bat_adc_val > BAT_ADC_VAL_3) // 电池电量大于3格
- 219   2              {
- 220   3                  cur_led_gear = 4; // 亮4格，让第4格闪烁
- 221   3              }
- 222   2              else if (bat_adc_val > BAT_ADC_VAL_2) // 电池电量大于2格
- 223   2              {
- 224   3                  cur_led_gear = 3; // 亮3格，让第3格闪烁
- 225   3              }
- 226   2              else if (bat_adc_val > BAT_ADC_VAL_1) // 电池电量大于1格
- 227   2              {
- 228   3                  cur_led_gear = 2; // 亮2格，让第2格闪烁
- 229   3              }
- 230   2              else
- 231   2              {
- 232   3                  cur_led_gear = 1; // 亮1格，让第2格闪烁
- 233   3              }
- 234   2      
- 235   2              if (CUR_CHARGE_PHASE_TRICKLE_CHARGE_WHEN_APPROACH_FULLY_CHARGE == cur_charge_phase || /* 快满电
+ 207   2      
+ 208   2              /* 点亮指示灯1（指示灯1始终点亮） */
+ 209   2              LED_1_ON();
+ 210   2      
+ 211   2              // if (bat_adc_val > BAT_ADC_VAL_5) // 电池电量大于5格
+ 212   2              // {
+ 213   2              //     cur_led_gear = 6; // 亮5格，并且所有指示灯常亮
+ 214   2              // }
+ 215   2              // else if (bat_adc_val > BAT_ADC_VAL_4) // 电池电量大于4格
+ 216   2              if (bat_adc_val > BAT_ADC_VAL_4) // 电池电量大于4格
+ 217   2              {
+ 218   3                  cur_led_gear = 5; // 亮5格，让第5格闪烁
+ 219   3              }
+ 220   2              else if (bat_adc_val > BAT_ADC_VAL_3) // 电池电量大于3格
+ 221   2              {
+ 222   3                  cur_led_gear = 4; // 亮4格，让第4格闪烁
+ 223   3              }
+ 224   2              else if (bat_adc_val > BAT_ADC_VAL_2) // 电池电量大于2格
+ 225   2              {
+ 226   3                  cur_led_gear = 3; // 亮3格，让第3格闪烁
+ 227   3              }
+ 228   2              else if (bat_adc_val > BAT_ADC_VAL_1) // 电池电量大于1格
+ 229   2              {
+ 230   3                  cur_led_gear = 2; // 亮2格，让第2格闪烁
+ 231   3              }
+ 232   2              else
+ 233   2              {
+ 234   3                  cur_led_gear = 1; // 亮1格，让第2格闪烁
+ 235   3              }
+ 236   2      
+C51 COMPILER V9.60.7.0   LED_HANDLE                                                        07/21/2025 14:57:41 PAGE 5   
+
+ 237   2              if (CUR_CHARGE_PHASE_TRICKLE_CHARGE_WHEN_APPROACH_FULLY_CHARGE == cur_charge_phase || /* 快满电
              -，涓流充电 */
-C51 COMPILER V9.60.7.0   LED_HANDLE                                                        07/19/2025 15:17:19 PAGE 5   
-
- 236   2                  CUR_CHARGE_PHASE_FULLY_CHARGE == cur_charge_phase)                                /* 已经充
+ 238   2                  CUR_CHARGE_PHASE_FULLY_CHARGE == cur_charge_phase)                                /* 已经充
              -满电 */
- 237   2              {
- 238   3                  // 样机是进入涓流充电才把所有指示灯变为常亮
- 239   3                  cur_led_gear = 6;
- 240   3              }
- 241   2      
- 242   2              if (0 == last_led_gear)
- 243   2              {
- 244   3                  last_led_gear = cur_led_gear;
- 245   3              }
- 246   2              else
- 247   2              {
- 248   3                  if (cur_led_gear < last_led_gear)
- 249   3                  {
- 250   4                      // 在充电指示模式中，如果电池电量降低，不更新显示
- 251   4                      cur_led_gear = last_led_gear;
- 252   4                  }
- 253   3              }
- 254   2      
- 255   2              cur_led_gear_in_charging = cur_led_gear; // 更新数值，给定时器中断使用
- 256   2              delay_ms(1);
- 257   2      
- 258   2              if (cur_led_gear >= 3)
- 259   2              {
- 260   3                  LED_2_ON();
- 261   3              }
- 262   2      
- 263   2              if (cur_led_gear >= 4)
- 264   2              {
- 265   3                  LED_3_ON();
- 266   3              }
- 267   2      
- 268   2              if (cur_led_gear >= 5)
- 269   2              {
- 270   3                  LED_4_ON();
- 271   3              }
- 272   2      
- 273   2              if (cur_led_gear >= 6)
- 274   2              {
- 275   3                  LED_5_ON();
- 276   3              }
- 277   2          }
- 278   1      
- 279   1          // led设置模式的时间到来
- 280   1          if (flag_led_setting_mode_exit_times_come)
- 281   1          {
- 282   2              flag_led_setting_mode_exit_times_come = 0;
- 283   2      
- 284   2              flag_is_in_setting_mode = 0; // 退出设置模式
- 285   2              flag_allow_light_in_setting_mode = 0;
- 286   2      
- 287   2              // 如果要回到 led_off
- 288   2              if (flag_is_led_off_enable)
- 289   2              {
- 290   3                  flag_is_led_off_enable = 0;
- 291   3                  cur_led_mode = CUR_LED_MODE_OFF;
- 292   3              }
- 293   2              else
- 294   2              {
- 295   3                  cur_led_mode = CUR_LED_MODE_BAT_INDICATOR; // 恢复到电池电量指示模式
- 296   3              }
-C51 COMPILER V9.60.7.0   LED_HANDLE                                                        07/19/2025 15:17:19 PAGE 6   
+ 239   2              {
+ 240   3                  // 样机是进入涓流充电才把所有指示灯变为常亮
+ 241   3                  cur_led_gear = 6;
+ 242   3              }
+ 243   2      
+ 244   2              if (0 == last_led_gear)
+ 245   2              {
+ 246   3                  last_led_gear = cur_led_gear;
+ 247   3              }
+ 248   2              else
+ 249   2              {
+ 250   3                  if (cur_led_gear < last_led_gear)
+ 251   3                  {
+ 252   4                      // 在充电指示模式中，如果电池电量降低，不更新显示
+ 253   4                      cur_led_gear = last_led_gear;
+ 254   4                  }
+ 255   3              }
+ 256   2      
+ 257   2              cur_led_gear_in_charging = cur_led_gear; // 更新数值，给定时器中断使用
+ 258   2              delay_ms(1);
+ 259   2      
+ 260   2              if (cur_led_gear >= 3)
+ 261   2              {
+ 262   3                  LED_2_ON();
+ 263   3              }
+ 264   2      
+ 265   2              if (cur_led_gear >= 4)
+ 266   2              {
+ 267   3                  LED_3_ON();
+ 268   3              }
+ 269   2      
+ 270   2              if (cur_led_gear >= 5)
+ 271   2              {
+ 272   3                  LED_4_ON();
+ 273   3              }
+ 274   2      
+ 275   2              if (cur_led_gear >= 6)
+ 276   2              {
+ 277   3                  LED_5_ON();
+ 278   3              }
+ 279   2          }
+ 280   1      
+ 281   1          // led设置模式的时间到来
+ 282   1          if (flag_led_setting_mode_exit_times_come)
+ 283   1          {
+ 284   2              flag_led_setting_mode_exit_times_come = 0;
+ 285   2      
+ 286   2              flag_is_in_setting_mode = 0; // 退出设置模式
+ 287   2              flag_allow_light_in_setting_mode = 0;
+ 288   2      
+ 289   2              // 如果要回到 led_off
+ 290   2              if (flag_is_led_off_enable)
+ 291   2              {
+ 292   3                  flag_is_led_off_enable = 0;
+ 293   3                  cur_led_mode = CUR_LED_MODE_OFF;
+ 294   3              }
+ 295   2              else
+ 296   2              {
+C51 COMPILER V9.60.7.0   LED_HANDLE                                                        07/21/2025 14:57:41 PAGE 6   
 
- 297   2          }
- 298   1      
- 299   1          // led指示灯退出指示模式的时间到来
- 300   1          if (flag_led_struction_mode_exit_times_come)
- 301   1          {
- 302   2              flag_led_struction_mode_exit_times_come = 0;
- 303   2      
- 304   2              flag_is_in_struction_mode = 0;
+ 297   3                  cur_led_mode = CUR_LED_MODE_BAT_INDICATOR; // 恢复到电池电量指示模式
+ 298   3              }
+ 299   2          }
+ 300   1      
+ 301   1          // led指示灯退出指示模式的时间到来
+ 302   1          if (flag_led_struction_mode_exit_times_come)
+ 303   1          {
+ 304   2              flag_led_struction_mode_exit_times_come = 0;
  305   2      
- 306   2              // 如果要回到 led_off
- 307   2              if (flag_is_led_off_enable)
- 308   2              {
- 309   3                  flag_is_led_off_enable = 0;
- 310   3                  cur_led_mode = CUR_LED_MODE_OFF;
- 311   3              }
- 312   2              else
- 313   2              {
- 314   3                  cur_led_mode = CUR_LED_MODE_BAT_INDICATOR;
- 315   3              }
- 316   2          }
- 317   1      
- 318   1          if (CUR_LED_MODE_OFF == cur_led_mode)
- 319   1          {
- 320   2              led_all_off();
- 321   2          }
- 322   1      
- 323   1          // last_led_mode = cur_led_mode;
- 324   1      }
+ 306   2              flag_is_in_struction_mode = 0;
+ 307   2      
+ 308   2              // 如果要回到 led_off
+ 309   2              if (flag_is_led_off_enable)
+ 310   2              {
+ 311   3                  flag_is_led_off_enable = 0;
+ 312   3                  cur_led_mode = CUR_LED_MODE_OFF;
+ 313   3              }
+ 314   2              else
+ 315   2              {
+ 316   3                  cur_led_mode = CUR_LED_MODE_BAT_INDICATOR;
+ 317   3              }
+ 318   2          }
+ 319   1      
+ 320   1          if (CUR_LED_MODE_OFF == cur_led_mode)
+ 321   1          {
+ 322   2              led_all_off();
+ 323   2          }
+ 324   1      
+ 325   1          // last_led_mode = cur_led_mode;
+ 326   1      }
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE

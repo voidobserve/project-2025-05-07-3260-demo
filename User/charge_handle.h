@@ -56,9 +56,9 @@ enum
         timer1_pwm_disable();          \
     } while (0);
 
-#define PWM_CTL_FOR_CHARGING_REG
+// #define PWM_CTL_FOR_CHARGING_REG
 
-extern volatile u8 cur_charge_status;
+// extern volatile u8 cur_charge_status;
 
 void charge_handle(void);
 

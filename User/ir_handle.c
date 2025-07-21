@@ -123,11 +123,14 @@ void ir_handle(void)
                 0 == flag_is_in_struction_mode && /* 不在指示模式 */
                 CUR_LED_MODE_OFF != cur_led_mode) /* 未关机 */
             {
+                // 设置未当前初始挡位对应的亮度：
+                cur_light_pwm_duty_val = light_pwm_duty_init_val_table[cur_initial_discharge_gear - 1];
                 // light_auto_shutdown_time_cnt = (u32)3 * 60 * 60 * 1000; // 3 小时
                 light_auto_shutdown_time_cnt = (u32)3 * 1000; // 3 s，测试时使用
                 flag_is_auto_shutdown_enable = 1;
 
                 light_blink(3);
+                printf("3H press\n");
             }
 
             break;
@@ -214,6 +217,7 @@ void ir_handle(void)
                 light_auto_shutdown_time_cnt = (u32)5 * 1000; // 5 s，测试时使用
                 flag_is_auto_shutdown_enable = 1;
                 light_blink(3);
+                printf("5H press\n");
             }
 
             flag_is_adjust_light_slowly = 0; // 关闭缓慢调节主灯光的操作
@@ -248,6 +252,7 @@ void ir_handle(void)
                 light_auto_shutdown_time_cnt = (u32)8 * 1000; // 8 s，测试时使用
                 flag_is_auto_shutdown_enable = 1;
                 light_blink(3);
+                printf("8H press\n");
             }
 
             flag_is_adjust_light_slowly = 0; // 关闭缓慢调节主灯光的操作

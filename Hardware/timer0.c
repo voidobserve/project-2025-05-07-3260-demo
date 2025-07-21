@@ -541,7 +541,6 @@ void TIMR0_IRQHandler(void) interrupt TMR0_IRQn
                         if (cnt >= light_auto_shutdown_time_cnt)
                         {
                             // 让主函数关机
-                            flag_is_auto_shutdown_enable = 0;
                             flag_is_auto_shutdown_times_come = 1;
                         }
                     }

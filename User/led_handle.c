@@ -25,10 +25,12 @@ void led_status_clear(void)
 {
     led_all_off();
 
+    // 清空设置模式相关的变量
     flag_is_in_setting_mode = 0;
     flag_led_setting_mode_exit_times_come = 0;
     led_setting_mode_exit_times_cnt = 0;
 
+    // 清空指示模式相关的变量
     flag_is_in_struction_mode = 0;
     flag_led_struction_mode_exit_times_come = 0;
     led_struction_mode_exit_times_cnt = 0;

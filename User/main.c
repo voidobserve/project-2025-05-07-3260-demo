@@ -90,7 +90,7 @@ volatile u16 expect_light_pwm_duty_val = 0; // ÆÚÍû»ºÂýµ÷½Úµ½µÄ¡¢Ö÷µÆ¹â¶ÔÓ¦µÄÕ¼¿
 
 // ÊÇ·ñ¿ªÆôÁË¶¨Ê±¹Ø»ú¹¦ÄÜ£º
 volatile bit flag_is_auto_shutdown_enable = 0;
-volatile u32 light_auto_shutdown_time_cnt = 0; // ¶¨Ê±¹Ø»ú¹¦ÄÜµÄ¶¨Ê±Æ÷¼ÆÊý£¬µ¥Î»£ºms
+volatile u32 light_auto_shutdown_time_cnt = 0;     // ¶¨Ê±¹Ø»ú¹¦ÄÜµÄ¶¨Ê±Æ÷¼ÆÊý£¬µ¥Î»£ºms
 volatile bit flag_is_auto_shutdown_times_come = 0; // ¶¨Ê±¹Ø»úµÄÊ±¼äµ½À´
 
 // ¶Ì°´¼õÐ¡µÆ¹âÁÁ¶È£¬¶ÔÓ¦¸÷¸öµ²Î»ÁÁ¶ÈµÄÕ¼¿Õ±ÈÖµ
@@ -242,12 +242,20 @@ void main(void)
         charge_handle();
         ir_handle(); // º¯ÊýÄÚ²¿»áÅÐ¶ÏÊÇ·ñÔÚ³äµç£¬Èç¹ûÔÚ³äµçÔòÍË³ö
 
-        // Èç¹ûµ±Ç°ÕýÔÚ³äµç£¬µ«ÊÇÖ¸Ê¾µÆÃ»ÓÐÇÐ»»µ½³äµçÖ¸Ê¾Ä£Ê½£¬ÔòÇÐ»»£º
+        /*
+            ¡¾·Ç³äµçÄ£Ê½¡¿ -> ¡¾³äµçÄ£Ê½¡¿
+
+            Èç¹ûµ±Ç°ÕýÔÚ³äµç£¬µ«ÊÇÖ¸Ê¾µÆÃ»ÓÐÇÐ»»µ½³äµçÖ¸Ê¾Ä£Ê½£¬ÔòÇÐ»»£º
+        */
         if (CUR_CHARGE_PHASE_NONE != cur_charge_phase)
         {
-            if (cur_led_mode != CUR_LED_MODE_CHARGING &&
-                cur_led_mode != CUR_LED_MODE_OFF)
+            // if (cur_led_mode != CUR_LED_MODE_CHARGING && /* Ö¸Ê¾µÆ²»´¦ÓÚ³äµçÄ£Ê½ */
+            //     cur_led_mode != CUR_LED_MODE_OFF)
+            if (cur_led_mode != CUR_LED_MODE_CHARGING) /* Ö¸Ê¾µÆ²»´¦ÓÚ³äµçÄ£Ê½ */
             {
+                // Çå¿Õ¶¨Ê±¹Ø»úÏà¹ØµÄ±äÁ¿
+                flag_is_auto_shutdown_enable = 0;
+                led_status_clear();
                 led_mode_alter(CUR_LED_MODE_CHARGING);
             }
 
@@ -257,6 +265,7 @@ void main(void)
         else // CUR_CHARGE_PHASE_NONE == cur_charge_phase
         {
             /*
+                ¡¾³äµçÄ£Ê½¡¿ -> ¡¾·Åµç¡¢µãÁÁÖ÷µÆ¹â¡¢Ö¸Ê¾µÆ¶ÔÓ¦µç³ØµçÁ¿Ö¸Ê¾¡¿
                 Èç¹ûµ±Ç°Ã»ÓÐÔÚ³äµç£¬²¢ÇÒÖ¸Ê¾µÆ´¦ÓÚ³äµçÖ¸Ê¾Ä£Ê½£¬
                 ÇÐ»»»Øµç³ØµçÁ¿Ö¸Ê¾Ä£Ê½
 
@@ -264,28 +273,36 @@ void main(void)
             */
             if (cur_led_mode == CUR_LED_MODE_CHARGING)
             {
+                led_status_clear();
                 led_mode_alter(CUR_LED_MODE_BAT_INDICATOR);
                 // ÐèÒª´ò¿ªÖ÷µÆ¹â
-                LIGHT_ON();
+
+                // ²é±í£¬»ñµÃµ²Î»¶ÔÓ¦µÄÕ¼¿Õ±ÈÖµ
+                cur_light_pwm_duty_val = light_pwm_duty_init_val_table[cur_initial_discharge_gear - 1];
+
+                LIGHT_SET_PWM_DUTY(cur_light_pwm_duty_val); // Á¢¿Ì¸üÐÂPWMÕ¼¿Õ±È
+                LIGHT_ON();                                 // Ê¹ÄÜ PWM Êä³ö
             }
         }
-        
+
         // Èç¹û¶¨Ê±¹Ø»úµÄÊ±¼äµ½À´
         if (flag_is_auto_shutdown_times_come)
         {
-            flag_is_auto_shutdown_times_come = 0;
+            flag_is_auto_shutdown_times_come = 0; // Çå¿Õ¶¨Ê±¹Ø»ú±êÖ¾
+            flag_is_auto_shutdown_enable = 0;     // ²»ÔÊÐí×Ô¶¯¹Ø»ú
             led_status_clear();
             cur_led_mode = CUR_LED_MODE_OFF;
             cur_light_pwm_duty_val = 0;
             LIGHT_OFF();
-        }
 
+            // printf("power off\n");
+        }
 
         adc_update_bat_adc_val();
         led_handle();
         light_handle();
 
-#if 0 // Ã¿¸ôÒ»¶ÎÊ±¼ä£¬´òÓ¡µ÷ÊÔÐÅÏ¢£º
+#if 0  // Ã¿¸ôÒ»¶ÎÊ±¼ä£¬´òÓ¡µ÷ÊÔÐÅÏ¢£º
 
         {
             static u8 cnt = 0;
