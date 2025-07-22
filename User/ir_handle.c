@@ -130,7 +130,7 @@ void ir_handle(void)
                 flag_is_auto_shutdown_enable = 1;
 
                 light_blink(3);
-                printf("3H press\n");
+                // printf("3H press\n");
             }
 
             break;
@@ -217,7 +217,7 @@ void ir_handle(void)
                 light_auto_shutdown_time_cnt = (u32)5 * 1000; // 5 s，测试时使用
                 flag_is_auto_shutdown_enable = 1;
                 light_blink(3);
-                printf("5H press\n");
+                // printf("5H press\n");
             }
 
             flag_is_adjust_light_slowly = 0; // 关闭缓慢调节主灯光的操作
@@ -252,7 +252,7 @@ void ir_handle(void)
                 light_auto_shutdown_time_cnt = (u32)8 * 1000; // 8 s，测试时使用
                 flag_is_auto_shutdown_enable = 1;
                 light_blink(3);
-                printf("8H press\n");
+                // printf("8H press\n");
             }
 
             flag_is_adjust_light_slowly = 0; // 关闭缓慢调节主灯光的操作

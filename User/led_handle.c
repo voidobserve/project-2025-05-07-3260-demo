@@ -139,10 +139,16 @@ void led_handle(void)
         {
             // 如果 last_led_gear 不为0，则说明已经初始化过了
 
-            if (cur_led_gear > last_led_gear)
+            if (cur_led_gear > last_led_gear ||         //
+                (0 == flag_led_gear_update_times_come)) /* 如果更新时间还未到来 */
             {
                 // 如果当前要显示的指示灯 大于 上次显示的指示灯（样机在电池电压上升的情况下，不会更新显示）
                 cur_led_gear = last_led_gear;
+            }
+
+            if (flag_led_gear_update_times_come)
+            {
+                flag_led_gear_update_times_come = 0;
             }
         }
 
@@ -247,10 +253,16 @@ void led_handle(void)
         }
         else
         {
-            if (cur_led_gear < last_led_gear)
+            if (cur_led_gear < last_led_gear ||         /* 如果电池电量比原来的还要低 */
+                (0 == flag_led_gear_update_times_come)) /* 如果更新时间还未到来 */
             {
                 // 在充电指示模式中，如果电池电量降低，不更新显示
                 cur_led_gear = last_led_gear;
+            }
+
+            if (flag_led_gear_update_times_come)
+            {
+                flag_led_gear_update_times_come = 0;
             }
         }
 

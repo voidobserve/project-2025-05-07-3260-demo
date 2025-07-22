@@ -282,7 +282,7 @@ void light_handle(void)
     LIGHT_SET_PWM_DUTY(cur_light_pwm_duty_val);
 }
 
-void light_set_pwm_duty(u16 pwm_duty_val)
-{
-    timer2_set_pwm_duty(pwm_duty_val);
-}
+// void light_set_pwm_duty(u16 pwm_duty_val)
+// {
+//     timer2_set_pwm_duty(pwm_duty_val);
+// }

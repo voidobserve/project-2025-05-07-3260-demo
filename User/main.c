@@ -60,6 +60,9 @@ volatile bit flag_is_in_struction_mode = 0;               // 是否处于指示模式
 volatile bit flag_led_struction_mode_exit_times_come = 0; // 退出指示灯指示模式的时间到来
 volatile u16 led_struction_mode_exit_times_cnt = 0;       // 退出指示灯指示模式时间计数
 
+volatile bit flag_led_gear_update_times_come = 0; // 指示灯状态更新的时间到来
+// volatile u16 led_gear_update_times_cnt = 0; // 指示灯状态更新的时间计数
+
 // 标志位，是否要回到 led_off 模式
 volatile bit flag_is_led_off_enable = 0;
 
@@ -204,7 +207,7 @@ void main(void)
 
     adc_config();
 
-    printf("sys reset\n"); // 打印至少占用1012字节空间
+    // printf("sys reset\n"); // 打印至少占用1012字节空间
 
     // TODO:
     // 上电后，需要先点亮红色指示灯，再变为电池电量指示模式
@@ -359,7 +362,7 @@ void main(void)
         }
 #endif // 每隔一段时间，打印调试信息
 
-#if 1 // demo板使用到的调试指示灯
+#if 0 // demo板使用到的调试指示灯
         if (CUR_CHARGE_PHASE_NONE == cur_charge_phase)
         {
             my_debug_led_2_off();

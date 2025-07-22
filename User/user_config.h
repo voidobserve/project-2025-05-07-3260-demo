@@ -52,6 +52,9 @@ extern volatile bit flag_is_in_struction_mode;               // 是否退出指�
 extern volatile bit flag_led_struction_mode_exit_times_come; // 退出指示灯指示模式的时间到来
 extern volatile u16 led_struction_mode_exit_times_cnt;       // 退出指示灯指示模式时间计数
 
+extern volatile bit flag_led_gear_update_times_come ; // 指示灯状态更新的时间到来
+// extern volatile u16 led_gear_update_times_cnt ; // 指示灯状态更新的时间计数
+
 // 标志位，是否要回到 led_off 模式
 extern volatile bit flag_is_led_off_enable;
 

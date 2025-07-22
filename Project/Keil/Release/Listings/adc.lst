@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.7.0   ADC                                                               07/21/2025 14:57:40 PAGE 1   
+C51 COMPILER V9.60.7.0   ADC                                                               07/22/2025 17:28:15 PAGE 1   
 
 
 C51 COMPILER V9.60.7.0, COMPILATION OF MODULE ADC
@@ -62,7 +62,7 @@ line level    source
   51   2                           (0x03 << 0);  /* 选择 内部 3.0V 作为参考电压 */
   52   2          }
   53   1      
-C51 COMPILER V9.60.7.0   ADC                                                               07/21/2025 14:57:40 PAGE 2   
+C51 COMPILER V9.60.7.0   ADC                                                               07/22/2025 17:28:15 PAGE 2   
 
   54   1          ADC_CFG0 |= ADC_CHAN0_EN(0x1) | // 使能通道0转换
   55   1                      ADC_EN(0x1);        // 使能A/D转换
@@ -126,7 +126,7 @@ line level    source
  113   2                  continue; // 丢弃前两次采样的
  114   2              if (g_temp_value > g_adcmax)
  115   2                  g_adcmax = g_temp_value; // 最大
-C51 COMPILER V9.60.7.0   ADC                                                               07/21/2025 14:57:40 PAGE 3   
+C51 COMPILER V9.60.7.0   ADC                                                               07/22/2025 17:28:15 PAGE 3   
 
  116   2              if (g_temp_value < g_adcmin)
  117   2                  g_adcmin = g_temp_value; // 最小
@@ -190,7 +190,7 @@ line level    source
                   if (bat_adc_val_sample_index >= BAT_ADC_VAL_SAMPLE_COUNT)
                       bat_adc_val_sample_index = 0;
               
-C51 COMPILER V9.60.7.0   ADC                                                               07/21/2025 14:57:40 PAGE 4   
+C51 COMPILER V9.60.7.0   ADC                                                               07/22/2025 17:28:15 PAGE 4   
 
                   for (i = 0; i < BAT_ADC_VAL_SAMPLE_COUNT; i++)
                       sum += bat_adc_val_samples[i];

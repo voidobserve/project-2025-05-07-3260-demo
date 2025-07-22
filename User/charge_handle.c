@@ -156,6 +156,11 @@ void charge_handle(void)
                 pwm_duty -= 2;
             }
 
+            // 除了检电池电压，还要检占空比，加上这个条件后，约3.55V之后进入涓流充电，进入涓流充电后，测得电池电压3.55V
+            if (pwm_duty < 10)
+            {
+                trickle_charge_cnt++;
+            }
 #if 0
             pwm_duty = 0;
             pwm_reg = (u32)TIMER1_HIGH_FEQ_PEROID_VAL * 0 / 100; // 寄存器存放的占空比值
@@ -163,7 +168,13 @@ void charge_handle(void)
             TMR1_PWML = pwm_reg & 0xFF;
 #endif
 
-            if (trickle_charge_cnt >= 250)
+            /*
+                测试发现，
+                如果只通过检测电压的方式来累计计数值，
+                即使电池从3.55V充到3.57V，很长时间都没有进入下面的条件，
+                PWM占空比一直卡在6%~10% 
+            */ 
+            if (trickle_charge_cnt >= 100)
             {
                 trickle_charge_cnt = 0;
 
@@ -242,7 +253,8 @@ void charge_handle(void)
 #endif
 
             // if (bat_adc_val >= (u16)((u32)(3600 + 150) * 4096 / 2 / 2 / 1000))
-            if (bat_adc_val >= (u16)((u32)(3600 + 50) * 4096 / 2 / 2 / 1000))
+            // if (bat_adc_val >= (u16)((u32)(3600 + 50) * 4096 / 2 / 2 / 1000)) // 用万用表测试，在3.60~3.61V跳动时，还没有停止充电，等单片机停止充电、PWM输出0%之后，测得电池电压是3.59V，并且电池电压还在下降，最后落在3.44V
+            if (bat_adc_val >= (u16)((u32)(3700 + 100) * 4096 / 2 / 2 / 1000)) // 
             {
 
                 // fully_charge_cnt++;
@@ -379,7 +391,7 @@ void charge_handle(void)
             // if (current >= 5400) // 如果电流值已经爆表，超过单片机能检测的值（理论值）：5454.54
             {
                 // printf("current overflow\n");
-                if (pwm_duty > 0)
+                if (pwm_duty > MIN_PWM_DUTY_IN_LOW_POWER)
                 {
                     pwm_duty--;
                 }

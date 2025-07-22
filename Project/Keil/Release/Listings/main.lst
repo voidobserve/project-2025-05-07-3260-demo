@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.7.0   MAIN                                                              07/21/2025 14:57:40 PAGE 1   
+C51 COMPILER V9.60.7.0   MAIN                                                              07/22/2025 17:46:19 PAGE 1   
 
 
 C51 COMPILER V9.60.7.0, COMPILATION OF MODULE MAIN
@@ -62,7 +62,7 @@ line level    source
   51          volatile u8 cur_led_gear;             // 当前led挡位
   52          volatile u8 last_led_gear;            // 上次led挡位（只能在刚上电时清零赋初始值）
   53          volatile u8 cur_led_gear_in_charging; // 充电指示，对应的挡位
-C51 COMPILER V9.60.7.0   MAIN                                                              07/21/2025 14:57:40 PAGE 2   
+C51 COMPILER V9.60.7.0   MAIN                                                              07/22/2025 17:46:19 PAGE 2   
 
   54          
   55          volatile bit flag_is_in_setting_mode = 0;              // 是否处于设置模式
@@ -73,258 +73,261 @@ line level    source
   60          volatile bit flag_led_struction_mode_exit_times_come = 0; // 退出指示灯指示模式的时间到来
   61          volatile u16 led_struction_mode_exit_times_cnt = 0;       // 退出指示灯指示模式时间计数
   62          
-  63          // 标志位，是否要回到 led_off 模式
-  64          volatile bit flag_is_led_off_enable = 0;
+  63          volatile bit flag_led_gear_update_times_come = 0; // 指示灯状态更新的时间到来
+  64          // volatile u16 led_gear_update_times_cnt = 0; // 指示灯状态更新的时间计数
   65          
-  66          // =================================================================
-  67          // 主灯光控制相关变量                                               //
-  68          // =================================================================
-  69          volatile u32 light_adjust_time_cnt = 0;    // 调节灯光的时间计数，暂定为每1s加一
-  70          volatile u8 light_ctl_phase_in_rate_1 = 1; // 在放电速率M1时，使用到的变量，在计算公式里面用作系数，每次唤
+  66          // 标志位，是否要回到 led_off 模式
+  67          volatile bit flag_is_led_off_enable = 0;
+  68          
+  69          // =================================================================
+  70          // 主灯光控制相关变量                                               //
+  71          // =================================================================
+  72          volatile u32 light_adjust_time_cnt = 0;    // 调节灯光的时间计数，暂定为每1s加一
+  73          volatile u8 light_ctl_phase_in_rate_1 = 1; // 在放电速率M1时，使用到的变量，在计算公式里面用作系数，每次唤
              -醒时需要初始化为1
-  71          
-  72          // TODO：3260使用16位寄存器，7361使用8位寄存器，要进行适配修改
-  73          volatile u16 cur_light_pwm_duty_val = 0; // 当前灯光对应的占空比值
-  74          // volatile u16 expect_light_pwm_duty_val = 0;                  // 期望调节到的、灯光对应的占空比值
-  75          volatile u8 flag_is_light_adjust_time_come = 0;              // 调节灯光的时间到来，目前为1s
-  76          volatile u8 flag_is_light_pwm_duty_val_adjust_time_come = 0; // 灯光占空比值调节时间到来
-  77          
-  78          volatile u8 flag_is_ctl_light_blink = 0; // 是否控制主灯光闪烁
-  79          volatile u8 light_ctl_blink_times = 0;   // 要控制主灯光闪烁的次数
-  80          /*
-  81              是否要在设置模式期间关闭主灯光
-  82          
-  83              如果已经关灯，在设置模式期间，主灯闪烁完成后，直接关灯
-  84          */
-  85          volatile bit flag_allow_light_in_setting_mode = 0;
-  86          
-  87          // 是否要缓慢调节主灯光的占空比
-  88          volatile bit flag_is_adjust_light_slowly = 0;
-  89          volatile u16 expect_light_pwm_duty_val = 0; // 期望缓慢调节到的、主灯光对应的占空比值
-  90          
-  91          // 是否开启了定时关机功能：
-  92          volatile bit flag_is_auto_shutdown_enable = 0;
-  93          volatile u32 light_auto_shutdown_time_cnt = 0;     // 定时关机功能的定时器计数，单位：ms
-  94          volatile bit flag_is_auto_shutdown_times_come = 0; // 定时关机的时间到来
-  95          
-  96          // 短按减小灯光亮度，对应各个挡位亮度的占空比值
-  97          const u16 light_pwm_sub_table[9] = {
-  98              (u16)((u32)TIMER2_FEQ * 8367 / 10000), // 83.67 %
-  99              (u16)((u32)TIMER2_FEQ * 7371 / 10000), // 73.71 %
- 100              (u16)((u32)TIMER2_FEQ * 6375 / 10000), // 63.75 %
- 101              (u16)((u32)TIMER2_FEQ * 5379 / 10000), // 53.79 %
- 102              (u16)((u32)TIMER2_FEQ * 4383 / 10000), // 43.83 %
- 103              (u16)((u32)TIMER2_FEQ * 3387 / 10000), // 33.87 %
- 104              (u16)((u32)TIMER2_FEQ * 2391 / 10000), // 23.91 %
- 105              (u16)((u32)TIMER2_FEQ * 1395 / 10000), // 13.95 %
- 106              (u16)((u32)TIMER2_FEQ * 478 / 10000),  // 4.78 %
- 107          };
- 108          
- 109          // 短按增加灯光亮度，对应各个挡位亮度的占空比值
- 110          const u16 light_pwm_add_table[9] = {
- 111              (u16)((u32)TIMER2_FEQ * 478 / 10000),  // 4.78 %
- 112              (u16)((u32)TIMER2_FEQ * 1474 / 10000), // 14.74 %
- 113              (u16)((u32)TIMER2_FEQ * 2470 / 10000), // 24.70 %
- 114              (u16)((u32)TIMER2_FEQ * 3466 / 10000), // 34.66 %
-C51 COMPILER V9.60.7.0   MAIN                                                              07/21/2025 14:57:40 PAGE 3   
+  74          
+  75          // TODO：3260使用16位寄存器，7361使用8位寄存器，要进行适配修改
+  76          volatile u16 cur_light_pwm_duty_val = 0; // 当前灯光对应的占空比值
+  77          // volatile u16 expect_light_pwm_duty_val = 0;                  // 期望调节到的、灯光对应的占空比值
+  78          volatile u8 flag_is_light_adjust_time_come = 0;              // 调节灯光的时间到来，目前为1s
+  79          volatile u8 flag_is_light_pwm_duty_val_adjust_time_come = 0; // 灯光占空比值调节时间到来
+  80          
+  81          volatile u8 flag_is_ctl_light_blink = 0; // 是否控制主灯光闪烁
+  82          volatile u8 light_ctl_blink_times = 0;   // 要控制主灯光闪烁的次数
+  83          /*
+  84              是否要在设置模式期间关闭主灯光
+  85          
+  86              如果已经关灯，在设置模式期间，主灯闪烁完成后，直接关灯
+  87          */
+  88          volatile bit flag_allow_light_in_setting_mode = 0;
+  89          
+  90          // 是否要缓慢调节主灯光的占空比
+  91          volatile bit flag_is_adjust_light_slowly = 0;
+  92          volatile u16 expect_light_pwm_duty_val = 0; // 期望缓慢调节到的、主灯光对应的占空比值
+  93          
+  94          // 是否开启了定时关机功能：
+  95          volatile bit flag_is_auto_shutdown_enable = 0;
+  96          volatile u32 light_auto_shutdown_time_cnt = 0;     // 定时关机功能的定时器计数，单位：ms
+  97          volatile bit flag_is_auto_shutdown_times_come = 0; // 定时关机的时间到来
+  98          
+  99          // 短按减小灯光亮度，对应各个挡位亮度的占空比值
+ 100          const u16 light_pwm_sub_table[9] = {
+ 101              (u16)((u32)TIMER2_FEQ * 8367 / 10000), // 83.67 %
+ 102              (u16)((u32)TIMER2_FEQ * 7371 / 10000), // 73.71 %
+ 103              (u16)((u32)TIMER2_FEQ * 6375 / 10000), // 63.75 %
+ 104              (u16)((u32)TIMER2_FEQ * 5379 / 10000), // 53.79 %
+ 105              (u16)((u32)TIMER2_FEQ * 4383 / 10000), // 43.83 %
+ 106              (u16)((u32)TIMER2_FEQ * 3387 / 10000), // 33.87 %
+ 107              (u16)((u32)TIMER2_FEQ * 2391 / 10000), // 23.91 %
+ 108              (u16)((u32)TIMER2_FEQ * 1395 / 10000), // 13.95 %
+ 109              (u16)((u32)TIMER2_FEQ * 478 / 10000),  // 4.78 %
+ 110          };
+ 111          
+ 112          // 短按增加灯光亮度，对应各个挡位亮度的占空比值
+ 113          const u16 light_pwm_add_table[9] = {
+ 114              (u16)((u32)TIMER2_FEQ * 478 / 10000),  // 4.78 %
+C51 COMPILER V9.60.7.0   MAIN                                                              07/22/2025 17:46:19 PAGE 3   
 
- 115              (u16)((u32)TIMER2_FEQ * 4462 / 10000), // 44.62 %
- 116              (u16)((u32)TIMER2_FEQ * 5458 / 10000), // 54.58 %
- 117              (u16)((u32)TIMER2_FEQ * 6554 / 10000), // 65.54 %
- 118              (u16)((u32)TIMER2_FEQ * 7450 / 10000), // 74.50 %
- 119              (u16)((u32)TIMER2_FEQ * 8367 / 10000), // 83.67 %
- 120          };
- 121          
- 122          const u16 light_pwm_duty_init_val_table[5] = {
- 123              (u16)((u32)TIMER2_FEQ * 8367 / 10000), // 83.67 %
- 124              (u16)((u32)TIMER2_FEQ * 7411 / 10000), // 74.11 %
- 125              (u16)((u32)TIMER2_FEQ * 6455 / 10000), // 64.55 %
- 126              (u16)((u32)TIMER2_FEQ * 5698 / 10000), // 56.98 %
- 127              (u16)((u32)TIMER2_FEQ * 4980 / 10000), // 49.80 %
- 128          };
- 129          
- 130          void led_pin_config(void)
- 131          {
- 132   1          P1_MD0 &= ~GPIO_P11_MODE_SEL(0x03);
- 133   1          P1_MD0 |= GPIO_P11_MODE_SEL(0x01);
- 134   1          FOUT_S11 = GPIO_FOUT_AF_FUNC;
- 135   1          P11 = 0; // 如果不给初始值，上电之后，指示灯会闪一下
- 136   1      
- 137   1          P1_MD0 &= ~GPIO_P12_MODE_SEL(0x03);
- 138   1          P1_MD0 |= GPIO_P12_MODE_SEL(0x01);
- 139   1          FOUT_S12 = GPIO_FOUT_AF_FUNC;
- 140   1          P12 = 0;
- 141   1      
- 142   1          P1_MD0 &= ~GPIO_P13_MODE_SEL(0x03);
- 143   1          P1_MD0 |= GPIO_P13_MODE_SEL(0x01);
- 144   1          FOUT_S13 = GPIO_FOUT_AF_FUNC;
- 145   1          P13 = 0;
- 146   1      
- 147   1          P1_MD1 &= ~GPIO_P14_MODE_SEL(0x03);
- 148   1          P1_MD1 |= GPIO_P14_MODE_SEL(0x01);
- 149   1          FOUT_S14 = GPIO_FOUT_AF_FUNC;
- 150   1          P14 = 0;
- 151   1      
- 152   1          P1_MD1 &= ~GPIO_P15_MODE_SEL(0x03);
- 153   1          P1_MD1 |= GPIO_P15_MODE_SEL(0x01);
- 154   1          FOUT_S15 = GPIO_FOUT_AF_FUNC;
- 155   1          P15 = 0;
- 156   1      }
- 157          
- 158          /*
- 159              变量、参数，初始化
+ 115              (u16)((u32)TIMER2_FEQ * 1474 / 10000), // 14.74 %
+ 116              (u16)((u32)TIMER2_FEQ * 2470 / 10000), // 24.70 %
+ 117              (u16)((u32)TIMER2_FEQ * 3466 / 10000), // 34.66 %
+ 118              (u16)((u32)TIMER2_FEQ * 4462 / 10000), // 44.62 %
+ 119              (u16)((u32)TIMER2_FEQ * 5458 / 10000), // 54.58 %
+ 120              (u16)((u32)TIMER2_FEQ * 6554 / 10000), // 65.54 %
+ 121              (u16)((u32)TIMER2_FEQ * 7450 / 10000), // 74.50 %
+ 122              (u16)((u32)TIMER2_FEQ * 8367 / 10000), // 83.67 %
+ 123          };
+ 124          
+ 125          const u16 light_pwm_duty_init_val_table[5] = {
+ 126              (u16)((u32)TIMER2_FEQ * 8367 / 10000), // 83.67 %
+ 127              (u16)((u32)TIMER2_FEQ * 7411 / 10000), // 74.11 %
+ 128              (u16)((u32)TIMER2_FEQ * 6455 / 10000), // 64.55 %
+ 129              (u16)((u32)TIMER2_FEQ * 5698 / 10000), // 56.98 %
+ 130              (u16)((u32)TIMER2_FEQ * 4980 / 10000), // 49.80 %
+ 131          };
+ 132          
+ 133          void led_pin_config(void)
+ 134          {
+ 135   1          P1_MD0 &= ~GPIO_P11_MODE_SEL(0x03);
+ 136   1          P1_MD0 |= GPIO_P11_MODE_SEL(0x01);
+ 137   1          FOUT_S11 = GPIO_FOUT_AF_FUNC;
+ 138   1          P11 = 0; // 如果不给初始值，上电之后，指示灯会闪一下
+ 139   1      
+ 140   1          P1_MD0 &= ~GPIO_P12_MODE_SEL(0x03);
+ 141   1          P1_MD0 |= GPIO_P12_MODE_SEL(0x01);
+ 142   1          FOUT_S12 = GPIO_FOUT_AF_FUNC;
+ 143   1          P12 = 0;
+ 144   1      
+ 145   1          P1_MD0 &= ~GPIO_P13_MODE_SEL(0x03);
+ 146   1          P1_MD0 |= GPIO_P13_MODE_SEL(0x01);
+ 147   1          FOUT_S13 = GPIO_FOUT_AF_FUNC;
+ 148   1          P13 = 0;
+ 149   1      
+ 150   1          P1_MD1 &= ~GPIO_P14_MODE_SEL(0x03);
+ 151   1          P1_MD1 |= GPIO_P14_MODE_SEL(0x01);
+ 152   1          FOUT_S14 = GPIO_FOUT_AF_FUNC;
+ 153   1          P14 = 0;
+ 154   1      
+ 155   1          P1_MD1 &= ~GPIO_P15_MODE_SEL(0x03);
+ 156   1          P1_MD1 |= GPIO_P15_MODE_SEL(0x01);
+ 157   1          FOUT_S15 = GPIO_FOUT_AF_FUNC;
+ 158   1          P15 = 0;
+ 159   1      }
  160          
- 161              如果是第一次上电，需要读出存放的数据
- 162          */
- 163          void param_init(void)
- 164          {
- 165   1          light_ctl_phase_in_rate_1 = 1;
- 166   1      
- 167   1          cur_initial_discharge_gear = 5; // 初始放电挡位（需要记忆）
- 168   1          cur_discharge_rate = 2;         // 初始放电速率（需要记忆）
- 169   1      }
- 170          
- 171          /**
- 172           * @brief  Main program.
- 173           * @param  None
- 174           * @retval None
- 175           */
- 176          void main(void)
-C51 COMPILER V9.60.7.0   MAIN                                                              07/21/2025 14:57:40 PAGE 4   
+ 161          /*
+ 162              变量、参数，初始化
+ 163          
+ 164              如果是第一次上电，需要读出存放的数据
+ 165          */
+ 166          void param_init(void)
+ 167          {
+ 168   1          light_ctl_phase_in_rate_1 = 1;
+ 169   1      
+ 170   1          cur_initial_discharge_gear = 5; // 初始放电挡位（需要记忆）
+ 171   1          cur_discharge_rate = 2;         // 初始放电速率（需要记忆）
+ 172   1      }
+ 173          
+ 174          /**
+ 175           * @brief  Main program.
+ 176           * @param  None
+C51 COMPILER V9.60.7.0   MAIN                                                              07/22/2025 17:46:19 PAGE 4   
 
- 177          {
- 178   1          // 看门狗默认打开, 复位时间2s
- 179   1          WDT_KEY = WDT_KEY_VAL(0xDD); //  关闭看门狗 (如需配置看门狗请查看“WDT\WDT_Reset”示例)
- 180   1      
- 181   1          system_init();
- 182   1      
- 183   1          // 关闭HCK和HDA的调试功能
- 184   1          WDT_KEY = 0x55;  // 解除写保护
- 185   1          IO_MAP &= ~0x01; // 清除这个寄存器的值，实现关闭HCK和HDA引脚的调试功能（解除映射）
- 186   1          WDT_KEY = 0xBB;  // 写一个无效的数据，触发写保护
- 187   1      
- 188   1          uart0_config();
- 189   1          my_debug_led_config();
+ 177           * @retval None
+ 178           */
+ 179          void main(void)
+ 180          {
+ 181   1          // 看门狗默认打开, 复位时间2s
+ 182   1          WDT_KEY = WDT_KEY_VAL(0xDD); //  关闭看门狗 (如需配置看门狗请查看“WDT\WDT_Reset”示例)
+ 183   1      
+ 184   1          system_init();
+ 185   1      
+ 186   1          // 关闭HCK和HDA的调试功能
+ 187   1          WDT_KEY = 0x55;  // 解除写保护
+ 188   1          IO_MAP &= ~0x01; // 清除这个寄存器的值，实现关闭HCK和HDA引脚的调试功能（解除映射）
+ 189   1          WDT_KEY = 0xBB;  // 写一个无效的数据，触发写保护
  190   1      
- 191   1          timer0_config();
- 192   1          timer1_pwm_config(); // 控制充电的PWM
- 193   1          timer1_pwm_disable();
- 194   1          timer2_pwm_config(); // 控制灯光的pwm
- 195   1          timer2_pwm_disable();
- 196   1      
- 197   1          // timer1_set_pwm_high_feq();
- 198   1          // TODO: 7361不用加这个引脚配置:
- 199   1          led_pin_config();
- 200   1      
- 201   1          // 红外接收引脚：
- 202   1          P2_MD0 &= ~(GPIO_P23_MODE_SEL(0x03)); // 输入模式
- 203   1          P2_PU |= GPIO_P23_PULL_UP(0x01);      // 上拉
- 204   1      
- 205   1          adc_config();
- 206   1      
- 207   1          printf("sys reset\n"); // 打印至少占用1012字节空间
- 208   1      
- 209   1          // TODO:
- 210   1          // 上电后，需要先点亮红色指示灯，再变为电池电量指示模式
- 211   1          // LED_1_ON();
- 212   1          // delay_ms(1000);
- 213   1      
- 214   1          // cur_led_mode = CUR_LED_MODE_INITIAL_DISCHARGE_GEAR;
- 215   1      
- 216   1      #if 0
+ 191   1          uart0_config();
+ 192   1          my_debug_led_config();
+ 193   1      
+ 194   1          timer0_config();
+ 195   1          timer1_pwm_config(); // 控制充电的PWM
+ 196   1          timer1_pwm_disable();
+ 197   1          timer2_pwm_config(); // 控制灯光的pwm
+ 198   1          timer2_pwm_disable();
+ 199   1      
+ 200   1          // timer1_set_pwm_high_feq();
+ 201   1          // TODO: 7361不用加这个引脚配置:
+ 202   1          led_pin_config();
+ 203   1      
+ 204   1          // 红外接收引脚：
+ 205   1          P2_MD0 &= ~(GPIO_P23_MODE_SEL(0x03)); // 输入模式
+ 206   1          P2_PU |= GPIO_P23_PULL_UP(0x01);      // 上拉
+ 207   1      
+ 208   1          adc_config();
+ 209   1      
+ 210   1          // printf("sys reset\n"); // 打印至少占用1012字节空间
+ 211   1      
+ 212   1          // TODO:
+ 213   1          // 上电后，需要先点亮红色指示灯，再变为电池电量指示模式
+ 214   1          // LED_1_ON();
+ 215   1          // delay_ms(1000);
+ 216   1      
+ 217   1          // cur_led_mode = CUR_LED_MODE_INITIAL_DISCHARGE_GEAR;
+ 218   1      
+ 219   1      #if 0
                   cur_led_mode = CUR_LED_MODE_BAT_INDICATOR; // 电池电量指示模式
                   cur_initial_discharge_gear = 5;
                   cur_discharge_rate = 3;
               #endif
- 221   1      
- 222   1          // cur_led_mode = CUR_LED_MODE_CHARGING;
- 223   1      
- 224   1          // bat_adc_val = 2000;
- 225   1          // led_status_refresh();
- 226   1          // cur_led_mode = CUR_LED_MODE_BAT_INDICATOR;
- 227   1      
- 228   1          param_init();
- 229   1      
- 230   1          light_init();
- 231   1          led_init();
- 232   1          led_mode_alter(CUR_LED_MODE_BAT_INDICATOR); // 电池电量指示模式
- 233   1      
- 234   1          // light_ctl_blink_times = 3;
- 235   1          // flag_is_ctl_light_blink = 1;
+ 224   1      
+ 225   1          // cur_led_mode = CUR_LED_MODE_CHARGING;
+ 226   1      
+ 227   1          // bat_adc_val = 2000;
+ 228   1          // led_status_refresh();
+ 229   1          // cur_led_mode = CUR_LED_MODE_BAT_INDICATOR;
+ 230   1      
+ 231   1          param_init();
+ 232   1      
+ 233   1          light_init();
+ 234   1          led_init();
+ 235   1          led_mode_alter(CUR_LED_MODE_BAT_INDICATOR); // 电池电量指示模式
  236   1      
- 237   1          while (1)
- 238   1          {
-C51 COMPILER V9.60.7.0   MAIN                                                              07/21/2025 14:57:40 PAGE 5   
+ 237   1          // light_ctl_blink_times = 3;
+ 238   1          // flag_is_ctl_light_blink = 1;
+C51 COMPILER V9.60.7.0   MAIN                                                              07/22/2025 17:46:19 PAGE 5   
 
- 239   2      
- 240   2      #if 1
- 241   2      
- 242   2              charge_handle();
- 243   2              ir_handle(); // 函数内部会判断是否在充电，如果在充电则退出
+ 239   1      
+ 240   1          while (1)
+ 241   1          {
+ 242   2      
+ 243   2      #if 1
  244   2      
- 245   2              /*
- 246   2                  【非充电模式】 -> 【充电模式】
+ 245   2              charge_handle();
+ 246   2              ir_handle(); // 函数内部会判断是否在充电，如果在充电则退出
  247   2      
- 248   2                  如果当前正在充电，但是指示灯没有切换到充电指示模式，则切换：
- 249   2              */
- 250   2              if (CUR_CHARGE_PHASE_NONE != cur_charge_phase)
- 251   2              {
- 252   3                  // if (cur_led_mode != CUR_LED_MODE_CHARGING && /* 指示灯不处于充电模式 */
- 253   3                  //     cur_led_mode != CUR_LED_MODE_OFF)
- 254   3                  if (cur_led_mode != CUR_LED_MODE_CHARGING) /* 指示灯不处于充电模式 */
- 255   3                  {
- 256   4                      // 清空定时关机相关的变量
- 257   4                      flag_is_auto_shutdown_enable = 0;
- 258   4                      led_status_clear();
- 259   4                      led_mode_alter(CUR_LED_MODE_CHARGING);
- 260   4                  }
- 261   3      
- 262   3                  // 需要关闭主灯光
- 263   3                  LIGHT_OFF();
- 264   3              } // if (CUR_CHARGE_PHASE_NONE != cur_charge_phase)
- 265   2              else // CUR_CHARGE_PHASE_NONE == cur_charge_phase
- 266   2              {
- 267   3                  /*
- 268   3                      【充电模式】 -> 【放电、点亮主灯光、指示灯对应电池电量指示】
- 269   3                      如果当前没有在充电，并且指示灯处于充电指示模式，
- 270   3                      切换回电池电量指示模式
- 271   3      
- 272   3                      测试时发现从充电到断开充电，led指示灯还在闪烁，需要加上这补丁
- 273   3                  */
- 274   3                  if (cur_led_mode == CUR_LED_MODE_CHARGING)
- 275   3                  {
- 276   4                      led_status_clear();
- 277   4                      led_mode_alter(CUR_LED_MODE_BAT_INDICATOR);
- 278   4                      // 需要打开主灯光
- 279   4      
- 280   4                      // 查表，获得挡位对应的占空比值
- 281   4                      cur_light_pwm_duty_val = light_pwm_duty_init_val_table[cur_initial_discharge_gear - 1];
+ 248   2              /*
+ 249   2                  【非充电模式】 -> 【充电模式】
+ 250   2      
+ 251   2                  如果当前正在充电，但是指示灯没有切换到充电指示模式，则切换：
+ 252   2              */
+ 253   2              if (CUR_CHARGE_PHASE_NONE != cur_charge_phase)
+ 254   2              {
+ 255   3                  // if (cur_led_mode != CUR_LED_MODE_CHARGING && /* 指示灯不处于充电模式 */
+ 256   3                  //     cur_led_mode != CUR_LED_MODE_OFF)
+ 257   3                  if (cur_led_mode != CUR_LED_MODE_CHARGING) /* 指示灯不处于充电模式 */
+ 258   3                  {
+ 259   4                      // 清空定时关机相关的变量
+ 260   4                      flag_is_auto_shutdown_enable = 0;
+ 261   4                      led_status_clear();
+ 262   4                      led_mode_alter(CUR_LED_MODE_CHARGING);
+ 263   4                  }
+ 264   3      
+ 265   3                  // 需要关闭主灯光
+ 266   3                  LIGHT_OFF();
+ 267   3              } // if (CUR_CHARGE_PHASE_NONE != cur_charge_phase)
+ 268   2              else // CUR_CHARGE_PHASE_NONE == cur_charge_phase
+ 269   2              {
+ 270   3                  /*
+ 271   3                      【充电模式】 -> 【放电、点亮主灯光、指示灯对应电池电量指示】
+ 272   3                      如果当前没有在充电，并且指示灯处于充电指示模式，
+ 273   3                      切换回电池电量指示模式
+ 274   3      
+ 275   3                      测试时发现从充电到断开充电，led指示灯还在闪烁，需要加上这补丁
+ 276   3                  */
+ 277   3                  if (cur_led_mode == CUR_LED_MODE_CHARGING)
+ 278   3                  {
+ 279   4                      led_status_clear();
+ 280   4                      led_mode_alter(CUR_LED_MODE_BAT_INDICATOR);
+ 281   4                      // 需要打开主灯光
  282   4      
- 283   4                      LIGHT_SET_PWM_DUTY(cur_light_pwm_duty_val); // 立刻更新PWM占空比
- 284   4                      LIGHT_ON();                                 // 使能 PWM 输出
- 285   4                  }
- 286   3              }
- 287   2      
- 288   2              // 如果定时关机的时间到来
- 289   2              if (flag_is_auto_shutdown_times_come)
- 290   2              {
- 291   3                  flag_is_auto_shutdown_times_come = 0; // 清空定时关机标志
- 292   3                  flag_is_auto_shutdown_enable = 0;     // 不允许自动关机
- 293   3                  led_status_clear();
- 294   3                  cur_led_mode = CUR_LED_MODE_OFF;
- 295   3                  cur_light_pwm_duty_val = 0;
- 296   3                  LIGHT_OFF();
- 297   3      
- 298   3                  // printf("power off\n");
- 299   3              }
- 300   2      
-C51 COMPILER V9.60.7.0   MAIN                                                              07/21/2025 14:57:40 PAGE 6   
+ 283   4                      // 查表，获得挡位对应的占空比值
+ 284   4                      cur_light_pwm_duty_val = light_pwm_duty_init_val_table[cur_initial_discharge_gear - 1];
+ 285   4      
+ 286   4                      LIGHT_SET_PWM_DUTY(cur_light_pwm_duty_val); // 立刻更新PWM占空比
+ 287   4                      LIGHT_ON();                                 // 使能 PWM 输出
+ 288   4                  }
+ 289   3              }
+ 290   2      
+ 291   2              // 如果定时关机的时间到来
+ 292   2              if (flag_is_auto_shutdown_times_come)
+ 293   2              {
+ 294   3                  flag_is_auto_shutdown_times_come = 0; // 清空定时关机标志
+ 295   3                  flag_is_auto_shutdown_enable = 0;     // 不允许自动关机
+ 296   3                  led_status_clear();
+ 297   3                  cur_led_mode = CUR_LED_MODE_OFF;
+ 298   3                  cur_light_pwm_duty_val = 0;
+ 299   3                  LIGHT_OFF();
+ 300   3      
+C51 COMPILER V9.60.7.0   MAIN                                                              07/22/2025 17:46:19 PAGE 6   
 
- 301   2              adc_update_bat_adc_val();
- 302   2              led_handle();
- 303   2              light_handle();
- 304   2      
- 305   2      #if 0  // 每隔一段时间，打印调试信息：
+ 301   3                  // printf("power off\n");
+ 302   3              }
+ 303   2      
+ 304   2              adc_update_bat_adc_val();
+ 305   2              led_handle();
+ 306   2              light_handle();
+ 307   2      
+ 308   2      #if 0  // 每隔一段时间，打印调试信息：
               
                       {
                           static u8 cnt = 0;
@@ -379,47 +382,47 @@ line level    source
                                   break;
                               }
                           }
+C51 COMPILER V9.60.7.0   MAIN                                                              07/22/2025 17:46:19 PAGE 7   
+
                       }
               #endif // 每隔一段时间，打印调试信息
- 361   2      
-C51 COMPILER V9.60.7.0   MAIN                                                              07/21/2025 14:57:40 PAGE 7   
-
- 362   2      #if 1 // demo板使用到的调试指示灯
- 363   2              if (CUR_CHARGE_PHASE_NONE == cur_charge_phase)
- 364   2              {
- 365   3                  my_debug_led_2_off();
- 366   3                  my_debug_led_3_off();
- 367   3                  my_debug_led_4_off();
- 368   3      
- 369   3                  my_debug_led_1_on();
- 370   3              }
- 371   2              else if (CUR_CHARGE_PHASE_NORMAL_CHARGE == cur_charge_phase)
- 372   2              {
- 373   3                  my_debug_led_1_off();
- 374   3                  my_debug_led_3_off();
- 375   3                  my_debug_led_4_off();
- 376   3      
- 377   3                  my_debug_led_2_on();
- 378   3              }
- 379   2              else if (CUR_CHARGE_PHASE_TRICKLE_CHARGE_WHEN_APPROACH_FULLY_CHARGE == cur_charge_phase)
- 380   2              {
- 381   3                  my_debug_led_1_off();
- 382   3                  my_debug_led_2_off();
- 383   3                  my_debug_led_4_off();
- 384   3      
- 385   3                  my_debug_led_3_on();
- 386   3              }
- 387   2              else if (CUR_CHARGE_PHASE_FULLY_CHARGE == cur_charge_phase)
- 388   2              {
- 389   3                  my_debug_led_1_off();
- 390   3                  my_debug_led_2_off();
- 391   3                  my_debug_led_3_off();
- 392   3      
- 393   3                  my_debug_led_4_on();
- 394   3              }
- 395   2      #endif // demo板使用到的调试指示灯
- 396   2      
- 397   2      #if 0 // 缓慢调节驱动灯光的pwm占空比（还未调试完成）
+ 364   2      
+ 365   2      #if 0 // demo板使用到的调试指示灯
+                      if (CUR_CHARGE_PHASE_NONE == cur_charge_phase)
+                      {
+                          my_debug_led_2_off();
+                          my_debug_led_3_off();
+                          my_debug_led_4_off();
+              
+                          my_debug_led_1_on();
+                      }
+                      else if (CUR_CHARGE_PHASE_NORMAL_CHARGE == cur_charge_phase)
+                      {
+                          my_debug_led_1_off();
+                          my_debug_led_3_off();
+                          my_debug_led_4_off();
+              
+                          my_debug_led_2_on();
+                      }
+                      else if (CUR_CHARGE_PHASE_TRICKLE_CHARGE_WHEN_APPROACH_FULLY_CHARGE == cur_charge_phase)
+                      {
+                          my_debug_led_1_off();
+                          my_debug_led_2_off();
+                          my_debug_led_4_off();
+              
+                          my_debug_led_3_on();
+                      }
+                      else if (CUR_CHARGE_PHASE_FULLY_CHARGE == cur_charge_phase)
+                      {
+                          my_debug_led_1_off();
+                          my_debug_led_2_off();
+                          my_debug_led_3_off();
+              
+                          my_debug_led_4_on();
+                      }
+              #endif // demo板使用到的调试指示灯
+ 399   2      
+ 400   2      #if 0 // 缓慢调节驱动灯光的pwm占空比（还未调试完成）
               
                       {
                           // static u8 cnt =0;
@@ -440,28 +443,28 @@ line level    source
                       }
               
               #endif // 缓慢调节驱动灯光的pwm占空比（还未调试完成）
- 418   2      
- 419   2      #endif
- 420   2          }
- 421   1      }
- 422          
- 423          /**
-C51 COMPILER V9.60.7.0   MAIN                                                              07/21/2025 14:57:40 PAGE 8   
+ 421   2      
+ 422   2      #endif
+ 423   2          }
+C51 COMPILER V9.60.7.0   MAIN                                                              07/22/2025 17:46:19 PAGE 8   
 
- 424           * @}
- 425           */
- 426          
- 427          /*************************** (C) COPYRIGHT 2022 HUGE-IC ***** END OF FILE *****/
+ 424   1      }
+ 425          
+ 426          /**
+ 427           * @}
+ 428           */
+ 429          
+ 430          /*************************** (C) COPYRIGHT 2022 HUGE-IC ***** END OF FILE *****/
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =    386    ----
-   CONSTANT SIZE    =     11    ----
+   CODE SIZE        =    288    ----
+   CONSTANT SIZE    =   ----    ----
    XDATA SIZE       =     86    ----
    PDATA SIZE       =   ----    ----
    DATA SIZE        =   ----    ----
    IDATA SIZE       =   ----    ----
-   BIT SIZE         =     10    ----
+   BIT SIZE         =     11    ----
 END OF MODULE INFORMATION.
 
 

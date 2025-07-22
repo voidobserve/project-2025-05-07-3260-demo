@@ -553,6 +553,22 @@ void TIMR0_IRQHandler(void) interrupt TMR0_IRQn
 
 #endif // 控制定时关机
 
+#if 1
+                {
+                    static u16 cnt = 0;
+
+                    if (0 == flag_led_gear_update_times_come)
+                    {
+                        cnt++;
+                        if (cnt >= 60000)
+                        {
+                            cnt = 0;
+                            flag_led_gear_update_times_come = 1;
+                        }
+                    }
+                }
+#endif
+
             } // if (cnt >= 10) // 10 * 100us == 1ms
         }
 
